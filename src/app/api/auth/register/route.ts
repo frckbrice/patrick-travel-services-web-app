@@ -20,103 +20,131 @@ import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 
 const handler = asyncHandler(async (request: NextRequest) => {
-    // Check if Firebase Admin is initialized
-    if (!adminAuth) {
-        throw new ApiError(
-            'Authentication service unavailable',
-            HttpStatus.SERVICE_UNAVAILABLE
+    const body = await request.json();
+
+    // Validate input
+    const validationResult = registerSchema.safeParse(body);
+
+    if (!validationResult.success) {
+        const errors = validationResult.error.issues.reduce(
+            (acc: Record<string, string[]>, err: ZodIssue) => {
+                const path = err.path.join('.');
+                if (!acc[path]) acc[path] = [];
+                acc[path].push(err.message);
+                return acc;
+            },
+            {} as Record<string, string[]>
         );
+
+        return validationErrorResponse(errors, ERROR_MESSAGES.VALIDATION_ERROR);
     }
 
-        const body = await request.json();
+    const { email, firstName, lastName, phone, inviteCode, firebaseUid } = validationResult.data;
 
-        // Validate input
-        const validationResult = registerSchema.safeParse(body);
+    if (!firebaseUid) {
+        throw new ApiError('Firebase UID is required', HttpStatus.BAD_REQUEST);
+    }
 
-        if (!validationResult.success) {
-            const errors = validationResult.error.issues.reduce(
-                (acc: Record<string, string[]>, err: ZodIssue) => {
-                    const path = err.path.join('.');
-                    if (!acc[path]) acc[path] = [];
-                    acc[path].push(err.message);
-                    return acc;
-                },
-                {} as Record<string, string[]>
-            );
+    // Check if user already exists in database
+    const existingUser = await prisma.user.findUnique({
+        where: { id: firebaseUid },
+    });
 
-            return validationErrorResponse(errors, ERROR_MESSAGES.VALIDATION_ERROR);
+    if (existingUser) {
+        return errorResponse(ERROR_MESSAGES.EMAIL_ALREADY_EXISTS, 409);
+    }
+
+    // Determine role based on invite code
+    let userRole: 'CLIENT' | 'AGENT' | 'ADMIN' = 'CLIENT';
+
+    if (inviteCode) {
+        // Validate and use invite code
+        const invite = await prisma.inviteCode.findUnique({
+            where: { code: inviteCode },
+        });
+
+        if (!invite) {
+            throw new ApiError('Invalid invite code', HttpStatus.BAD_REQUEST);
         }
 
-        const { email, password, firstName, lastName, phone } = validationResult.data;
-
-        // Check if user already exists in database
-        const existingUser = await prisma.user.findUnique({
-            where: { email },
-        });
-
-        if (existingUser) {
-            return errorResponse(ERROR_MESSAGES.EMAIL_ALREADY_EXISTS, 409);
+        if (!invite.isActive) {
+            throw new ApiError('This invite code has been deactivated', HttpStatus.FORBIDDEN);
         }
 
-        // Create user in Firebase Auth
-        const firebaseUser = await adminAuth.createUser({
-            email,
-            password,
-            displayName: `${firstName} ${lastName}`,
-            emailVerified: false,
-        });
+        if (new Date() > invite.expiresAt) {
+            throw new ApiError('This invite code has expired', HttpStatus.FORBIDDEN);
+        }
 
-        // Set custom claims for the user
-        await adminAuth.setCustomUserClaims(firebaseUser.uid, {
-            role: 'CLIENT',
-        });
+        if (invite.usedCount >= invite.maxUses) {
+            throw new ApiError('This invite code has reached its usage limit', HttpStatus.FORBIDDEN);
+        }
 
-        // Create user in database
-        const user = await prisma.user.create({
+        // Use the role from invite code
+        userRole = invite.role;
+
+        // Update invite code usage
+        await prisma.inviteCode.update({
+            where: { id: invite.id },
             data: {
-                id: firebaseUser.uid, // Use Firebase UID as database ID
-                email,
-                password: 'firebase_managed', // Password managed by Firebase
-                firstName,
-                lastName,
-                phone,
-                role: 'CLIENT',
-                isVerified: false,
-            },
-            select: {
-                id: true,
-                email: true,
-                firstName: true,
-                lastName: true,
-                phone: true,
-                role: true,
-                isActive: true,
-                isVerified: true,
-                createdAt: true,
-                updatedAt: true,
-                lastLogin: true,
+                usedCount: { increment: 1 },
+                usedBy: firebaseUid,
+                usedAt: new Date(),
             },
         });
 
-        // Generate custom token for immediate login
-        const customToken = await adminAuth.createCustomToken(firebaseUser.uid, {
-            role: 'CLIENT',
-            userId: user.id,
-        });
+        logger.info('Invite code used', { code: inviteCode, role: userRole, userId: firebaseUid });
+    }
 
-        logger.info('User registered successfully', { userId: user.id, email: user.email });
+    // Create user in database (Firebase user already created on client)
+    const user = await prisma.user.create({
+        data: {
+            id: firebaseUid, // Use Firebase UID as database ID
+            email,
+            password: 'firebase_managed', // Password managed by Firebase
+            firstName,
+            lastName,
+            phone,
+            role: userRole,
+            isVerified: false,
+        },
+        select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            role: true,
+            isActive: true,
+            isVerified: true,
+            createdAt: true,
+            updatedAt: true,
+            lastLogin: true,
+        },
+    });
 
-        // TODO: Send verification email via Firebase
-        // await adminAuth.generateEmailVerificationLink(email);
+    // Set custom claims in Firebase (if admin is available)
+    if (adminAuth) {
+        try {
+            await adminAuth.setCustomUserClaims(firebaseUid, {
+                role: userRole,
+                userId: user.id,
+            });
+        } catch (error) {
+            logger.warn('Failed to set custom claims, but registration succeeded', error);
+        }
+    }
 
-        return successResponse(
-            {
-                user,
-                customToken, // Client will exchange this for ID token
-            },
-            SUCCESS_MESSAGES.REGISTRATION_SUCCESS,
-            201
-        );
+    logger.info('User registered successfully', {
+        userId: user.id,
+        email: user.email,
+        role: userRole
+    });
+
+    return successResponse(
+        { user },
+        SUCCESS_MESSAGES.REGISTRATION_SUCCESS,
+        201
+    );
 });
 
 // Apply middleware: CORS -> Rate Limit -> Handler

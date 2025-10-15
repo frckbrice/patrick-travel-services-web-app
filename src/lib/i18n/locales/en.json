@@ -281,6 +281,76 @@
       "cookies": "Cookie Policy",
       "rights": "All rights reserved."
     }
+  },
+  "about": {
+    "badge": "About Patrick Travel Services",
+    "title": "Your Trusted Immigration Partner",
+    "subtitle": "Helping individuals and families achieve their dreams of living, working, and studying abroad since 2014.",
+    "statsYears": "Years Experience",
+    "statsClients": "Happy Clients",
+    "statsSuccess": "Success Rate",
+    "imageAlt": "About Patrick Travel Services",
+    "licensedBadge": "Licensed",
+    "licensedSince": "Since 2014",
+    "mission": {
+      "title": "Our Mission",
+      "paragraph1": "At Patrick Travel Services, we believe everyone deserves the opportunity to pursue their dreams globally. Our mission is to make immigration accessible, transparent, and successful for all our clients.",
+      "paragraph2": "With over a decade of experience, we've helped hundreds of families navigate complex immigration processes with confidence and peace of mind.",
+      "licensedTitle": "Licensed & Insured",
+      "licensedDesc": "Fully certified professionals",
+      "fastTitle": "Fast Processing",
+      "fastDesc": "Quick turnaround times",
+      "statsCases": "Cases Handled",
+      "statsSuccessRate": "Success Rate",
+      "statsExperience": "Years Experience",
+      "statsSupport": "Support"
+    },
+    "values": {
+      "title": "Our Core Values",
+      "subtitle": "The principles that guide everything we do",
+      "excellence": {
+        "title": "Excellence",
+        "description": "We maintain the highest standards in immigration consulting"
+      },
+      "compassion": {
+        "title": "Compassion",
+        "description": "We understand the personal nature of your journey"
+      },
+      "results": {
+        "title": "Results",
+        "description": "Focused on achieving successful outcomes for every client"
+      },
+      "partnership": {
+        "title": "Partnership",
+        "description": "Building lasting relationships with our clients"
+      }
+    },
+    "team": {
+      "title": "Meet Our Team",
+      "subtitle": "Experienced professionals dedicated to your success",
+      "member1": {
+        "name": "Patrick E.",
+        "role": "Founder & CEO",
+        "description": "Licensed immigration consultant with 15+ years of experience"
+      },
+      "member2": {
+        "name": "Sarah Thompson",
+        "role": "Senior Immigration Consultant",
+        "description": "Specialist in student and work visas"
+      },
+      "member3": {
+        "name": "David Chen",
+        "role": "Case Manager",
+        "description": "Expert in family reunification cases"
+      }
+    },
+    "cta": {
+      "title": "Ready to Start Your Journey?",
+      "description": "Let us help you achieve your immigration goals with expert guidance and personalized support.",
+      "getStarted": "Get Started Today",
+      "contact": "Contact Us"
+    }
   }
+
 }
 

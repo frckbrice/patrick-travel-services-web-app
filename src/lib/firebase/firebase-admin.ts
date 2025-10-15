@@ -12,14 +12,23 @@ let adminDatabase: Database | null = null;
 const initializeFirebaseAdmin = () => {
     if (getApps().length > 0) {
         adminApp = getApps()[0];
-        adminAuth = getAuth(adminApp);
-        adminDatabase = getDatabase(adminApp);
+        if (!adminAuth) {
+            adminAuth = getAuth(adminApp);
+        }
+        // Don't reinitialize database if it's already initialized
+        if (!adminDatabase && process.env.FIREBASE_DATABASE_URL) {
+            try {
+                adminDatabase = getDatabase(adminApp);
+            } catch (error) {
+                console.warn('Firebase Realtime Database already initialized or not available');
+            }
+        }
         return;
     }
 
     // Check if we have the required credentials
     const hasCredentials =
-        process.env.FIREBASE_SERVICE_ACCOUNT ||
+        process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
         (process.env.FIREBASE_PROJECT_ID &&
             process.env.FIREBASE_PRIVATE_KEY &&
             process.env.FIREBASE_CLIENT_EMAIL);
@@ -32,24 +41,45 @@ const initializeFirebaseAdmin = () => {
     }
 
     try {
-        // Initialize Firebase Admin with service account
-        const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
-            ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-            : {
-                projectId: process.env.FIREBASE_PROJECT_ID,
-                privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            };
+        // Use individual environment variables (most reliable for Next.js)
+        const serviceAccount = {
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        };
 
-        adminApp = initializeApp({
+        console.log('✅ Initializing Firebase Admin with individual environment variables');
+        console.log('   Project ID:', serviceAccount.projectId);
+        console.log('   Client Email:', serviceAccount.clientEmail);
+
+        const initConfig: {
+            credential: ReturnType<typeof cert>;
+            databaseURL?: string;
+        } = {
             credential: cert(serviceAccount),
-            databaseURL: process.env.FIREBASE_DATABASE_URL,
-        });
+        };
 
+        // Only add databaseURL if it exists (optional for Firestore-only apps)
+        if (process.env.FIREBASE_DATABASE_URL) {
+            initConfig.databaseURL = process.env.FIREBASE_DATABASE_URL;
+        }
+
+        adminApp = initializeApp(initConfig);
         adminAuth = getAuth(adminApp);
-        adminDatabase = getDatabase(adminApp);
+
+        // Only initialize Realtime Database if URL is provided (optional - we mainly use Firestore)
+        if (process.env.FIREBASE_DATABASE_URL) {
+            try {
+                adminDatabase = getDatabase(adminApp);
+                console.log('✅ Firebase Realtime Database initialized');
+            } catch (dbError) {
+                console.warn('⚠️ Firebase Realtime Database not initialized (optional):', dbError);
+            }
+        }
+
+        console.log('✅ Firebase Admin initialized successfully');
     } catch (error) {
-        console.error('Failed to initialize Firebase Admin:', error);
+        console.error('❌ Failed to initialize Firebase Admin:', error);
     }
 };
 

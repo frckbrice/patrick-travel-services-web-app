@@ -1,12 +1,7 @@
-'use client';
-
+import { Suspense } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
-import { Hero } from '@/components/landing/Hero';
-import { WhyChooseUs } from '@/components/landing/WhyChooseUs';
-import { Services } from '@/components/landing/Services';
-import { Testimonials } from '@/components/landing/Testimonials';
-import { Contact } from '@/components/landing/Contact';
 import { Footer } from '@/components/layout/Footer';
+import { LandingView } from '@/components/landing/LandingView';
 
 export default function HomePage() {
   return (
@@ -34,19 +29,13 @@ export default function HomePage() {
 
       <Navbar />
       <main className="flex-1 w-full relative z-0">
-        <Hero />
-        <section id="why-choose-us">
-          <WhyChooseUs />
-        </section>
-        <section id="services">
-          <Services />
-        </section>
-        <section id="testimonials">
-          <Testimonials />
-        </section>
-        <section id="contact">
-          <Contact />
-        </section>
+        <Suspense fallback={
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        }>
+          <LandingView />
+        </Suspense>
       </main>
       <Footer />
     </div>

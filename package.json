@@ -15,6 +15,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio",
+    "prisma:seed": "tsx prisma/seed.ts",
     "prepare": "husky",
     "precommit": "lint-staged && pnpm type-check",
     "validate": "pnpm lint && pnpm format:check && pnpm type-check && pnpm build"
@@ -44,6 +45,7 @@
     "firebase-admin": "^13.5.0",
     "i18next": "^24.2.0",
     "lucide-react": "^0.545.0",
+    "nanoid": "^5.1.6",
     "next": "15.5.5",
     "next-themes": "^0.4.6",
     "react": "19.1.0",
@@ -85,5 +87,8 @@
     "*.{json,css,md}": [
       "prettier --write"
     ]
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

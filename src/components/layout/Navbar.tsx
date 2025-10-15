@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,13 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 
 export function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const { t } = useTranslation();
+
+    // Prevent hydration mismatch by only rendering translations after mount
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const navigation = [
         { name: t('landing.footer.services'), href: '#services' },
@@ -39,7 +45,7 @@ export function Navbar() {
 
                 {/* Desktop Navigation */}
                 <div className="hidden md:flex items-center space-x-6">
-                    {navigation.map((item) => (
+                    {mounted && navigation.map((item) => (
                         <Link
                             key={item.name}
                             href={item.href}
@@ -59,10 +65,10 @@ export function Navbar() {
 
                     <div className="hidden md:flex items-center space-x-2">
                         <Button variant="ghost" asChild>
-                            <Link href="/login">{t('auth.login')}</Link>
+                            <Link href="/login">{mounted ? t('auth.login') : 'Login'}</Link>
                         </Button>
                         <Button asChild>
-                            <Link href="/register">{t('auth.signUp')}</Link>
+                            <Link href="/register">{mounted ? t('auth.signUp') : 'Sign Up'}</Link>
                         </Button>
                     </div>
 
@@ -79,7 +85,7 @@ export function Navbar() {
             </div>
 
             {/* Mobile Menu */}
-            {isMenuOpen && (
+            {isMenuOpen && mounted && (
                 <div className="md:hidden border-t">
                     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-3">
                         {navigation.map((item) => (

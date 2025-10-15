@@ -17,6 +17,7 @@ model User {
   firstName         String
   lastName          String
   phone             String?
+  profilePicture    String?   // For Google OAuth profile photos
   role              Role      @default(CLIENT)
   isActive          Boolean   @default(true)
   isVerified        Boolean   @default(false)
@@ -276,4 +277,23 @@ model SystemSetting {
   
   @@index([key])
   @@index([category])
+}
+
+// InviteCode Model (for secure AGENT/ADMIN registration)
+model InviteCode {
+  id           String    @id @default(uuid())
+  code         String    @unique // Random secure code
+  role         Role      // Role assigned when code is used
+  createdBy    String    // Admin who created the code
+  usedBy       String?   // User who used the code
+  maxUses      Int       @default(1) // How many times it can be used
+  usedCount    Int       @default(0)
+  expiresAt    DateTime  // Expiration date
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  usedAt       DateTime?
+  
+  @@index([code])
+  @@index([isActive])
+  @@index([expiresAt])
 }

@@ -280,6 +280,75 @@
       "terms": "Conditions d'Utilisation",
       "cookies": "Politique des Cookies",
       "rights": "Tous droits réservés."
+    },
+    "about": {
+      "badge": "À Propos de Patrick Travel Services",
+      "title": "Votre Partenaire d'Immigration de Confiance",
+      "subtitle": "Aider les individus et les familles à réaliser leurs rêves de vivre, travailler ou étudier à l'étranger depuis 2014.",
+      "statsYears": "Années d'Expérience",
+      "statsClients": "Clients Satisfaits",
+      "statsSuccess": "Taux de Réussite",
+      "imageAlt": "À Propos de Patrick Travel Services",
+      "licensedBadge": "Agréé",
+      "licensedSince": "Depuis 2014",
+      "mission": {
+        "title": "Notre Mission",
+        "paragraph1": "Chez Patrick Travel Services, nous croyons que chacun mérite l'opportunité de poursuivre ses rêves à l'échelle mondiale. Notre mission est de rendre l'immigration accessible, transparente et réussie pour tous nos clients.",
+        "paragraph2": "Avec plus d'une décennie d'expérience, nous avons aidé des centaines de familles à naviguer dans des processus d'immigration complexes avec confiance et tranquillité d'esprit.",
+        "licensedTitle": "Agréé et Assuré",
+        "licensedDesc": "Professionnels entièrement certifiés",
+        "fastTitle": "Traitement Rapide",
+        "fastDesc": "Délais de traitement rapides",
+        "statsCases": "Dossiers Traités",
+        "statsSuccessRate": "Taux de Réussite",
+        "statsExperience": "Années d'Expérience",
+        "statsSupport": "Support"
+      },
+      "values": {
+        "title": "Nos Valeurs Fondamentales",
+        "subtitle": "Les principes qui guident tout ce que nous faisons",
+        "excellence": {
+          "title": "Excellence",
+          "description": "Nous maintenons les normes les plus élevées en matière de conseil en immigration"
+        },
+        "compassion": {
+          "title": "Compassion",
+          "description": "Nous comprenons la nature personnelle de votre parcours"
+        },
+        "results": {
+          "title": "Résultats",
+          "description": "Concentré sur l'obtention de résultats réussis pour chaque client"
+        },
+        "partnership": {
+          "title": "Partenariat",
+          "description": "Établir des relations durables avec nos clients"
+        }
+      },
+      "team": {
+        "title": "Rencontrez Notre Équipe",
+        "subtitle": "Des professionnels expérimentés dédiés à votre succès",
+        "member1": {
+          "name": "Patrick E.",
+          "role": "Fondateur et PDG",
+          "description": "Consultant en immigration agréé avec plus de 15 ans d'expérience"
+        },
+        "member2": {
+          "name": "Sarah Thompson",
+          "role": "Consultante Senior en Immigration",
+          "description": "Spécialiste des visas étudiants et de travail"
+        },
+        "member3": {
+          "name": "David Chen",
+          "role": "Gestionnaire de Cas",
+          "description": "Expert en cas de réunification familiale"
+        }
+      },
+      "cta": {
+        "title": "Prêt à Commencer Votre Voyage?",
+        "description": "Laissez-nous vous aider à atteindre vos objectifs d'immigration avec des conseils d'experts et un soutien personnalisé.",
+        "getStarted": "Commencer Aujourd'hui",
+        "contact": "Nous Contacter"
+      }
     }
   }
 }

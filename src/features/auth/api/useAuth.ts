@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
+    signInWithPopup,
+    GoogleAuthProvider,
     signOut,
     User as FirebaseUser,
 } from 'firebase/auth';
@@ -234,4 +236,80 @@ export const useFirebaseToken = async (): Promise<string | null> => {
         console.error('Error getting Firebase token:', error);
         return null;
     }
+};
+
+// Google Sign-In mutation
+export const useGoogleSignIn = () => {
+    const { setAuth } = useAuthStore();
+    const router = useRouter();
+
+    return useMutation({
+        mutationFn: async (): Promise<{ user: User; token: string; isNewUser: boolean }> => {
+            const provider = new GoogleAuthProvider();
+            provider.setCustomParameters({
+                prompt: 'select_account',
+            });
+
+            // Sign in with Google popup
+            const userCredential = await signInWithPopup(auth, provider);
+            const firebaseUser = userCredential.user;
+
+            // Get Firebase ID token
+            const token = await firebaseUser.getIdToken();
+
+            // Check if this is a new user
+            const isNewUser = userCredential.user.metadata.creationTime === userCredential.user.metadata.lastSignInTime;
+
+            // Sync with backend
+            const response = await apiClient.post(
+                '/api/auth/google',
+                {
+                    firebaseUid: firebaseUser.uid,
+                    email: firebaseUser.email,
+                    displayName: firebaseUser.displayName,
+                    photoURL: firebaseUser.photoURL,
+                    isNewUser,
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            return {
+                user: response.data.data.user,
+                token,
+                isNewUser,
+            };
+        },
+        onSuccess: (data) => {
+            setAuth({
+                user: data.user,
+                accessToken: data.token,
+                refreshToken: data.token,
+            });
+            
+            if (data.isNewUser) {
+                toast.success('Welcome to Patrick Travel Services!');
+            } else {
+                toast.success(`Welcome back, ${data.user.firstName}!`);
+            }
+            
+            router.push('/dashboard');
+        },
+        onError: (error: ApiError) => {
+            let message = 'Google sign-in failed. Please try again.';
+
+            if (error.code === 'auth/popup-closed-by-user') {
+                message = 'Sign-in cancelled.';
+            } else if (error.code === 'auth/popup-blocked') {
+                message = 'Popup was blocked. Please allow popups for this site.';
+            } else if (error.response?.data?.error) {
+                message = error.response.data.error;
+            }
+
+            toast.error(message);
+        },
+    });
 };

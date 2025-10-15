@@ -27,11 +27,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     isLoading: true,
 
     setAuth: (data: AuthResponse) => {
-        // Save tokens to localStorage
+        // Save tokens to localStorage with timestamp
         if (typeof window !== 'undefined') {
             localStorage.setItem('accessToken', data.accessToken);
             localStorage.setItem('refreshToken', data.refreshToken);
             localStorage.setItem('user', JSON.stringify(data.user));
+            localStorage.setItem('authTimestamp', Date.now().toString());
         }
 
         set({
@@ -41,6 +42,8 @@ export const useAuthStore = create<AuthState>((set) => ({
             isAuthenticated: true,
             isLoading: false,
         });
+
+        logger.info('Auth state updated', { userId: data.user.id, email: data.user.email });
     },
 
     setUser: (user: User) => {
@@ -56,6 +59,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('user');
+            localStorage.removeItem('authTimestamp');
         }
 
         set({
@@ -65,6 +69,8 @@ export const useAuthStore = create<AuthState>((set) => ({
             isAuthenticated: false,
             isLoading: false,
         });
+
+        logger.info('User logged out');
     },
 
     setLoading: (isLoading: boolean) => {
@@ -77,17 +83,35 @@ export const useAuthStore = create<AuthState>((set) => ({
             const accessToken = localStorage.getItem('accessToken');
             const refreshToken = localStorage.getItem('refreshToken');
             const userStr = localStorage.getItem('user');
+            const authTimestamp = localStorage.getItem('authTimestamp');
 
             if (accessToken && refreshToken && userStr) {
                 try {
                     const user = JSON.parse(userStr) as User;
-                    set({
-                        user,
-                        accessToken,
-                        refreshToken,
-                        isAuthenticated: true,
-                        isLoading: false,
-                    });
+
+                    // Check if session is still valid (within 7 days)
+                    const SESSION_TIMEOUT = 7 * 24 * 60 * 60 * 1000; // 7 days
+                    const timestamp = authTimestamp ? parseInt(authTimestamp, 10) : 0;
+                    const isExpired = Date.now() - timestamp > SESSION_TIMEOUT;
+
+                    if (isExpired) {
+                        logger.warn('Session expired, clearing auth state');
+                        // Clear expired session
+                        localStorage.removeItem('accessToken');
+                        localStorage.removeItem('refreshToken');
+                        localStorage.removeItem('user');
+                        localStorage.removeItem('authTimestamp');
+                        set({ isLoading: false });
+                    } else {
+                        set({
+                            user,
+                            accessToken,
+                            refreshToken,
+                            isAuthenticated: true,
+                            isLoading: false,
+                        });
+                        logger.info('Auth state restored from localStorage', { userId: user.id });
+                    }
                 } catch (error) {
                     logger.error('Error parsing user from localStorage', error);
                     set({ isLoading: false });

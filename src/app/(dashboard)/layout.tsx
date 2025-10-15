@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/features/auth/store';
 import Link from 'next/link';
@@ -9,42 +9,30 @@ import { useLogout } from '@/features/auth/api/useAuth';
 import { ThemeSwitcher } from '@/components/layout/ThemeSwitcher';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
-import {
-    LayoutDashboard,
-    Briefcase,
-    FileText,
-    MessageSquare,
-    Bell,
-    Users,
-    BarChart3,
-    User,
-    Settings,
-    HelpCircle,
-    Shield,
-    ScrollText,
-    LogOut,
-    Loader2,
-} from 'lucide-react';
+import { LogOut, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { getNavigationForRole, roleDisplayNames, roleBadgeColors, UserRole } from '@/lib/utils/role-permissions';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
-    const { isAuthenticated, user } = useAuthStore();
+    const { isAuthenticated, user, isLoading } = useAuthStore();
     const logoutMutation = useLogout();
     const { t } = useTranslation();
 
     useEffect(() => {
-        if (!isAuthenticated) {
+        // Only redirect if auth check is complete (not loading) and user is not authenticated
+        if (!isLoading && !isAuthenticated) {
             router.push('/login');
         }
-    }, [isAuthenticated, router]);
+    }, [isAuthenticated, isLoading, router]);
 
-    if (!isAuthenticated) {
+    // Show loading state while checking authentication
+    if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
@@ -55,39 +43,37 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         );
     }
 
-    const navigationItems = [
-        { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { href: '/dashboard/cases', icon: Briefcase, label: 'Cases' },
-        { href: '/dashboard/documents', icon: FileText, label: 'Documents' },
-        { href: '/dashboard/messages', icon: MessageSquare, label: 'Messages', badge: 3 },
-        { href: '/dashboard/notifications', icon: Bell, label: 'Notifications', badge: 5 },
-    ];
+    // Show loading state while redirecting to login
+    if (!isAuthenticated) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+                    <p className="mt-4 text-muted-foreground">Redirecting to login...</p>
+                </div>
+            </div>
+        );
+    }
 
-    const managementItems = [
-        { href: '/dashboard/clients', icon: Users, label: 'Clients', roles: ['ADMIN', 'AGENT'] },
-        { href: '/dashboard/analytics', icon: BarChart3, label: 'Analytics', roles: ['ADMIN', 'AGENT'] },
-        { href: '/dashboard/users', icon: Shield, label: 'Users', roles: ['ADMIN'] },
-        { href: '/dashboard/audit-logs', icon: ScrollText, label: 'Audit Logs', roles: ['ADMIN'] },
-    ];
-
-    const accountItems = [
-        { href: '/dashboard/profile', icon: User, label: 'Profile' },
-        { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
-        { href: '/dashboard/faq', icon: HelpCircle, label: 'FAQ' },
-    ];
+    // Get role-based navigation items
+    const allNavItems = useMemo(() => {
+        if (!user?.role) return [];
+        return getNavigationForRole(user.role as UserRole);
+    }, [user?.role]);
 
     const getInitials = () => {
         if (!user) return '??';
         return `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase();
     };
 
-    const getRoleBadgeVariant = (role?: string) => {
-        const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
-            'ADMIN': 'destructive',
-            'AGENT': 'default',
-            'CLIENT': 'secondary',
-        };
-        return variants[role || ''] || 'secondary';
+    const getRoleBadgeColor = (role?: string) => {
+        if (!role) return '';
+        return roleBadgeColors[role as UserRole] || '';
+    };
+
+    const getRoleDisplayName = (role?: string) => {
+        if (!role) return 'Unknown';
+        return roleDisplayNames[role as UserRole] || role;
     };
 
     return (
@@ -123,9 +109,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                                 <span className="text-sm font-medium">
                                     {user?.firstName} {user?.lastName}
                                 </span>
-                                <Badge variant={getRoleBadgeVariant(user?.role)} className="w-fit text-xs">
-                                    {user?.role}
-                                </Badge>
+                                <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium w-fit", getRoleBadgeColor(user?.role))}>
+                                    {getRoleDisplayName(user?.role)}
+                                </span>
                             </div>
                         </div>
                         <Button
@@ -145,61 +131,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 {/* Sidebar */}
                 <aside className="w-64 border-r bg-background min-h-[calc(100vh-4rem)] hidden md:block">
                     <nav className="p-4 space-y-2">
-                        {/* Main Navigation */}
-                        {navigationItems.map((item) => (
-                            <NavLink
-                                key={item.href}
-                                href={item.href}
-                                icon={item.icon}
-                                isActive={pathname === item.href}
-                                badge={item.badge}
-                            >
-                                {item.label}
-                            </NavLink>
-                        ))}
-
-                        {/* Management Section */}
-                        {managementItems.some((item) =>
-                            !item.roles || item.roles.includes(user?.role || '')
-                        ) && (
-                            <>
-                                <div className="pt-4 pb-2">
-                                    <h3 className="px-4 text-xs font-semibold text-muted-foreground uppercase">
-                                        Management
-                                    </h3>
-                                </div>
-                                {managementItems.map((item) => {
-                                    if (item.roles && !item.roles.includes(user?.role || '')) {
-                                        return null;
-                                    }
-                                    return (
-                                        <NavLink
-                                            key={item.href}
-                                            href={item.href}
-                                            icon={item.icon}
-                                            isActive={pathname === item.href}
-                                        >
-                                            {item.label}
-                                        </NavLink>
-                                    );
-                                })}
-                            </>
-                        )}
-
-                        {/* Account Section */}
-                        <div className="pt-4 pb-2">
-                            <h3 className="px-4 text-xs font-semibold text-muted-foreground uppercase">
-                                Account
-                            </h3>
-                        </div>
-                        {accountItems.map((item) => (
+                        {/* Role-Based Navigation */}
+                        {allNavItems.map((item) => (
                             <NavLink
                                 key={item.href}
                                 href={item.href}
                                 icon={item.icon}
                                 isActive={pathname === item.href}
                             >
-                                {item.label}
+                                {item.title}
                             </NavLink>
                         ))}
                     </nav>

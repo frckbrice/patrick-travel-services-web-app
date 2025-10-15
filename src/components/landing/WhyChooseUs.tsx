@@ -130,7 +130,7 @@ export function WhyChooseUs() {
                                     {/* Image Frame */}
                                     <div className="relative w-full h-full rounded-full overflow-hidden shadow-2xl border-4 border-primary/30 bg-gradient-to-tr from-primary/10 to-blue-500/10">
                                         <Image
-                                            src="/images/mpe_hero_2.png"
+                                            src="/images/mpe_hero_3.png"
                                             alt={t('landing.whyChooseUs.imageText')}
                                             fill
                                             className="object-cover scale-110 w-full hover:scale-125 transition-transform duration-700"
