@@ -5,7 +5,7 @@
 import { useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase/firebase-client';
-import { useAuthStore } from '@/stores/auth/authStore';
+import { useAuthStore } from '@/features/auth/store';
 import { logger } from '@/lib/utils/logger';
 
 export function FirebaseAuthProvider({ children }: { children: React.ReactNode }) {

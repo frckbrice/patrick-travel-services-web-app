@@ -8,19 +8,25 @@ import { adminAuth } from '@/lib/firebase/firebase-admin';
 import { registerSchema } from '@/features/auth/schemas/auth.schema';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants';
 import { logger } from '@/lib/utils/logger';
+import type { ZodIssue } from 'zod';
 import {
     successResponse,
     errorResponse,
     validationErrorResponse,
     serverErrorResponse,
 } from '@/lib/utils/api-response';
+import { asyncHandler, ApiError, HttpStatus } from '@/lib/utils/error-handler';
+import { withCorsMiddleware } from '@/lib/middleware/cors';
+import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 
-export async function POST(request: NextRequest) {
-    try {
-        // Check if Firebase Admin is initialized
-        if (!adminAuth) {
-            return serverErrorResponse('Authentication service unavailable');
-        }
+const handler = asyncHandler(async (request: NextRequest) => {
+    // Check if Firebase Admin is initialized
+    if (!adminAuth) {
+        throw new ApiError(
+            'Authentication service unavailable',
+            HttpStatus.SERVICE_UNAVAILABLE
+        );
+    }
 
         const body = await request.json();
 
@@ -28,12 +34,15 @@ export async function POST(request: NextRequest) {
         const validationResult = registerSchema.safeParse(body);
 
         if (!validationResult.success) {
-            const errors = validationResult.error.errors.reduce((acc, err) => {
-                const path = err.path.join('.');
-                if (!acc[path]) acc[path] = [];
-                acc[path].push(err.message);
-                return acc;
-            }, {} as Record<string, string[]>);
+            const errors = validationResult.error.issues.reduce(
+                (acc: Record<string, string[]>, err: ZodIssue) => {
+                    const path = err.path.join('.');
+                    if (!acc[path]) acc[path] = [];
+                    acc[path].push(err.message);
+                    return acc;
+                },
+                {} as Record<string, string[]>
+            );
 
             return validationErrorResponse(errors, ERROR_MESSAGES.VALIDATION_ERROR);
         }
@@ -108,13 +117,9 @@ export async function POST(request: NextRequest) {
             SUCCESS_MESSAGES.REGISTRATION_SUCCESS,
             201
         );
-    } catch (error) {
-        // Check if error is from Firebase
-        if ((error as { code?: string }).code === 'auth/email-already-exists') {
-            return errorResponse(ERROR_MESSAGES.EMAIL_ALREADY_EXISTS, 409);
-        }
+});
 
-        logger.error('Registration error', error);
-        return serverErrorResponse(ERROR_MESSAGES.SERVER_ERROR);
-    }
-}
+// Apply middleware: CORS -> Rate Limit -> Handler
+export const POST = withCorsMiddleware(
+    withRateLimit(handler, RateLimitPresets.AUTH)
+);

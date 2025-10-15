@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase/firebase-client';
 import { apiClient } from '@/lib/utils/axios';
-import { useAuthStore } from '@/stores/auth/authStore';
+import { useAuthStore } from '../store';
 import { useRouter } from 'next/navigation';
 import { User } from '@/lib/types';
 import { LoginInput, RegisterInput } from '../schemas/auth.schema';

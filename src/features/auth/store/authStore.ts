@@ -1,8 +1,8 @@
 // Authentication store using Zustand for Patrick Travel Services
 
 import { create } from 'zustand';
-import { User, AuthResponse } from '../../lib/types';
-import { logger } from '../../lib/utils/logger';
+import { User, AuthResponse } from '@/lib/types';
+import { logger } from '@/lib/utils/logger';
 
 interface AuthState {
     user: User | null;

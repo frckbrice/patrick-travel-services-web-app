@@ -1,4 +1,4 @@
-import { createUploadthing, type FileRouter } from "uploadthing/next";
+import { createUploadthing, type FileRouter } from "uploadthing/server";
 import { adminAuth } from "@/lib/firebase/firebase-admin";
 
 const f = createUploadthing();
@@ -72,20 +72,24 @@ export const ourFileRouter = {
             console.log("Document upload complete for user:", metadata.userId);
             console.log("File URL:", file.url);
 
-            // You can save document metadata to database here
-            // await prisma.document.create({
-            //     data: {
-            //         userId: metadata.userId,
-            //         fileUrl: file.url,
-            //         fileName: file.name,
-            //         fileSize: file.size,
-            //     },
-            // });
+            // Document metadata should be saved via /api/documents POST endpoint
+            // This keeps the upload logic separate from metadata storage
+            // Client should call /api/documents after upload with:
+            // {
+            //     fileName: file.name,
+            //     originalName: file.name,
+            //     filePath: file.url,
+            //     fileSize: file.size,
+            //     mimeType: file.type,
+            //     documentType: 'TYPE',
+            //     caseId: 'case-id'
+            // }
 
             return {
                 uploadedBy: metadata.uploadedBy,
                 fileUrl: file.url,
                 fileName: file.name,
+                fileSize: file.size,
             };
         }),
 
