@@ -43,7 +43,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             isLoading: false,
         });
 
-        logger.info('Auth state updated', { userId: data.user.id, email: data.user.email });
+        logger.info('Auth state updated', { userId: data.user.id });
     },
 
     setUser: (user: User) => {
@@ -92,7 +92,7 @@ export const useAuthStore = create<AuthState>((set) => ({
                     // Check if session is still valid (within 7 days)
                     const SESSION_TIMEOUT = 7 * 24 * 60 * 60 * 1000; // 7 days
                     const timestamp = authTimestamp ? parseInt(authTimestamp, 10) : 0;
-                    const isExpired = Date.now() - timestamp > SESSION_TIMEOUT;
+                    const isExpired = !timestamp || isNaN(timestamp) || Date.now() - timestamp > SESSION_TIMEOUT;
 
                     if (isExpired) {
                         logger.warn('Session expired, clearing auth state');

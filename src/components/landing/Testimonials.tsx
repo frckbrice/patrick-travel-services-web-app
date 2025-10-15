@@ -65,7 +65,7 @@ export function Testimonials() {
                                 {/* Rating */}
                                 <div className="flex space-x-1 mb-4">
                                     {Array.from({ length: testimonial.rating }).map((_, i) => (
-                                        <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                                        <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" aria-label="star" />
                                     ))}
                                 </div>
 
@@ -95,7 +95,7 @@ export function Testimonials() {
                 {/* Trust Badge */}
                 <div className="mt-16 text-center">
                     <div className="inline-flex items-center space-x-2 bg-muted px-6 py-3 rounded-full">
-                        <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                        <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" aria-hidden="true" />
                         <span className="font-semibold">4.9/5.0</span>
                         <span className="text-muted-foreground">{t('landing.testimonials.rating')}</span>
                     </div>

@@ -18,7 +18,8 @@ export function LanguageSwitcher() {
         { code: 'fr', name: 'Français', flag: '🇫🇷' },
     ];
 
-    const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
+    const languageCode = i18n.language.split('-')[0];
+    const currentLanguage = languages.find(lang => lang.code === languageCode) || languages[0];
 
     const changeLanguage = (langCode: string) => {
         i18n.changeLanguage(langCode);

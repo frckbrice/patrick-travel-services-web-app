@@ -32,6 +32,9 @@ async function verifyAdminAccess(request: NextRequest): Promise<string> {
     }
 
     const token = authHeader.split('Bearer ')[1];
+    if (!token) {
+        throw new ApiError('Invalid token', HttpStatus.UNAUTHORIZED);
+    }
     const decodedToken = await adminAuth.verifyIdToken(token);
 
     // Check if user is admin
@@ -74,11 +77,11 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
             createdBy: adminId,
             maxUses,
             expiresAt,
-        },
-    });
-
     logger.info('Invite code created', {
-        code: inviteCode.code,
+        codePrefix: inviteCode.code.substring(0, 10) + '...',
+        role: inviteCode.role,
+        createdBy: adminId
+    });
         role: inviteCode.role,
         createdBy: adminId
     });

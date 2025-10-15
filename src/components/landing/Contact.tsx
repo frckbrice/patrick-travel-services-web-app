@@ -63,7 +63,7 @@ export function Contact() {
             icon: MapPin,
             title: t('landing.contact.address'),
             value: '123 Immigration Street, City, Country',
-            href: '#',
+            // href: 'https://maps.google.com/?q=123+Immigration+Street,+City,+Country',
             color: 'text-purple-600 dark:text-purple-400',
             bgColor: 'bg-purple-100 dark:bg-purple-900/20',
         },

@@ -55,15 +55,9 @@ export function FirebaseAuthProvider({ children }: { children: React.ReactNode }
                     logout();
                 }
             } else {
-                // Only logout if there's no Firebase user AND no cached session
-                const accessToken = localStorage.getItem('accessToken');
-                if (!accessToken) {
-                    logger.info('Firebase auth state changed - user signed out');
-                    logout();
-                } else {
-                    // Keep the cached session if Firebase session is temporarily unavailable
-                    logger.warn('No Firebase user but cached session exists - keeping cached session');
-                }
+                // User signed out - clear session
+                logger.info('Firebase auth state changed - user signed out');
+                logout();
             }
 
             setLoading(false);

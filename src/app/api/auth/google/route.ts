@@ -9,6 +9,7 @@ import { successResponse } from '@/lib/utils/api-response';
 import { asyncHandler, ApiError, HttpStatus } from '@/lib/utils/error-handler';
 import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
+import { randomBytes } from 'crypto';
 
 const handler = asyncHandler(async (request: NextRequest) => {
     // Check if Firebase Admin is initialized
@@ -77,8 +78,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
             },
         });
 
-        logger.info('User logged in with Google', { userId: user.id, email: user.email });
-
+        logger.info('User logged in with Google', { userId: user.id });
         return successResponse({ user }, 'Login successful');
     }
 
@@ -91,7 +91,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
         data: {
             id: firebaseUid,
             email,
-            password: 'google_oauth', // Password managed by Google
+            password: randomBytes(32).toString('hex'), // Random value for OAuth users, // Password managed by Google
             firstName,
             lastName,
             phone: null,

@@ -148,7 +148,7 @@ export function WhyChooseUs() {
                                                 94%
                                             </div>
                                             <div className="text-sm font-bold text-muted-foreground uppercase tracking-wide">
-                                                Success Rate
+                                                {t('landing.whyChooseUs.successRate')}
                                             </div>
                                         </div>
                                     </div>

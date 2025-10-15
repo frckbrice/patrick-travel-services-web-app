@@ -29,20 +29,20 @@ const handler = asyncHandler(async (request: NextRequest) => {
     });
 
     if (!inviteCode) {
-        throw new ApiError('Invalid invite code', HttpStatus.NOT_FOUND);
+        throw new ApiError('Invalid or expired invite code', HttpStatus.FORBIDDEN);
     }
 
     // Check if code is valid
     if (!inviteCode.isActive) {
-        throw new ApiError('This invite code has been deactivated', HttpStatus.FORBIDDEN);
+        throw new ApiError('Invalid or expired invite code', HttpStatus.FORBIDDEN);
     }
 
     if (new Date() > inviteCode.expiresAt) {
-        throw new ApiError('This invite code has expired', HttpStatus.FORBIDDEN);
+        throw new ApiError('Invalid or expired invite code', HttpStatus.FORBIDDEN);
     }
 
     if (inviteCode.usedCount >= inviteCode.maxUses) {
-        throw new ApiError('This invite code has reached its usage limit', HttpStatus.FORBIDDEN);
+        throw new ApiError('Invalid or expired invite code', HttpStatus.FORBIDDEN);
     }
 
     return successResponse(

@@ -37,7 +37,7 @@ export const navigationItems: NavItem[] = [
     },
     {
         title: 'My Cases',
-        href: '/dashboard/cases',
+        href: '/dashboard/my-cases',
         icon: Briefcase,
         roles: ['CLIENT'],
         description: 'View your immigration cases',

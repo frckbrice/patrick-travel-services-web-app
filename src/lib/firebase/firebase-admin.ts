@@ -73,13 +73,13 @@ const initializeFirebaseAdmin = () => {
                 adminDatabase = getDatabase(adminApp);
                 console.log('✅ Firebase Realtime Database initialized');
             } catch (dbError) {
-                console.warn('⚠️ Firebase Realtime Database not initialized (optional):', dbError);
+                console.warn('⚠️ Firebase Realtime Database not initialized (optional)');
             }
         }
 
         console.log('✅ Firebase Admin initialized successfully');
     } catch (error) {
-        console.error('❌ Failed to initialize Firebase Admin:', error);
+        console.error('❌ Failed to initialize Firebase Admin:', error instanceof Error ? error.message : 'Unknown error');
     }
 };
 

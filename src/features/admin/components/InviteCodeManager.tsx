@@ -57,8 +57,8 @@ export function InviteCodeManager() {
             setIsDialogOpen(false);
             refetch();
             // Auto-copy to clipboard
-            navigator.clipboard.writeText(data.code);
-            toast.info('Code copied to clipboard!');
+            navigator.clipboard.writeText(data.code).then(() => toast.info('Code copied to clipboard!'));
+            // toast.info('Code copied to clipboard!');
         },
         onError: () => {
             toast.error('Failed to generate invite code');
@@ -196,9 +196,14 @@ export function InviteCodeManager() {
                                 </div>
                                 <div>
                                     <p className="text-muted-foreground">Status</p>
-                                    <Badge variant={code.isActive && new Date(code.expiresAt) > new Date() ? 'default' : 'secondary'}>
-                                        {code.isActive && new Date(code.expiresAt) > new Date() ? 'Active' : 'Expired'}
-                                    </Badge>
+                                    {(() => {
+                                        const isActiveAndValid = code.isActive && new Date(code.expiresAt) > new Date();
+                                        return (
+                                            <Badge variant={isActiveAndValid ? 'default' : 'secondary'}>
+                                                {isActiveAndValid ? 'Active' : 'Expired'}
+                                            </Badge>
+                                        );
+                                    })()}
                                 </div>
                                 <div>
                                     <p className="text-muted-foreground">Used</p>

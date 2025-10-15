@@ -49,17 +49,19 @@ export function Hero() {
 
                         {/* Key Features - Enhanced */}
                         <div className="flex flex-wrap gap-6 justify-center lg:justify-start">
-                            <div className="flex items-center gap-2.5 text-sm md:text-base">
-                                <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
-                                <span className="font-medium">Expert Guidance</span>
-                            </div>
-                            <div className="flex items-center gap-2.5 text-sm md:text-base">
-                                <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
-                                <span className="font-medium">Real-time Tracking</span>
-                            </div>
-                            <div className="flex items-center gap-2.5 text-sm md:text-base">
-                                <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
-                                <span className="font-medium">94% Success Rate</span>
+                            <div className="flex flex-wrap gap-6 justify-center lg:justify-start">
+                                <div className="flex items-center gap-2.5 text-sm md:text-base">
+                                    <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+                                    <span className="font-medium">{t('landing.hero.features.expertGuidance')}</span>
+                                </div>
+                                <div className="flex items-center gap-2.5 text-sm md:text-base">
+                                    <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+                                    <span className="font-medium">{t('landing.hero.features.realTimeTracking')}</span>
+                                </div>
+                                <div className="flex items-center gap-2.5 text-sm md:text-base">
+                                    <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+                                    <span className="font-medium">{t('landing.hero.features.successRate')}</span>
+                                </div>
                             </div>
                         </div>
 
@@ -150,7 +152,7 @@ export function Hero() {
                                     </div>
                                     <div>
                                         <div className="text-3xl font-extrabold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-                                            94%
+                                            <div className="text-sm font-semibold text-muted-foreground">{t('landing.hero.successRate')}</div>
                                         </div>
                                         <div className="text-sm font-semibold text-muted-foreground">Success Rate</div>
                                     </div>
@@ -158,7 +160,7 @@ export function Hero() {
                             </div>
 
                             {/* Decorative Floating Badge */}
-                            <div className="absolute -top-6 -right-6 hidden lg:block">
+                            {t('landing.hero.trustedBy', { count: '500+' })}
                                 <div className="bg-gradient-to-br from-primary to-blue-600 text-primary-foreground px-6 py-3 rounded-full shadow-2xl border-4 border-background font-bold text-sm uppercase tracking-wide hover:scale-105 transition-transform duration-300">
                                     Trusted by 500+
                                 </div>
