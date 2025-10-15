@@ -1,6 +1,6 @@
 'use client';
 
-import { useAuthStore } from '@/stores/auth/authStore';
+import { useAuthStore } from '@/features/auth/store';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';

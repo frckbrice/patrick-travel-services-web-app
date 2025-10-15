@@ -1,6 +1,6 @@
 'use client';
 
-import { useAuthStore } from '@/stores/auth/authStore';
+import { useAuthStore } from '@/features/auth/store';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { ReactNode } from 'react';

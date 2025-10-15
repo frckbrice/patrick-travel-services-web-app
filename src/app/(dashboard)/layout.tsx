@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/stores/auth/authStore';
+import { useAuthStore } from '@/features/auth/store';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useLogout } from '@/features/auth/api/useAuth';

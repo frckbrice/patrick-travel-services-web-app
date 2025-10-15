@@ -264,7 +264,7 @@ The application is available on Docker Hub:
 docker pull <docker-username>/patrick-travel-web:latest
 ```
 
-## 📜 Available Scripts
+## Available Scripts
 
 ### Development
 ```bash
@@ -296,7 +296,7 @@ pnpm prisma:studio    # Open Prisma Studio
 pnpm precommit    # Run pre-commit checks (lint-staged + type-check)
 ```
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 web/
@@ -372,7 +372,7 @@ web/
 └── tsconfig.json           # TypeScript configuration
 ```
 
-## 🔐 Authentication Flow
+##  Authentication Flow
 
 ### Registration
 1. Client calls Firebase `createUserWithEmailAndPassword`
@@ -399,7 +399,7 @@ web/
 
 See [AUTH_MIGRATION_GUIDE.md](./AUTH_MIGRATION_GUIDE.md) for complete documentation.
 
-## 🗄️ Database Schema
+##  Database Schema
 
 The application uses PostgreSQL with Prisma ORM. Key entities include:
 
@@ -412,7 +412,7 @@ The application uses PostgreSQL with Prisma ORM. Key entities include:
 
 See `prisma/schema.prisma` for the complete schema.
 
-## 🔥 Firebase Integration
+##  Firebase Integration
 
 Firebase is used for real-time messaging functionality:
 
@@ -421,7 +421,7 @@ Firebase is used for real-time messaging functionality:
 - **File attachments** - Support for document sharing
 - **Read receipts** - Message status tracking
 
-## 🎨 UI Components
+##  UI Components
 
 Built with [shadcn/ui](https://ui.shadcn.com/):
 - Fully accessible components (ARIA compliant)
@@ -430,7 +430,7 @@ Built with [shadcn/ui](https://ui.shadcn.com/):
 - Consistent design system
 - Pre-built form components
 
-## 🧪 Code Quality & Git Workflow
+##  Code Quality & Git Workflow
 
 ### Pre-commit Hooks (via Husky)
 Automatically runs before each commit:
@@ -454,7 +454,7 @@ docs(readme): update installation instructions
 refactor(api): improve error handling
 ```
 
-## 📱 API Endpoints
+##  API Endpoints
 
 ### Authentication
 - `POST /api/auth/register` - Register new user
@@ -487,7 +487,7 @@ refactor(api): improve error handling
 - `POST /api/messages` - Send message
 - `GET /api/messages/[id]` - Get conversation
 
-## 🔄 CI/CD Pipeline
+##  CI/CD Pipeline
 
 The project includes a comprehensive GitHub Actions workflow for continuous integration and deployment.
 
@@ -544,7 +544,7 @@ On successful build to `main` branch:
 gh workflow run ci-cd.yml
 ```
 
-## 🚀 Deployment
+##  Deployment
 
 ### Docker Deployment (Recommended)
 
@@ -594,7 +594,7 @@ Ensure all environment variables are properly set:
 - File storage credentials (Cloudinary/UploadThing)
 - App URL (NEXT_PUBLIC_APP_URL)
 
-## 🔒 Security Features
+##  Security Features
 
 - **Firebase Authentication** - Industry-standard security with automatic updates
 - **Firebase ID Token Verification** - All API routes protected with Firebase Admin SDK
@@ -606,7 +606,7 @@ Ensure all environment variables are properly set:
 - **CORS Configuration** - Configurable for production
 - **Rate Limiting** - Recommended for production (not included)
 
-## 📁 File Upload with UploadThing
+##  File Upload with UploadThing
 
 UploadThing provides a simpler, more developer-friendly alternative to traditional cloud storage:
 
@@ -638,7 +638,7 @@ import { FileUploader } from '@/components/upload/FileUploader';
 
 See [UploadThing Documentation](https://docs.uploadthing.com) for more information.
 
-## 🎯 Best Practices
+##  Best Practices
 
 - **Type Safety:** Full TypeScript coverage
 - **Code Quality:** ESLint + Prettier enforced
@@ -648,7 +648,7 @@ See [UploadThing Documentation](https://docs.uploadthing.com) for more informati
 - **Error Handling:** Centralized error handling with custom logger
 - **API Design:** RESTful conventions with consistent responses
 
-## 🤝 Contributing
+##  Contributing
 
 1. Create a feature branch (`git checkout -b feature/amazing-feature`)
 2. Make your changes
@@ -656,7 +656,7 @@ See [UploadThing Documentation](https://docs.uploadthing.com) for more informati
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+##  License
 
 This project is proprietary and confidential.
 
@@ -666,5 +666,5 @@ For support and questions, please contact the development team.
 
 ---
 
-**Built with ❤️ for Patrick Travel Services**
+**Built with ❤️ by Avom Brice *
 
