@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -21,7 +21,7 @@ const resetPasswordSchema = z.object({
 
 type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const oobCode = searchParams.get('oobCode'); // Firebase reset code from email
@@ -148,3 +148,17 @@ export default function ResetPasswordPage() {
     );
 }
 
+export default function ResetPasswordPage() {
+    return (
+        <Suspense fallback={
+            <div className="w-full max-w-md mx-auto">
+                <div className="bg-white p-8 rounded-lg shadow-md text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading...</p>
+                </div>
+            </div>
+        }>
+            <ResetPasswordForm />
+        </Suspense>
+    );
+}

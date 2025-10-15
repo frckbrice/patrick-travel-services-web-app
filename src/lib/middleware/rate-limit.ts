@@ -76,9 +76,10 @@ function getClientIdentifier(req: NextRequest): string {
     const userId = req.headers.get("x-user-id");
     if (userId) return `user:${userId}`;
 
-    // Get IP address
+    // Get IP address from headers
     const forwarded = req.headers.get("x-forwarded-for");
-    const ip = forwarded ? forwarded.split(",")[0].trim() : req.ip || "unknown";
+    const realIp = req.headers.get("x-real-ip");
+    const ip = forwarded ? forwarded.split(",")[0].trim() : realIp || "unknown";
 
     return `ip:${ip}`;
 }

@@ -82,7 +82,7 @@ export function DashboardHome() {
                     {t('dashboard.welcomeBack')}, {user?.firstName}!
                 </h1>
                 <p className="text-muted-foreground mt-2">
-                    Here's what's happening with your immigration cases today.
+                    Here&apos;s what&apos;s happening with your immigration cases today.
                 </p>
             </div>
 

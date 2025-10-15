@@ -161,18 +161,26 @@ export function handleApiError(error: unknown): NextResponse<ApiResponse> {
 
     // Handle ApiError instances
     if (error instanceof ApiError) {
-        return NextResponse.json(
-            {
-                success: false,
-                error: error.message,
-                code: error.code,
-                ...(error.details && { errors: error.details }),
-                meta: {
-                    timestamp: new Date().toISOString(),
-                },
+        const response: {
+            success: false;
+            error: string;
+            code: string | undefined;
+            meta: { timestamp: string };
+            errors?: any;
+        } = {
+            success: false,
+            error: error.message,
+            code: error.code,
+            meta: {
+                timestamp: new Date().toISOString(),
             },
-            { status: error.statusCode }
-        );
+        };
+
+        if (error.details) {
+            response.errors = error.details;
+        }
+
+        return NextResponse.json(response, { status: error.statusCode });
     }
 
     // Handle Firebase errors

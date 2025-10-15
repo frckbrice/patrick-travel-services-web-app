@@ -151,6 +151,13 @@
     "invalidPhone": "Veuillez entrer un numéro de téléphone valide"
   },
   "landing": {
+    "nav": {
+      "home": "Accueil",
+      "services": "Services",
+      "testimonials": "Témoignages",
+      "contact": "Contact",
+      "about": "À Propos"
+    },
     "hero": {
       "title": "Votre Voyage vers un Nouvel Avenir Commence Ici",
       "subtitle": "Services d'immigration professionnels pour vous aider à réaliser vos rêves d'étudier, de travailler ou de vivre à l'étranger.",
@@ -162,11 +169,50 @@
       "clients": "Clients Satisfaits",
       "success": "Taux de Réussite",
       "years": "Années d'Expérience",
-      "imageText": "Votre Voyage Global"
+      "imageText": "Votre Voyage Global",
+      "badge": "Partenaire d'Immigration de Confiance Depuis 2014",
+      "expertConsultants": "Consultants Experts",
+      "licensedProfessionals": "Professionnels agréés",
+      "support247": "Support 24/7",
+      "alwaysHere": "Toujours là pour vous",
+      "fastProcessing": "Traitement Rapide",
+      "quickTurnaround": "Délais de traitement rapides"
+    },
+    "whyChooseUs": {
+      "title": "Pourquoi Nous Choisir",
+      "subtitle": "Nous combinons expertise, dévouement et résultats prouvés pour vous aider à atteindre vos objectifs d'immigration en toute confiance",
+      "imageText": "Notre Équipe d'Experts en Immigration",
+      "features": {
+        "security": {
+          "title": "Sécurisé et Confidentiel",
+          "description": "Vos informations personnelles et documents sont protégés avec des mesures de sécurité de pointe"
+        },
+        "excellence": {
+          "title": "Excellence Prouvée",
+          "description": "94% de taux de réussite avec des milliers de demandes de visa traitées avec succès"
+        },
+        "support": {
+          "title": "Support 24/7",
+          "description": "Notre équipe dévouée est toujours disponible pour répondre à vos questions et vous guider"
+        },
+        "success": {
+          "title": "Taux de Réussite Élevé",
+          "description": "Notre expertise garantit la plus haute probabilité de résultats réussis"
+        },
+        "efficiency": {
+          "title": "Traitement Rapide",
+          "description": "Processus rationalisés et communication directe pour des délais rapides"
+        },
+        "global": {
+          "title": "Portée Mondiale",
+          "description": "Réseau étendu à travers plusieurs pays et systèmes d'immigration"
+        }
+      }
     },
     "services": {
       "title": "Nos Services d'Immigration",
       "subtitle": "Solutions complètes de visa et d'immigration adaptées à vos besoins",
+      "badge": "Nos Services",
       "student": "Visa Étudiant",
       "studentDesc": "Réalisez vos rêves d'éducation avec notre assistance pour visa étudiant",
       "work": "Permis de Travail",
@@ -175,18 +221,30 @@
       "familyDesc": "Retrouvez vos proches grâce au parrainage familial",
       "business": "Visa d'Affaires",
       "businessDesc": "Développez vos opportunités commerciales à l'échelle mondiale",
-      "viewAll": "Voir Tous les Services"
+      "viewAll": "Voir Tous les Services",
+      "learnMore": "En Savoir Plus",
+      "mostPopular": "Le Plus Populaire",
+      "highDemand": "Forte Demande"
     },
     "testimonials": {
       "title": "Ce Que Disent Nos Clients",
       "subtitle": "Histoires réelles de personnes que nous avons aidées à atteindre leurs objectifs d'immigration",
+      "badge": "Témoignages",
       "testimonial1": "Patrick Travel Services a rendu mon processus de visa étudiant si fluide. Leurs conseils d'experts et leur soutien constant m'ont aidé à être accepté dans l'université de mes rêves!",
       "testimonial2": "Grâce à leur professionnalisme et leur souci du détail, j'ai obtenu mon permis de travail en un temps record. Hautement recommandé!",
-      "testimonial3": "L'équipe m'a aidé à retrouver ma famille. Leur approche compatissante et leur expertise ont fait toute la différence."
+      "testimonial3": "L'équipe m'a aidé à retrouver ma famille. Leur approche compatissante et leur expertise ont fait toute la différence.",
+      "location1": "Toronto, Canada",
+      "location2": "Londres, Royaume-Uni",
+      "location3": "Sydney, Australie",
+      "role1": "Visa Étudiant",
+      "role2": "Permis de Travail",
+      "role3": "Réunification Familiale",
+      "rating": "sur 500+ avis"
     },
     "contact": {
       "title": "Contactez-Nous",
       "subtitle": "Vous avez des questions? Nous sommes là pour vous aider dans votre parcours d'immigration",
+      "badge": "Nous Contacter",
       "phone": "Téléphone",
       "email": "E-mail",
       "address": "Adresse",
@@ -204,7 +262,10 @@
       "messagePlaceholder": "Parlez-nous de vos besoins en matière d'immigration...",
       "send": "Envoyer le Message",
       "sending": "Envoi en cours...",
-      "success": "Message envoyé avec succès! Nous vous répondrons bientôt."
+      "success": "Message envoyé avec succès! Nous vous répondrons bientôt.",
+      "cannotFind": "Vous ne trouvez pas ce que vous cherchez?",
+      "supportTeam": "Notre équipe d'assistance est là pour vous aider",
+      "contactSupport": "Contacter le Support"
     },
     "footer": {
       "description": "Services d'immigration professionnels aidant les individus et les familles à réaliser leurs rêves mondiaux.",

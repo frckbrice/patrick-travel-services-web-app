@@ -95,7 +95,7 @@ export function FAQList() {
                     <div className="text-center">
                         <MessageCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                         <h3 className="text-lg font-semibold mb-2">
-                            Can't find what you're looking for?
+                            Can&apos;t find what you&apos;re looking for?
                         </h3>
                         <p className="text-sm text-muted-foreground mb-4">
                             Our support team is here to help
