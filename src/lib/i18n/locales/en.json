@@ -149,6 +149,77 @@
     "passwordTooShort": "Password must be at least 6 characters",
     "passwordsDontMatch": "Passwords don't match",
     "invalidPhone": "Please enter a valid phone number"
+  },
+  "landing": {
+    "hero": {
+      "title": "Your Journey to a New Future Starts Here",
+      "subtitle": "Expert immigration services to help you achieve your dreams of studying, working, or living abroad.",
+      "cta": "Get Started",
+      "login": "Sign In",
+      "feature1": "Expert guidance throughout your immigration journey",
+      "feature2": "Track your case status in real-time",
+      "feature3": "94% success rate with visa applications",
+      "clients": "Happy Clients",
+      "success": "Success Rate",
+      "years": "Years Experience",
+      "imageText": "Your Global Journey"
+    },
+    "services": {
+      "title": "Our Immigration Services",
+      "subtitle": "Comprehensive visa and immigration solutions tailored to your needs",
+      "student": "Student Visa",
+      "studentDesc": "Pursue your education dreams with our student visa assistance",
+      "work": "Work Permit",
+      "workDesc": "Secure work permits for your international career",
+      "family": "Family Reunification",
+      "familyDesc": "Reunite with your loved ones through family sponsorship",
+      "business": "Business Visa",
+      "businessDesc": "Expand your business opportunities globally",
+      "viewAll": "View All Services"
+    },
+    "testimonials": {
+      "title": "What Our Clients Say",
+      "subtitle": "Real stories from people we've helped achieve their immigration goals",
+      "testimonial1": "Patrick Travel Services made my student visa process so smooth. Their expert guidance and constant support helped me get accepted to my dream university!",
+      "testimonial2": "Thanks to their professionalism and attention to detail, I secured my work permit in record time. Highly recommended!",
+      "testimonial3": "The team helped me reunite with my family. Their compassionate approach and expertise made all the difference."
+    },
+    "contact": {
+      "title": "Get in Touch",
+      "subtitle": "Have questions? We're here to help you with your immigration journey",
+      "phone": "Phone",
+      "email": "Email",
+      "address": "Address",
+      "hours": "Office Hours",
+      "weekdays": "Mon - Fri",
+      "saturday": "Saturday",
+      "sunday": "Sunday",
+      "closed": "Closed",
+      "formTitle": "Send us a message",
+      "formSubtitle": "Fill out the form below and we'll get back to you within 24 hours",
+      "name": "Full Name",
+      "emailLabel": "Email Address",
+      "phoneLabel": "Phone Number (Optional)",
+      "message": "Message",
+      "messagePlaceholder": "Tell us about your immigration needs...",
+      "send": "Send Message",
+      "sending": "Sending...",
+      "success": "Message sent successfully! We'll get back to you soon."
+    },
+    "footer": {
+      "description": "Professional immigration services helping individuals and families achieve their global dreams.",
+      "services": "Services",
+      "company": "Company",
+      "legal": "Legal",
+      "about": "About Us",
+      "team": "Our Team",
+      "careers": "Careers",
+      "press": "Press",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "cookies": "Cookie Policy",
+      "rights": "All rights reserved."
+    }
   }
 }
 

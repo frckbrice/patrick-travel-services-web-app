@@ -149,6 +149,77 @@
     "passwordTooShort": "Le mot de passe doit contenir au moins 6 caractères",
     "passwordsDontMatch": "Les mots de passe ne correspondent pas",
     "invalidPhone": "Veuillez entrer un numéro de téléphone valide"
+  },
+  "landing": {
+    "hero": {
+      "title": "Votre Voyage vers un Nouvel Avenir Commence Ici",
+      "subtitle": "Services d'immigration professionnels pour vous aider à réaliser vos rêves d'étudier, de travailler ou de vivre à l'étranger.",
+      "cta": "Commencer",
+      "login": "Se Connecter",
+      "feature1": "Guidance experte tout au long de votre parcours d'immigration",
+      "feature2": "Suivez l'état de votre dossier en temps réel",
+      "feature3": "94% de taux de réussite pour les demandes de visa",
+      "clients": "Clients Satisfaits",
+      "success": "Taux de Réussite",
+      "years": "Années d'Expérience",
+      "imageText": "Votre Voyage Global"
+    },
+    "services": {
+      "title": "Nos Services d'Immigration",
+      "subtitle": "Solutions complètes de visa et d'immigration adaptées à vos besoins",
+      "student": "Visa Étudiant",
+      "studentDesc": "Réalisez vos rêves d'éducation avec notre assistance pour visa étudiant",
+      "work": "Permis de Travail",
+      "workDesc": "Obtenez des permis de travail pour votre carrière internationale",
+      "family": "Réunification Familiale",
+      "familyDesc": "Retrouvez vos proches grâce au parrainage familial",
+      "business": "Visa d'Affaires",
+      "businessDesc": "Développez vos opportunités commerciales à l'échelle mondiale",
+      "viewAll": "Voir Tous les Services"
+    },
+    "testimonials": {
+      "title": "Ce Que Disent Nos Clients",
+      "subtitle": "Histoires réelles de personnes que nous avons aidées à atteindre leurs objectifs d'immigration",
+      "testimonial1": "Patrick Travel Services a rendu mon processus de visa étudiant si fluide. Leurs conseils d'experts et leur soutien constant m'ont aidé à être accepté dans l'université de mes rêves!",
+      "testimonial2": "Grâce à leur professionnalisme et leur souci du détail, j'ai obtenu mon permis de travail en un temps record. Hautement recommandé!",
+      "testimonial3": "L'équipe m'a aidé à retrouver ma famille. Leur approche compatissante et leur expertise ont fait toute la différence."
+    },
+    "contact": {
+      "title": "Contactez-Nous",
+      "subtitle": "Vous avez des questions? Nous sommes là pour vous aider dans votre parcours d'immigration",
+      "phone": "Téléphone",
+      "email": "E-mail",
+      "address": "Adresse",
+      "hours": "Heures d'Ouverture",
+      "weekdays": "Lun - Ven",
+      "saturday": "Samedi",
+      "sunday": "Dimanche",
+      "closed": "Fermé",
+      "formTitle": "Envoyez-nous un message",
+      "formSubtitle": "Remplissez le formulaire ci-dessous et nous vous répondrons dans les 24 heures",
+      "name": "Nom Complet",
+      "emailLabel": "Adresse E-mail",
+      "phoneLabel": "Numéro de Téléphone (Optionnel)",
+      "message": "Message",
+      "messagePlaceholder": "Parlez-nous de vos besoins en matière d'immigration...",
+      "send": "Envoyer le Message",
+      "sending": "Envoi en cours...",
+      "success": "Message envoyé avec succès! Nous vous répondrons bientôt."
+    },
+    "footer": {
+      "description": "Services d'immigration professionnels aidant les individus et les familles à réaliser leurs rêves mondiaux.",
+      "services": "Services",
+      "company": "Entreprise",
+      "legal": "Légal",
+      "about": "À Propos",
+      "team": "Notre Équipe",
+      "careers": "Carrières",
+      "press": "Presse",
+      "privacy": "Politique de Confidentialité",
+      "terms": "Conditions d'Utilisation",
+      "cookies": "Politique des Cookies",
+      "rights": "Tous droits réservés."
+    }
   }
 }
 
