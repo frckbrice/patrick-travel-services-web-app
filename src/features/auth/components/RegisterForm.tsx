@@ -1,26 +1,35 @@
 'use client';
 
-// Registration form component
+// Registration form component with shadcn/ui
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
+import { Eye, EyeOff } from 'lucide-react';
 import { useRegister } from '../api/useAuth';
 import { registerSchema, RegisterInput } from '../schemas/auth.schema';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 export function RegisterForm() {
     const [showPassword, setShowPassword] = useState(false);
     const registerMutation = useRegister();
     const { t } = useTranslation();
 
-    const {
-        register,
-        handleSubmit,
-        formState: { errors, isSubmitting },
-    } = useForm<RegisterInput>({
+    const form = useForm<RegisterInput>({
         resolver: zodResolver(registerSchema),
+        defaultValues: {
+            email: '',
+            password: '',
+            firstName: '',
+            lastName: '',
+            phone: '',
+        },
     });
 
     const onSubmit = async (data: RegisterInput) => {
@@ -29,143 +38,140 @@ export function RegisterForm() {
 
     return (
         <div className="w-full max-w-md mx-auto">
-            <div className="bg-white p-8 rounded-lg shadow-md">
-                <h2 className="text-2xl font-bold text-center mb-6">
-                    Create Account
-                </h2>
-                <p className="text-center text-gray-600 mb-6">
-                    Join Patrick Travel Services today
-                </p>
-
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    {/* First Name */}
-                    <div>
-                        <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                            First Name
-                        </label>
-                        <input
-                            id="firstName"
-                            type="text"
-                            {...register('firstName')}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="John"
-                        />
-                        {errors.firstName && (
-                            <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
-                        )}
-                    </div>
-
-                    {/* Last Name */}
-                    <div>
-                        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                            Last Name
-                        </label>
-                        <input
-                            id="lastName"
-                            type="text"
-                            {...register('lastName')}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Doe"
-                        />
-                        {errors.lastName && (
-                            <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
-                        )}
-                    </div>
-
-                    {/* Email */}
-                    <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                            Email Address
-                        </label>
-                        <input
-                            id="email"
-                            type="email"
-                            {...register('email')}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="john@example.com"
-                        />
-                        {errors.email && (
-                            <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-                        )}
-                    </div>
-
-                    {/* Phone (Optional) */}
-                    <div>
-                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                            Phone Number (Optional)
-                        </label>
-                        <input
-                            id="phone"
-                            type="tel"
-                            {...register('phone')}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="+1234567890"
-                        />
-                        {errors.phone && (
-                            <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
-                        )}
-                    </div>
-
-                    {/* Password */}
-                    <div>
-                        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                            Password
-                        </label>
-                        <div className="relative">
-                            <input
-                                id="password"
-                                type={showPassword ? 'text' : 'password'}
-                                {...register('password')}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="••••••••"
+            <Card>
+                <CardHeader className="space-y-1">
+                    <CardTitle className="text-2xl text-center">
+                        {t('auth.createAccount')}
+                    </CardTitle>
+                    <CardDescription className="text-center">
+                        {t('auth.signUpMessage')}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                            {/* First Name */}
+                            <FormField
+                                control={form.control}
+                                name="firstName"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{t('auth.firstName')}</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="John" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
                             />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+
+                            {/* Last Name */}
+                            <FormField
+                                control={form.control}
+                                name="lastName"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{t('auth.lastName')}</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Doe" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {/* Email */}
+                            <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{t('auth.email')}</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                type="email"
+                                                placeholder="john@example.com"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {/* Phone (Optional) */}
+                            <FormField
+                                control={form.control}
+                                name="phone"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{t('auth.phone')}</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                type="tel"
+                                                placeholder="+1234567890"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {/* Password */}
+                            <FormField
+                                control={form.control}
+                                name="password"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{t('auth.password')}</FormLabel>
+                                        <FormControl>
+                                            <div className="relative">
+                                                <Input
+                                                    type={showPassword ? 'text' : 'password'}
+                                                    placeholder="••••••••"
+                                                    {...field}
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                >
+                                                    {showPassword ? (
+                                                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                                    ) : (
+                                                        <Eye className="h-4 w-4 text-muted-foreground" />
+                                                    )}
+                                                </Button>
+                                            </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {/* Submit Button */}
+                            <Button
+                                type="submit"
+                                className="w-full"
+                                disabled={form.formState.isSubmitting || registerMutation.isPending}
                             >
-                                {showPassword ? '👁️' : '👁️‍🗨️'}
-                            </button>
-                        </div>
-                        {errors.password && (
-                            <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-                        )}
-                        <p className="mt-1 text-xs text-gray-500">
-                            Must be at least 8 characters with uppercase, lowercase, number, and special character
-                        </p>
-                    </div>
-
-                    {/* Submit Button */}
-                    <button
-                        type="submit"
-                        disabled={isSubmitting || registerMutation.isPending}
-                        className="w-full py-2 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {registerMutation.isPending ? 'Creating account...' : 'Create Account'}
-                    </button>
-
-                    {/* Terms */}
-                    <p className="text-xs text-center text-gray-500">
-                        By creating an account, you agree to our{' '}
-                        <Link href="/terms" className="text-blue-600 hover:text-blue-700">
-                            Terms of Service
-                        </Link>{' '}
-                        and{' '}
-                        <Link href="/privacy" className="text-blue-600 hover:text-blue-700">
-                            Privacy Policy
+                                {registerMutation.isPending ? t('auth.signingUp') : t('auth.createAccount')}
+                            </Button>
+                        </form>
+                    </Form>
+                </CardContent>
+                <CardFooter>
+                    <p className="text-sm text-center text-muted-foreground w-full">
+                        {t('auth.alreadyHaveAccount')}{' '}
+                        <Link href="/login" className="text-primary hover:underline font-medium">
+                            {t('auth.signIn')}
                         </Link>
                     </p>
-                </form>
-
-                {/* Login Link */}
-                <p className="mt-6 text-center text-sm text-gray-600">
-                    Already have an account?{' '}
-                    <Link href="/auth/login" className="text-blue-600 hover:text-blue-700 font-medium">
-                        Sign in
-                    </Link>
-                </p>
-            </div>
+                </CardFooter>
+            </Card>
         </div>
     );
 }
-

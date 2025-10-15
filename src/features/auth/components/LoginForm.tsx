@@ -1,26 +1,33 @@
 'use client';
 
-// Login form component
+// Login form component with shadcn/ui
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
+import { Eye, EyeOff } from 'lucide-react';
 import { useLogin } from '../api/useAuth';
 import { loginSchema, LoginInput } from '../schemas/auth.schema';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 export function LoginForm() {
     const [showPassword, setShowPassword] = useState(false);
     const loginMutation = useLogin();
     const { t } = useTranslation();
 
-    const {
-        register,
-        handleSubmit,
-        formState: { errors, isSubmitting },
-    } = useForm<LoginInput>({
+    const form = useForm<LoginInput>({
         resolver: zodResolver(loginSchema),
+        defaultValues: {
+            email: '',
+            password: '',
+            rememberMe: false,
+        },
     });
 
     const onSubmit = async (data: LoginInput) => {
@@ -29,95 +36,120 @@ export function LoginForm() {
 
     return (
         <div className="w-full max-w-md mx-auto">
-            <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md">
-                <h2 className="text-2xl font-bold text-center mb-6 dark:text-white">
-                    {t('auth.welcome')} {t('common.back')}
-                </h2>
-                <p className="text-center text-gray-600 dark:text-gray-400 mb-6">
-                    {t('auth.signInMessage')}
-                </p>
-
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    {/* Email */}
-                    <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            {t('auth.email')}
-                        </label>
-                        <input
-                            id="email"
-                            type="email"
-                            {...register('email')}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                            placeholder="you@example.com"
-                        />
-                        {errors.email && (
-                            <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-                        )}
-                    </div>
-
-                    {/* Password */}
-                    <div>
-                        <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            {t('auth.password')}
-                        </label>
-                        <div className="relative">
-                            <input
-                                id="password"
-                                type={showPassword ? 'text' : 'password'}
-                                {...register('password')}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                                placeholder="••••••••"
+            <Card>
+                <CardHeader className="space-y-1">
+                    <CardTitle className="text-2xl text-center">
+                        {t('auth.welcome')} {t('common.back')}
+                    </CardTitle>
+                    <CardDescription className="text-center">
+                        {t('auth.signInMessage')}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                            {/* Email */}
+                            <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{t('auth.email')}</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                type="email"
+                                                placeholder="you@example.com"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
                             />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+
+                            {/* Password */}
+                            <FormField
+                                control={form.control}
+                                name="password"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{t('auth.password')}</FormLabel>
+                                        <FormControl>
+                                            <div className="relative">
+                                                <Input
+                                                    type={showPassword ? 'text' : 'password'}
+                                                    placeholder="••••••••"
+                                                    {...field}
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                >
+                                                    {showPassword ? (
+                                                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                                    ) : (
+                                                        <Eye className="h-4 w-4 text-muted-foreground" />
+                                                    )}
+                                                </Button>
+                                            </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {/* Remember Me & Forgot Password */}
+                            <div className="flex items-center justify-between">
+                                <FormField
+                                    control={form.control}
+                                    name="rememberMe"
+                                    render={({ field }) => (
+                                        <FormItem className="flex items-center space-x-2 space-y-0">
+                                            <FormControl>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={field.value}
+                                                    onChange={field.onChange}
+                                                    className="rounded border-input text-primary focus:ring-primary"
+                                                />
+                                            </FormControl>
+                                            <Label className="text-sm font-normal cursor-pointer">
+                                                {t('auth.rememberMe')}
+                                            </Label>
+                                        </FormItem>
+                                    )}
+                                />
+                                <Link
+                                    href="/forgot-password"
+                                    className="text-sm text-primary hover:underline"
+                                >
+                                    {t('auth.forgotPassword')}
+                                </Link>
+                            </div>
+
+                            {/* Submit Button */}
+                            <Button
+                                type="submit"
+                                className="w-full"
+                                disabled={form.formState.isSubmitting || loginMutation.isPending}
                             >
-                                {showPassword ? '👁️' : '👁️‍🗨️'}
-                            </button>
-                        </div>
-                        {errors.password && (
-                            <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-                        )}
-                    </div>
-
-                    {/* Remember Me & Forgot Password */}
-                    <div className="flex items-center justify-between">
-                        <label className="flex items-center">
-                            <input
-                                type="checkbox"
-                                {...register('rememberMe')}
-                                className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
-                            />
-                            <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">{t('auth.rememberMe')}</span>
-                        </label>
-                        <Link
-                            href="/forgot-password"
-                            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-                        >
-                            {t('auth.forgotPassword')}
+                                {loginMutation.isPending ? t('auth.signingIn') : t('auth.signIn')}
+                            </Button>
+                        </form>
+                    </Form>
+                </CardContent>
+                <CardFooter>
+                    <p className="text-sm text-center text-muted-foreground w-full">
+                        {t('auth.dontHaveAccount')}{' '}
+                        <Link href="/register" className="text-primary hover:underline font-medium">
+                            {t('auth.signUp')}
                         </Link>
-                    </div>
-
-                    {/* Submit Button */}
-                    <button
-                        type="submit"
-                        disabled={isSubmitting || loginMutation.isPending}
-                        className="w-full py-2 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loginMutation.isPending ? t('auth.signingIn') : t('auth.signIn')}
-                    </button>
-                </form>
-
-                {/* Register Link */}
-                <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-                    {t('auth.dontHaveAccount')}{' '}
-                    <Link href="/register" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
-                        {t('auth.signUp')}
-                    </Link>
-                </p>
-            </div>
+                    </p>
+                </CardFooter>
+            </Card>
         </div>
     );
 }
-
