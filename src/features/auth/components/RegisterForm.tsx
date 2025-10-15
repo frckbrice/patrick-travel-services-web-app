@@ -6,12 +6,14 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { useRegister } from '../api/useAuth';
 import { registerSchema, RegisterInput } from '../schemas/auth.schema';
 
 export function RegisterForm() {
     const [showPassword, setShowPassword] = useState(false);
     const registerMutation = useRegister();
+    const { t } = useTranslation();
 
     const {
         register,

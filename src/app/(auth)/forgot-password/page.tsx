@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/lib/firebase/firebase-client';
@@ -18,6 +19,7 @@ type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 
 export default function ForgotPasswordPage() {
     const [emailSent, setEmailSent] = useState(false);
+    const { t } = useTranslation();
 
     const {
         register,
@@ -49,19 +51,18 @@ export default function ForgotPasswordPage() {
     if (emailSent) {
         return (
             <div className="w-full max-w-md mx-auto">
-                <div className="bg-white p-8 rounded-lg shadow-md text-center">
+                <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md text-center">
                     <div className="mb-4 text-green-600 text-5xl">✓</div>
-                    <h2 className="text-2xl font-bold mb-4">Check Your Email</h2>
-                    <p className="text-gray-600 mb-6">
-                        We've sent password reset instructions to your email address.
-                        Please check your inbox and follow the link to reset your password.
+                    <h2 className="text-2xl font-bold mb-4 dark:text-white">{t('auth.checkEmail')}</h2>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">
+                        {t('auth.resetLinkSent')}
                     </p>
                     <div className="space-y-3">
                         <Link
                             href="/login"
                             className="block w-full py-2 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 text-center"
                         >
-                            Back to Login
+                            {t('auth.backToLogin')}
                         </Link>
                         <button
                             onClick={() => setEmailSent(false)}
