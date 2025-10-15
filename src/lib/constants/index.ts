@@ -145,10 +145,15 @@ export const SUCCESS_MESSAGES = {
     PROFILE_UPDATED: 'Profile updated successfully',
     CASE_SUBMITTED: 'Case submitted successfully',
     CASE_UPDATED: 'Case updated successfully',
+    CASE_DELETED: 'Case deleted successfully',
     DOCUMENT_UPLOADED: 'Document uploaded successfully',
     DOCUMENT_DELETED: 'Document deleted successfully',
     MESSAGE_SENT: 'Message sent successfully',
+    MESSAGE_DELETED: 'Message deleted successfully',
     NOTIFICATION_READ: 'Notification marked as read',
+    CREATED: 'Created successfully',
+    UPDATED: 'Updated successfully',
+    DELETED: 'Deleted successfully',
 };
 
 export const ROUTES = {

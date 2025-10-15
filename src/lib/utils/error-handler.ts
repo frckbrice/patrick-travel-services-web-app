@@ -4,7 +4,7 @@
  * Compatible with both web and mobile clients
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { logger } from "./logger";
 import { ApiResponse } from "./api-response";
 
@@ -273,9 +273,9 @@ export function handleApiError(error: unknown): NextResponse<ApiResponse> {
  * Wraps async route handlers to catch errors automatically
  */
 export function asyncHandler<T>(
-    handler: (req: Request, context?: T) => Promise<NextResponse>
+    handler: (req: NextRequest, context?: T) => Promise<NextResponse>
 ) {
-    return async (req: Request, context?: T): Promise<NextResponse> => {
+    return async (req: NextRequest, context?: T): Promise<NextResponse> => {
         try {
             return await handler(req, context);
         } catch (error) {

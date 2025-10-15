@@ -8,6 +8,7 @@ import { adminAuth } from '@/lib/firebase/firebase-admin';
 import { registerSchema } from '@/features/auth/schemas/auth.schema';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants';
 import { logger } from '@/lib/utils/logger';
+import type { ZodIssue } from 'zod';
 import {
     successResponse,
     errorResponse,
@@ -33,12 +34,15 @@ const handler = asyncHandler(async (request: NextRequest) => {
         const validationResult = registerSchema.safeParse(body);
 
         if (!validationResult.success) {
-            const errors = validationResult.error.errors.reduce((acc, err) => {
-                const path = err.path.join('.');
-                if (!acc[path]) acc[path] = [];
-                acc[path].push(err.message);
-                return acc;
-            }, {} as Record<string, string[]>);
+            const errors = validationResult.error.issues.reduce(
+                (acc: Record<string, string[]>, err: ZodIssue) => {
+                    const path = err.path.join('.');
+                    if (!acc[path]) acc[path] = [];
+                    acc[path].push(err.message);
+                    return acc;
+                },
+                {} as Record<string, string[]>
+            );
 
             return validationErrorResponse(errors, ERROR_MESSAGES.VALIDATION_ERROR);
         }

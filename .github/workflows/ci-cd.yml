@@ -165,7 +165,6 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         environment:
             name: production
-            url: ${{ secrets.PRODUCTION_URL }}
 
         steps:
             - name: Checkout code
