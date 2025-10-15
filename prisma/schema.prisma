@@ -1,0 +1,279 @@
+// Prisma schema for Patrick Travel Services
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Model
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  password          String    // hashed
+  firstName         String
+  lastName          String
+  phone             String?
+  role              Role      @default(CLIENT)
+  isActive          Boolean   @default(true)
+  isVerified        Boolean   @default(false)
+  verificationToken String?
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  lastLogin         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  cases             Case[]    @relation("ClientCases")
+  assignedCases     Case[]    @relation("AgentCases")
+  sentMessages      Message[] @relation("SentMessages")
+  receivedMessages  Message[] @relation("ReceivedMessages")
+  documents         Document[]
+  notifications     Notification[]
+  activityLogs      ActivityLog[]
+  
+  @@index([email])
+  @@index([role])
+}
+
+enum Role {
+  CLIENT
+  AGENT
+  ADMIN
+}
+
+// Case Model
+model Case {
+  id                  String       @id @default(uuid())
+  referenceNumber     String       @unique
+  clientId            String
+  client              User         @relation("ClientCases", fields: [clientId], references: [id])
+  assignedAgentId     String?
+  assignedAgent       User?        @relation("AgentCases", fields: [assignedAgentId], references: [id])
+  serviceType         ServiceType
+  status              CaseStatus   @default(SUBMITTED)
+  priority            Priority     @default(NORMAL)
+  submissionDate      DateTime     @default(now())
+  lastUpdated         DateTime     @updatedAt
+  internalNotes       String?      @db.Text
+  estimatedCompletion DateTime?
+  
+  // Relations
+  documents        Document[]
+  messages         Message[]
+  statusHistory    StatusHistory[]
+  notifications    Notification[]
+  formData         CaseFormData?
+  
+  @@index([clientId])
+  @@index([assignedAgentId])
+  @@index([status])
+  @@index([serviceType])
+  @@index([referenceNumber])
+}
+
+enum ServiceType {
+  STUDENT_VISA
+  WORK_PERMIT
+  FAMILY_REUNIFICATION
+  TOURIST_VISA
+  BUSINESS_VISA
+  PERMANENT_RESIDENCY
+}
+
+enum CaseStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  DOCUMENTS_REQUIRED
+  PROCESSING
+  APPROVED
+  REJECTED
+  CLOSED
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+// CaseFormData Model (JSON field for dynamic form data)
+model CaseFormData {
+  id        String   @id @default(uuid())
+  caseId    String   @unique
+  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  data      Json     // Flexible JSON structure for different service types
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// StatusHistory Model (for timeline tracking)
+model StatusHistory {
+  id          String     @id @default(uuid())
+  caseId      String
+  case        Case       @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  status      CaseStatus
+  changedBy   String
+  notes       String?
+  timestamp   DateTime   @default(now())
+  
+  @@index([caseId])
+  @@index([timestamp])
+}
+
+// Document Model
+model Document {
+  id              String         @id @default(uuid())
+  caseId          String
+  case            Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  uploadedById    String
+  uploadedBy      User           @relation(fields: [uploadedById], references: [id])
+  fileName        String
+  originalName    String
+  filePath        String
+  fileSize        Int
+  mimeType        String
+  documentType    DocumentType
+  status          DocumentStatus @default(PENDING)
+  uploadDate      DateTime       @default(now())
+  verifiedBy      String?
+  verifiedAt      DateTime?
+  rejectionReason String?
+  
+  @@index([caseId])
+  @@index([status])
+}
+
+enum DocumentType {
+  PASSPORT
+  ID_CARD
+  BIRTH_CERTIFICATE
+  MARRIAGE_CERTIFICATE
+  DIPLOMA
+  EMPLOYMENT_LETTER
+  BANK_STATEMENT
+  PROOF_OF_RESIDENCE
+  PHOTO
+  OTHER
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Message Model
+model Message {
+  id          String   @id @default(uuid())
+  senderId    String
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  recipientId String
+  recipient   User     @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  caseId      String?
+  case        Case?    @relation(fields: [caseId], references: [id])
+  subject     String?
+  content     String   @db.Text
+  isRead      Boolean  @default(false)
+  readAt      DateTime?
+  sentAt      DateTime @default(now())
+  attachments Json?    // Array of file references
+  
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([caseId])
+  @@index([isRead])
+}
+
+// Notification Model
+model Notification {
+  id               String           @id @default(uuid())
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caseId           String?
+  case             Case?            @relation(fields: [caseId], references: [id])
+  type             NotificationType
+  title            String
+  message          String
+  isRead           Boolean          @default(false)
+  readAt           DateTime?
+  createdAt        DateTime         @default(now())
+  actionUrl        String?
+  
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  CASE_STATUS_UPDATE
+  NEW_MESSAGE
+  DOCUMENT_UPLOADED
+  DOCUMENT_VERIFIED
+  DOCUMENT_REJECTED
+  CASE_ASSIGNED
+  SYSTEM_ANNOUNCEMENT
+}
+
+// ActivityLog Model
+model ActivityLog {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  action      String
+  description String
+  ipAddress   String?
+  userAgent   String?
+  metadata    Json?
+  timestamp   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([timestamp])
+  @@index([action])
+}
+
+// FAQ Model
+model FAQ {
+  id        String   @id @default(uuid())
+  question  String
+  answer    String   @db.Text
+  category  String
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([category])
+  @@index([isActive])
+}
+
+// DocumentTemplate Model
+model DocumentTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  filePath    String
+  fileSize    Int
+  category    String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// SystemSetting Model
+model SystemSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String   @db.Text
+  category  String
+  updatedAt DateTime @updatedAt
+  updatedBy String
+  
+  @@index([key])
+  @@index([category])
+}
