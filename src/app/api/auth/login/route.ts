@@ -12,15 +12,17 @@ import {
     errorResponse,
     serverErrorResponse,
 } from '@/lib/utils/api-response';
+import { asyncHandler, ApiError, HttpStatus } from '@/lib/utils/error-handler';
+import { withCorsMiddleware } from '@/lib/middleware/cors';
+import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 
-export async function POST(request: NextRequest) {
-    try {
-        const body = await request.json();
-        const { firebaseUid } = body;
+const handler = asyncHandler(async (request: NextRequest) => {
+    const body = await request.json();
+    const { firebaseUid } = body;
 
-        if (!firebaseUid) {
-            return errorResponse('Firebase UID is required', 400);
-        }
+    if (!firebaseUid) {
+        throw new ApiError('Firebase UID is required', HttpStatus.BAD_REQUEST);
+    }
 
         // Find user by Firebase UID
         const user = await prisma.user.findUnique({
@@ -41,12 +43,15 @@ export async function POST(request: NextRequest) {
         });
 
         if (!user) {
-            return errorResponse(ERROR_MESSAGES.NOT_FOUND, 404);
+            throw new ApiError(ERROR_MESSAGES.NOT_FOUND, HttpStatus.NOT_FOUND);
         }
 
         // Check if account is active
         if (!user.isActive) {
-            return errorResponse(ERROR_MESSAGES.ACCOUNT_INACTIVE, 403);
+            throw new ApiError(
+                ERROR_MESSAGES.ACCOUNT_INACTIVE,
+                HttpStatus.FORBIDDEN
+            );
         }
 
         // Update last login
@@ -66,8 +71,9 @@ export async function POST(request: NextRequest) {
             },
             SUCCESS_MESSAGES.LOGIN_SUCCESS
         );
-    } catch (error) {
-        logger.error('Login error', error);
-        return serverErrorResponse(ERROR_MESSAGES.SERVER_ERROR);
-    }
-}
+});
+
+// Apply middleware: CORS -> Rate Limit -> Handler
+export const POST = withCorsMiddleware(
+    withRateLimit(handler, RateLimitPresets.AUTH)
+);
