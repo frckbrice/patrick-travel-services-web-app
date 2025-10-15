@@ -3,6 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
+import { Plus, Filter } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function CasesList() {
     const [filter, setFilter] = useState('all');
@@ -10,57 +15,89 @@ export function CasesList() {
 
     const filters = ['all', 'submitted', 'under_review', 'processing', 'approved', 'rejected'];
 
+    const getStatusVariant = (status: string) => {
+        const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+            'submitted': 'secondary',
+            'under_review': 'default',
+            'processing': 'default',
+            'approved': 'default',
+            'rejected': 'destructive',
+        };
+        return variants[status] || 'outline';
+    };
+
     return (
-        <div>
-            <div className="flex justify-between items-center mb-6">
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                    <h1 className="text-3xl font-bold tracking-tight">
                         {t('cases.title')}
                     </h1>
-                    <p className="mt-2 text-gray-600 dark:text-gray-400">
+                    <p className="text-muted-foreground mt-2">
                         Manage and track all immigration cases
                     </p>
                 </div>
-                <Link
-                    href="/dashboard/cases/new"
-                    className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700"
-                >
-                    + {t('cases.newCase')}
-                </Link>
+                <Button asChild>
+                    <Link href="/dashboard/cases/new">
+                        <Plus className="mr-2 h-4 w-4" />
+                        {t('cases.newCase')}
+                    </Link>
+                </Button>
             </div>
 
             {/* Filters */}
-            <div className="flex space-x-2 mb-6 overflow-x-auto">
-                {filters.map((status) => (
-                    <button
-                        key={status}
-                        onClick={() => setFilter(status)}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${filter === status
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600'
-                            }`}
-                    >
-                        {t(`cases.${status}`).toUpperCase()}
-                    </button>
-                ))}
-            </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center text-base">
+                        <Filter className="mr-2 h-4 w-4" />
+                        Filter Cases
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Tabs value={filter} onValueChange={setFilter} className="w-full">
+                        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
+                            {filters.map((status) => (
+                                <TabsTrigger
+                                    key={status}
+                                    value={status}
+                                    className="capitalize"
+                                >
+                                    {t(`cases.${status}`)}
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </Tabs>
+                </CardContent>
+            </Card>
 
             {/* Cases List */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                <div className="p-6">
-                    <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                        <p className="text-lg">No cases found</p>
-                        <p className="text-sm mt-2">Get started by creating your first case</p>
-                        <Link
-                            href="/dashboard/cases/new"
-                            className="inline-block mt-4 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                        >
-                            {t('cases.newCase')}
-                        </Link>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Cases</CardTitle>
+                    <CardDescription>
+                        {filter === 'all' ? 'All cases' : `${t(`cases.${filter}`)} cases`}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {/* Empty State */}
+                    <div className="text-center py-12">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                            <Filter className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <h3 className="mt-4 text-lg font-semibold">No cases found</h3>
+                        <p className="text-sm text-muted-foreground mt-2">
+                            Get started by creating your first case
+                        </p>
+                        <Button asChild className="mt-4">
+                            <Link href="/dashboard/cases/new">
+                                <Plus className="mr-2 h-4 w-4" />
+                                {t('cases.newCase')}
+                            </Link>
+                        </Button>
                     </div>
-                </div>
-            </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }
-

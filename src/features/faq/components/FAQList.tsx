@@ -2,6 +2,10 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { HelpCircle, ChevronDown, MessageCircle } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 
 const faqs = [
     {
@@ -20,6 +24,14 @@ const faqs = [
         question: 'How do I upload documents?',
         answer: 'Navigate to the Documents section and use the upload button. Supported formats: PDF, JPG, PNG, DOC.',
     },
+    {
+        question: 'What payment methods do you accept?',
+        answer: 'We accept all major credit cards, debit cards, and bank transfers. Payment plans are also available.',
+    },
+    {
+        question: 'Can I get a refund if my visa is rejected?',
+        answer: 'Service fees are non-refundable, but government fees may be refundable depending on the case.',
+    },
 ];
 
 export function FAQList() {
@@ -27,44 +39,74 @@ export function FAQList() {
     const { t } = useTranslation();
 
     return (
-        <div>
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <div className="space-y-6">
+            {/* Header */}
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">
                     Frequently Asked Questions
                 </h1>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">
+                <p className="text-muted-foreground mt-2">
                     Find answers to common questions
                 </p>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="space-y-4">
-                    {faqs.map((faq, index) => (
-                        <div key={index} className="border-b dark:border-gray-700 last:border-b-0 pb-4 last:pb-0">
-                            <button
-                                onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                                className="w-full text-left flex justify-between items-center py-2"
-                            >
-                                <span className="font-medium text-gray-900 dark:text-white">{faq.question}</span>
-                                <span className="text-2xl dark:text-gray-300">{openIndex === index ? '−' : '+'}</span>
-                            </button>
-                            {openIndex === index && (
-                                <p className="mt-2 text-gray-600 dark:text-gray-400 pl-4">{faq.answer}</p>
-                            )}
-                        </div>
-                    ))}
-                </div>
+            {/* FAQ List */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center">
+                        <HelpCircle className="mr-2 h-5 w-5" />
+                        Common Questions
+                    </CardTitle>
+                    <CardDescription>
+                        Click on any question to see the answer
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {faqs.map((faq, index) => (
+                            <div key={index}>
+                                <button
+                                    onClick={() => setOpenIndex(openIndex === index ? null : index)}
+                                    className="w-full flex items-start justify-between text-left py-4 hover:bg-muted/50 rounded-lg px-4 transition-colors"
+                                >
+                                    <span className="font-medium pr-4">{faq.question}</span>
+                                    <ChevronDown
+                                        className={`h-5 w-5 text-muted-foreground transition-transform flex-shrink-0 ${openIndex === index ? 'transform rotate-180' : ''
+                                            }`}
+                                    />
+                                </button>
+                                {openIndex === index && (
+                                    <div className="px-4 pb-4">
+                                        <p className="text-muted-foreground leading-relaxed">
+                                            {faq.answer}
+                                        </p>
+                                    </div>
+                                )}
+                                {index < faqs.length - 1 && <Separator />}
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
 
-                <div className="mt-8 pt-6 border-t dark:border-gray-700 text-center">
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">
-                        Can't find what you're looking for?
-                    </p>
-                    <button className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                        Contact Support
-                    </button>
-                </div>
-            </div>
+            {/* Contact Support */}
+            <Card>
+                <CardContent className="pt-6">
+                    <div className="text-center">
+                        <MessageCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                        <h3 className="text-lg font-semibold mb-2">
+                            Can't find what you're looking for?
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                            Our support team is here to help
+                        </p>
+                        <Button>
+                            <MessageCircle className="mr-2 h-4 w-4" />
+                            Contact Support
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }
-

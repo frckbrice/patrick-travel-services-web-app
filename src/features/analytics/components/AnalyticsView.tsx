@@ -4,6 +4,9 @@ import { useAuthStore } from '@/features/auth/store';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import { BarChart3, TrendingUp, FileCheck, Target } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function AnalyticsView() {
     const { user } = useAuthStore();
@@ -22,54 +25,135 @@ export function AnalyticsView() {
     }
 
     const stats = [
-        { label: 'Total Cases', value: '156', trend: '+12%' },
-        { label: 'Active Cases', value: '48', trend: '+8%' },
-        { label: 'Approved Cases', value: '92', trend: '+15%' },
-        { label: 'Success Rate', value: '94%', trend: '+3%' },
+        {
+            label: 'Total Cases',
+            value: '156',
+            trend: '+12%',
+            icon: BarChart3,
+            description: 'All time cases'
+        },
+        {
+            label: 'Active Cases',
+            value: '48',
+            trend: '+8%',
+            icon: TrendingUp,
+            description: 'Currently processing'
+        },
+        {
+            label: 'Approved Cases',
+            value: '92',
+            trend: '+15%',
+            icon: FileCheck,
+            description: 'Successfully approved'
+        },
+        {
+            label: 'Success Rate',
+            value: '94%',
+            trend: '+3%',
+            icon: Target,
+            description: 'Approval percentage'
+        },
     ];
 
     return (
-        <div>
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <div className="space-y-6">
+            {/* Header */}
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">
                     Analytics
                 </h1>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">
+                <p className="text-muted-foreground mt-2">
                     Track performance and case statistics
                 </p>
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {stats.map((stat) => (
-                    <div
-                        key={stat.label}
-                        className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
-                    >
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{stat.label}</p>
-                        <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
-                        <p className="mt-2 text-sm text-green-600 dark:text-green-400">{stat.trend}</p>
-                    </div>
-                ))}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {stats.map((stat) => {
+                    const Icon = stat.icon;
+                    return (
+                        <Card key={stat.label}>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">
+                                    {stat.label}
+                                </CardTitle>
+                                <Icon className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{stat.value}</div>
+                                <div className="flex items-center space-x-2 mt-1">
+                                    <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                                        {stat.trend}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {stat.description}
+                                    </p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    );
+                })}
             </div>
 
             {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                    <h2 className="text-xl font-bold mb-4 dark:text-white">Cases by Status</h2>
-                    <div className="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400">
-                        Chart placeholder - integrate Recharts
-                    </div>
-                </div>
+            <Tabs defaultValue="status" className="space-y-4">
+                <TabsList>
+                    <TabsTrigger value="status">By Status</TabsTrigger>
+                    <TabsTrigger value="trends">Monthly Trends</TabsTrigger>
+                    <TabsTrigger value="types">Case Types</TabsTrigger>
+                </TabsList>
 
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                    <h2 className="text-xl font-bold mb-4 dark:text-white">Monthly Trends</h2>
-                    <div className="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400">
-                        Chart placeholder - integrate Recharts
-                    </div>
-                </div>
-            </div>
+                <TabsContent value="status" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Cases by Status</CardTitle>
+                            <CardDescription>Distribution of cases across different statuses</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="h-64 flex items-center justify-center text-muted-foreground">
+                                <div className="text-center">
+                                    <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                    <p>Chart placeholder - integrate Recharts</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="trends" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Monthly Trends</CardTitle>
+                            <CardDescription>Case volume and approval trends over time</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="h-64 flex items-center justify-center text-muted-foreground">
+                                <div className="text-center">
+                                    <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                    <p>Chart placeholder - integrate Recharts</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="types" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Case Types Distribution</CardTitle>
+                            <CardDescription>Breakdown by visa type</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="h-64 flex items-center justify-center text-muted-foreground">
+                                <div className="text-center">
+                                    <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                    <p>Chart placeholder - integrate Recharts</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }
-

@@ -3,134 +3,201 @@
 import { useAuthStore } from '@/features/auth/store';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
-import { ReactNode } from 'react';
+import { FileText, MessageSquare, Bell, Briefcase, ArrowRight, CheckCircle, Upload } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 export function DashboardHome() {
     const { user } = useAuthStore();
     const { t } = useTranslation();
 
     const stats = [
-        { label: t('dashboard.activeCases'), value: '12', change: '+2 this week', color: 'blue' },
-        { label: t('dashboard.pendingDocuments'), value: '5', change: '3 need review', color: 'yellow' },
-        { label: t('dashboard.newMessages'), value: '8', change: '2 unread', color: 'green' },
-        { label: t('dashboard.notifications'), value: '15', change: '5 new today', color: 'purple' },
+        {
+            label: t('dashboard.activeCases'),
+            value: '12',
+            change: '+2 this week',
+            icon: Briefcase,
+            trend: 'up'
+        },
+        {
+            label: t('dashboard.pendingDocuments'),
+            value: '5',
+            change: '3 need review',
+            icon: FileText,
+            trend: 'neutral'
+        },
+        {
+            label: t('dashboard.newMessages'),
+            value: '8',
+            change: '2 unread',
+            icon: MessageSquare,
+            trend: 'up'
+        },
+        {
+            label: t('dashboard.notifications'),
+            value: '15',
+            change: '5 new today',
+            icon: Bell,
+            trend: 'up'
+        },
+    ];
+
+    const quickActions = [
+        { label: 'Submit New Case', icon: Briefcase, href: '/dashboard/cases/new' },
+        { label: 'Upload Document', icon: Upload, href: '/dashboard/documents' },
+        { label: 'Send Message', icon: MessageSquare, href: '/dashboard/messages' },
+    ];
+
+    const recentActivity = [
+        {
+            icon: CheckCircle,
+            title: 'Case Updated',
+            description: 'Student Visa application status changed',
+            time: '2 hours ago',
+            variant: 'success' as const,
+        },
+        {
+            icon: Upload,
+            title: 'Document Uploaded',
+            description: 'Passport copy received',
+            time: '5 hours ago',
+            variant: 'default' as const,
+        },
+        {
+            icon: MessageSquare,
+            title: 'New Message',
+            description: 'Agent replied to your query',
+            time: '1 day ago',
+            variant: 'secondary' as const,
+        },
     ];
 
     return (
-        <div>
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <div className="space-y-8">
+            {/* Header */}
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">
                     {t('dashboard.welcomeBack')}, {user?.firstName}!
                 </h1>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">
+                <p className="text-muted-foreground mt-2">
                     Here's what's happening with your immigration cases today.
                 </p>
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {stats.map((stat) => (
-                    <div
-                        key={stat.label}
-                        className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
-                    >
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{stat.label}</p>
-                        <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
-                        <p className={`mt-2 text-sm text-${stat.color}-600`}>{stat.change}</p>
-                    </div>
-                ))}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {stats.map((stat) => {
+                    const Icon = stat.icon;
+                    return (
+                        <Card key={stat.label}>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">
+                                    {stat.label}
+                                </CardTitle>
+                                <Icon className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{stat.value}</div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    {stat.change}
+                                </p>
+                            </CardContent>
+                        </Card>
+                    );
+                })}
             </div>
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                    <h2 className="text-xl font-bold mb-4 dark:text-white">{t('dashboard.quickActions')}</h2>
-                    <div className="space-y-2">
-                        <QuickActionButton href="/dashboard/cases/new">
-                            📋 Submit New Case
-                        </QuickActionButton>
-                        <QuickActionButton href="/dashboard/documents">
-                            📄 Upload Document
-                        </QuickActionButton>
-                        <QuickActionButton href="/dashboard/messages">
-                            💬 Send Message
-                        </QuickActionButton>
-                    </div>
-                </div>
+            {/* Quick Actions & Recent Activity */}
+            <div className="grid gap-4 md:grid-cols-2">
+                {/* Quick Actions */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>{t('dashboard.quickActions')}</CardTitle>
+                        <CardDescription>Common tasks and shortcuts</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        {quickActions.map((action) => {
+                            const Icon = action.icon;
+                            return (
+                                <Button
+                                    key={action.href}
+                                    variant="outline"
+                                    className="w-full justify-start"
+                                    asChild
+                                >
+                                    <Link href={action.href}>
+                                        <Icon className="mr-2 h-4 w-4" />
+                                        {action.label}
+                                    </Link>
+                                </Button>
+                            );
+                        })}
+                    </CardContent>
+                </Card>
 
                 {/* Recent Activity */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                    <h2 className="text-xl font-bold mb-4 dark:text-white">{t('dashboard.recentActivity')}</h2>
-                    <div className="space-y-3">
-                        <ActivityItem
-                            icon="✅"
-                            title="Case Updated"
-                            description="Student Visa application status changed"
-                            time="2 hours ago"
-                        />
-                        <ActivityItem
-                            icon="📄"
-                            title="Document Uploaded"
-                            description="Passport copy received"
-                            time="5 hours ago"
-                        />
-                        <ActivityItem
-                            icon="💬"
-                            title="New Message"
-                            description="Agent replied to your query"
-                            time="1 day ago"
-                        />
-                    </div>
-                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>{t('dashboard.recentActivity')}</CardTitle>
+                        <CardDescription>Latest updates and changes</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            {recentActivity.map((activity, index) => {
+                                const Icon = activity.icon;
+                                return (
+                                    <div key={index}>
+                                        <div className="flex items-start space-x-4">
+                                            <div className="mt-1">
+                                                <Icon className="h-5 w-5 text-muted-foreground" />
+                                            </div>
+                                            <div className="flex-1 space-y-1">
+                                                <p className="text-sm font-medium leading-none">
+                                                    {activity.title}
+                                                </p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {activity.description}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {activity.time}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {index < recentActivity.length - 1 && (
+                                            <Separator className="my-4" />
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
             {/* Cases Overview for Admin/Agent */}
             {user?.role !== 'CLIENT' && (
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                    <h2 className="text-xl font-bold mb-4 dark:text-white">Cases Overview</h2>
-                    <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                        <p>Cases list will be displayed here</p>
-                        <Link href="/dashboard/cases" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 mt-2 inline-block">
-                            {t('dashboard.viewAll')} →
-                        </Link>
-                    </div>
-                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Cases Overview</CardTitle>
+                        <CardDescription>Manage all client cases</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-center py-8">
+                            <p className="text-sm text-muted-foreground">
+                                Cases list will be displayed here
+                            </p>
+                            <Button variant="link" asChild className="mt-2">
+                                <Link href="/dashboard/cases">
+                                    {t('dashboard.viewAll')}
+                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                </Link>
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
             )}
         </div>
     );
 }
-
-function QuickActionButton({ href, children }: { href: string; children: ReactNode }) {
-    return (
-        <Link
-            href={href}
-            className="block px-4 py-3 rounded-md border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors dark:text-gray-300"
-        >
-            {children}
-        </Link>
-    );
-}
-
-function ActivityItem({
-    icon,
-    title,
-    description,
-    time,
-}: {
-    icon: string;
-    title: string;
-    description: string;
-    time: string;
-}) {
-    return (
-        <div className="flex items-start space-x-3 p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50">
-            <span className="text-2xl">{icon}</span>
-            <div className="flex-1">
-                <p className="font-medium text-gray-900 dark:text-white">{title}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{time}</p>
-            </div>
-        </div>
-    );
-}
-

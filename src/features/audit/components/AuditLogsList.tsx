@@ -4,6 +4,10 @@ import { useAuthStore } from '@/features/auth/store';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import { FileText, Search, Shield } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function AuditLogsList() {
     const { user } = useAuthStore();
@@ -22,32 +26,67 @@ export function AuditLogsList() {
     }
 
     return (
-        <div>
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <div className="space-y-6">
+            {/* Header */}
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">
                     Audit Logs
                 </h1>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">
+                <p className="text-muted-foreground mt-2">
                     Track all system activities and changes
                 </p>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                <div className="p-4 border-b dark:border-gray-700">
-                    <input
-                        type="text"
-                        placeholder="Search logs..."
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                    />
-                </div>
-                <div className="p-6">
-                    <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                        <p className="text-lg">No audit logs available</p>
-                        <p className="text-sm mt-2">System activities will be logged here</p>
+            {/* Filters */}
+            <Card>
+                <CardHeader>
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <CardTitle className="text-base">Filter Logs</CardTitle>
+                        <div className="relative w-full md:w-[300px]">
+                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Search logs..."
+                                className="pl-8"
+                            />
+                        </div>
                     </div>
-                </div>
-            </div>
+                </CardHeader>
+                <CardContent>
+                    <Tabs defaultValue="all" className="w-full">
+                        <TabsList className="grid w-full grid-cols-4">
+                            <TabsTrigger value="all">All</TabsTrigger>
+                            <TabsTrigger value="user">User Actions</TabsTrigger>
+                            <TabsTrigger value="system">System</TabsTrigger>
+                            <TabsTrigger value="security">Security</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                </CardContent>
+            </Card>
+
+            {/* Logs List */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center">
+                        <FileText className="mr-2 h-5 w-5" />
+                        Activity Logs
+                    </CardTitle>
+                    <CardDescription>
+                        Chronological record of all system events
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {/* Empty State */}
+                    <div className="text-center py-12">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                            <Shield className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <h3 className="mt-4 text-lg font-semibold">No audit logs available</h3>
+                        <p className="text-sm text-muted-foreground mt-2">
+                            System activities will be logged here for security and compliance
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }
-
