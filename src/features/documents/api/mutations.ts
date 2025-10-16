@@ -42,3 +42,41 @@ export function useDeleteDocument() {
         },
     });
 }
+
+// Approve document (AGENT/ADMIN only)
+export function useApproveDocument() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (id: string) => {
+            const response = await apiClient.patch(`/api/documents/${id}/approve`);
+            return response.data.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [DOCUMENTS_KEY] });
+            toast.success('Document approved! Client has been notified.');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || 'Failed to approve document');
+        },
+    });
+}
+
+// Reject document (AGENT/ADMIN only)
+export function useRejectDocument() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+            const response = await apiClient.patch(`/api/documents/${id}/reject`, { reason });
+            return response.data.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [DOCUMENTS_KEY] });
+            toast.success('Document rejected. Client has been notified.');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || 'Failed to reject document');
+        },
+    });
+}

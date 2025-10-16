@@ -63,3 +63,60 @@ export function useDeleteCase() {
     });
 }
 
+
+// Update case status (AGENT/ADMIN only)
+export function useUpdateCaseStatus() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, status, note }: { id: string; status: string; note?: string }) => {
+            const response = await apiClient.patch(`/api/cases/${id}/status`, { status, note });
+            return response.data.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [CASES_KEY] });
+            toast.success('Case status updated successfully!');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || 'Failed to update status');
+        },
+    });
+}
+
+// Add internal note to case (AGENT/ADMIN only)
+export function useAddInternalNote() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, note }: { id: string; note: string }) => {
+            const response = await apiClient.patch(`/api/cases/${id}/notes`, { note });
+            return response.data.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [CASES_KEY] });
+            toast.success('Internal note saved successfully!');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || 'Failed to save note');
+        },
+    });
+}
+
+// Update case priority (AGENT/ADMIN only)
+export function useUpdateCasePriority() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, priority }: { id: string; priority: string }) => {
+            const response = await apiClient.patch(`/api/cases/${id}/priority`, { priority });
+            return response.data.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [CASES_KEY] });
+            toast.success('Priority updated!');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || 'Failed to update priority');
+        },
+    });
+}
