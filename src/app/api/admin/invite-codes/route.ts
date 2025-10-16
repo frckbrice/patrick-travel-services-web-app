@@ -77,11 +77,11 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
             createdBy: adminId,
             maxUses,
             expiresAt,
-    logger.info('Invite code created', {
-        codePrefix: inviteCode.code.substring(0, 10) + '...',
-        role: inviteCode.role,
-        createdBy: adminId
+        },
     });
+
+    logger.info('Invite code created', {
+        code: inviteCode.code,
         role: inviteCode.role,
         createdBy: adminId
     });

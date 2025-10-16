@@ -1,12 +1,10 @@
 import { Suspense } from 'react';
-import { ProfileView } from '@/features/profile/components/ProfileView';
-import DashboardLoading from '../loading';
+import { ProfileView, ProfileViewSkeleton } from '@/features/profile/components/ProfileViewEnhanced';
 
 export default function ProfilePage() {
     return (
-        <Suspense fallback={<DashboardLoading />}>
+        <Suspense fallback={<ProfileViewSkeleton />}>
             <ProfileView />
         </Suspense>
     );
 }
-

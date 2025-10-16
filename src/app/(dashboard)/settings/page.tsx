@@ -1,10 +1,9 @@
 import { Suspense } from 'react';
-import { SettingsView } from '@/features/settings/components/SettingsView';
-import DashboardLoading from '../loading';
+import { SettingsView, SettingsViewSkeleton } from '@/features/settings/components/SettingsViewEnhanced';
 
 export default function SettingsPage() {
     return (
-        <Suspense fallback={<DashboardLoading />}>
+        <Suspense fallback={<SettingsViewSkeleton />}>
             <SettingsView />
         </Suspense>
     );

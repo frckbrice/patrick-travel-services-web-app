@@ -1,12 +1,10 @@
 import { Suspense } from 'react';
-import { MessagesList } from '@/features/messages/components/MessagesList';
-import DashboardLoading from '../loading';
+import { MessagesList, MessagesListSkeleton } from '@/features/messages/components/MessagesListEnhanced';
 
 export default function MessagesPage() {
     return (
-        <Suspense fallback={<DashboardLoading />}>
+        <Suspense fallback={<MessagesListSkeleton />}>
             <MessagesList />
         </Suspense>
     );
 }
-

@@ -1,12 +1,10 @@
 import { Suspense } from 'react';
-import { NotificationsList } from '@/features/notifications/components/NotificationsList';
-import DashboardLoading from '../loading';
+import { NotificationsList, NotificationsListSkeleton } from '@/features/notifications/components/NotificationsListEnhanced';
 
 export default function NotificationsPage() {
     return (
-        <Suspense fallback={<DashboardLoading />}>
+        <Suspense fallback={<NotificationsListSkeleton />}>
             <NotificationsList />
         </Suspense>
     );
 }
-

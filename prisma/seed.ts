@@ -11,7 +11,10 @@ async function main() {
 
     // Create first ADMIN user (to be manually created in Firebase Auth first)
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@patricktravel.com';
-    const adminId = process.env.ADMIN_FIREBASE_UID || 'admin-placeholder-uid';
+    const adminId = process.env.ADMIN_FIREBASE_UID;
+    if (!adminId) {
+        throw new Error('ADMIN_FIREBASE_UID environment variable is required');
+    }
 
     const existingAdmin = await prisma.user.findUnique({
         where: { email: adminEmail },
@@ -89,16 +92,16 @@ async function main() {
             answer: 'You can track your case in real-time through your dashboard. You will receive notifications for all status updates and can communicate directly with your assigned agent.',
             category: 'General',
             order: 3,
-        },
-    ];
-
     for (const faq of faqs) {
         await prisma.fAQ.upsert({
-            where: { id: faq.question }, // Using question as unique identifier
+            where: { question: faq.question },
             update: {},
             create: faq,
         });
     }
+            create: faq,
+        });
+}
 
     console.log('✅ FAQs created');
 
