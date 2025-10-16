@@ -1,11 +1,12 @@
 import { Suspense } from 'react';
-import { DashboardHome } from '@/features/dashboard/components/DashboardHome';
-import DashboardLoading from '../loading';
+import { DashboardHome, DashboardHomeSkeleton } from '@/features/dashboard/components/DashboardHome';
+import { AgentDashboard, AgentDashboardSkeleton } from '@/features/dashboard/components/AgentDashboard';
+import { RoleDashboard } from '@/features/dashboard/components/RoleDashboard';
 
 export default function DashboardPage() {
     return (
-        <Suspense fallback={<DashboardLoading />}>
-            <DashboardHome />
+        <Suspense fallback={<DashboardHomeSkeleton />}>
+            <RoleDashboard />
         </Suspense>
     );
 }

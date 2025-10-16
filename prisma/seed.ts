@@ -92,16 +92,16 @@ async function main() {
             answer: 'You can track your case in real-time through your dashboard. You will receive notifications for all status updates and can communicate directly with your assigned agent.',
             category: 'General',
             order: 3,
+        },
+    ];
+
     for (const faq of faqs) {
         await prisma.fAQ.upsert({
-            where: { question: faq.question },
+            where: { id: faq.question }, // Using question as unique identifier
             update: {},
             create: faq,
         });
     }
-            create: faq,
-        });
-}
 
     console.log('✅ FAQs created');
 

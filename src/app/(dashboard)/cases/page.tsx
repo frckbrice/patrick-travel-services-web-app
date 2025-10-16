@@ -1,10 +1,11 @@
 import { Suspense } from 'react';
-import { CasesList, CasesListSkeleton } from '@/features/cases/components/CasesList';
+import { RoleCasesList } from '@/features/cases/components/RoleCasesList';
+import { CasesListSkeleton } from '@/features/cases/components/CasesList';
 
 export default function CasesPage() {
     return (
         <Suspense fallback={<CasesListSkeleton />}>
-            <CasesList />
+            <RoleCasesList />
         </Suspense>
     );
 }
