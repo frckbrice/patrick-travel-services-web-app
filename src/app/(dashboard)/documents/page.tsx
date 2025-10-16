@@ -1,13 +1,10 @@
 import { Suspense } from 'react';
-import { DocumentsList } from '@/features/documents/components/DocumentsList';
-import DashboardLoading from '../loading';
+import { DocumentsList, DocumentsListSkeleton } from '@/features/documents/components/DocumentsListWithUpload';
 
 export default function DocumentsPage() {
     return (
-        <Suspense fallback={<DashboardLoading />}>
+        <Suspense fallback={<DocumentsListSkeleton />}>
             <DocumentsList />
         </Suspense>
     );
 }
-
-

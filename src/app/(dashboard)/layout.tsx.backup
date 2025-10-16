@@ -16,7 +16,6 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { getNavigationForRole, roleDisplayNames, roleBadgeColors, UserRole } from '@/lib/utils/role-permissions';
-import { useRealtimeNotifications } from '@/features/notifications/hooks/useRealtimeNotifications';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
     const router = useRouter();
@@ -24,9 +23,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     const { isAuthenticated, user, isLoading } = useAuthStore();
     const logoutMutation = useLogout();
     const { t } = useTranslation();
-
-    // Real-time notifications
-    useRealtimeNotifications();
 
     useEffect(() => {
         // Only redirect if auth check is complete (not loading) and user is not authenticated

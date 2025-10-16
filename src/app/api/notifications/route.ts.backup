@@ -10,7 +10,6 @@ import { asyncHandler, ApiError, HttpStatus } from '@/lib/utils/error-handler';
 import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
-import { createRealtimeNotification } from '@/lib/firebase/notifications.service';
 
 // GET /api/notifications - Get user notifications
 const getHandler = asyncHandler(async (request: NextRequest) => {
@@ -103,18 +102,6 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
             isRead: false,
         },
     });
-
-    // Also create in Firebase Realtime Database for instant notifications
-    try {
-        await createRealtimeNotification(userId, {
-            type: notification.type,
-            title: notification.title,
-            message: notification.message,
-            actionUrl: notification.actionUrl || undefined,
-        });
-    } catch (firebaseError) {
-        logger.warn('Failed to create Firebase notification, but PostgreSQL notification exists', firebaseError);
-    }
 
     // TODO: Send push notification to mobile device
     // TODO: Send email notification if enabled
