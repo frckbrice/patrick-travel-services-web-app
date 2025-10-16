@@ -43,11 +43,11 @@ export function FirebaseAuthProvider({ children }: { children: React.ReactNode }
                             });
                         } catch (error) {
                             logger.error('Error parsing cached user', error);
-                            // Don't logout if we can't parse cached user - Firebase user is still valid
+                            logout();
                         }
                     } else {
-                        // No cached user but Firebase user exists - this shouldn't happen in normal flow
-                        logger.warn('Firebase user exists but no cached user data found');
+                        logger.warn('Firebase user exists but no cached user data found - logging out');
+                        logout();
                     }
                 } catch (error) {
                     logger.error('Error getting Firebase token', error);

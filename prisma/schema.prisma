@@ -279,33 +279,15 @@ model SystemSetting {
   @@index([category])
 }
 
-// InviteCode Model (for secure AGENT/ADMIN registration)
-model InviteCode {
-  id           String    @id @default(uuid())
-  code         String    @unique // Random secure code
-  role         Role      // Role assigned when code is used
-// prisma/schema.prisma
-
 model InviteCode {
   id           String    @id @default(uuid())
   code         String    @unique
   role         Role
   createdBy    String
-  creator      User      @relation("CreatedInviteCodes", fields: [createdBy], references: [id])
   usedBy       String?
-  user         User?     @relation("UsedInviteCodes", fields: [usedBy], references: [id])
-}
-
-model User {
-  id                String    @id @default(uuid())
-  // ... existing fields ...
-  activityLogs      ActivityLog[]
-  createdInviteCodes InviteCode[] @relation("CreatedInviteCodes")
-  usedInviteCodes    InviteCode[] @relation("UsedInviteCodes")
-}
-  maxUses      Int       @default(1) // How many times it can be used
+  maxUses      Int       @default(1)
   usedCount    Int       @default(0)
-  expiresAt    DateTime  // Expiration date
+  expiresAt    DateTime
   isActive     Boolean   @default(true)
   createdAt    DateTime  @default(now())
   usedAt       DateTime?

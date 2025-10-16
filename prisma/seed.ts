@@ -47,7 +47,16 @@ async function main() {
     // Create sample invite codes
     console.log('🎟️  Creating sample invite codes...');
 
-    const agentCode = await prisma.inviteCode.create({
+    // Ensure idempotent invite code creation
+    const existingAgentCode = await prisma.inviteCode.findFirst({
+        where: { code: { startsWith: 'agent-' }, createdBy: adminId },
+    });
+
+    const existingAdminCode = await prisma.inviteCode.findFirst({
+        where: { code: { startsWith: 'admin-' }, createdBy: adminId },
+    });
+
+    const agentCode = existingAgentCode || await prisma.inviteCode.create({
         data: {
             code: `agent-${nanoid(16)}`,
             role: 'AGENT',
@@ -57,7 +66,7 @@ async function main() {
         },
     });
 
-    const adminCode = await prisma.inviteCode.create({
+    const adminCode = existingAdminCode || await prisma.inviteCode.create({
         data: {
             code: `admin-${nanoid(16)}`,
             role: 'ADMIN',
