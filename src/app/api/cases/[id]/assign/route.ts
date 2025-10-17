@@ -76,7 +76,18 @@ const handler = asyncHandler(async (request: NextRequest, context?: { params: Pr
         logger.warn('Failed to notify agent', error);
     }
 
-    logger.info('Case assigned', { caseId: params.id, agentId, assignedBy: req.user.userId });
+    // Comprehensive logging for ADMIN action
+    logger.info('ADMIN_ACTION: Case assigned', {
+        action: 'CASE_ASSIGN',
+        caseId: params.id,
+        caseReference: caseData.referenceNumber,
+        agentId,
+        agentName: `${agent.firstName} ${agent.lastName}`,
+        adminId: req.user.userId,
+        clientId: caseData.client.id,
+        clientName: `${caseData.client.firstName} ${caseData.client.lastName}`,
+        timestamp: new Date().toISOString(),
+    });
 
     return successResponse({ case: caseData }, 'Case assigned successfully');
 });

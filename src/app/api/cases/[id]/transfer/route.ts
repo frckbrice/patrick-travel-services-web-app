@@ -262,12 +262,25 @@ const handler = asyncHandler(async (request: NextRequest, context?: { params: Pr
     // Wait for all email promises (don't block response if they fail)
     await Promise.allSettled(emailPromises);
 
-    logger.info('Case transferred', {
+    // Comprehensive logging for ADMIN action
+    logger.info('ADMIN_ACTION: Case transferred', {
+        action: 'CASE_TRANSFER',
         caseId: params.id,
-        from: oldAgentId,
-        to: newAgentId,
+        caseReference: caseData.referenceNumber,
+        fromAgentId: oldAgentId,
+        fromAgentName: oldAgentName || 'Unassigned',
+        toAgentId: newAgentId,
+        toAgentName: `${newAgent.firstName} ${newAgent.lastName}`,
         reason,
-        transferredBy: req.user.userId
+        hasHandoverNotes: !!handoverNotes,
+        notificationsSent: {
+            client: notifyClient,
+            agent: notifyAgent,
+        },
+        adminId: req.user.userId,
+        clientId: caseData.client.id,
+        clientName: `${caseData.client.firstName} ${caseData.client.lastName}`,
+        timestamp: new Date().toISOString(),
     });
 
     return successResponse(

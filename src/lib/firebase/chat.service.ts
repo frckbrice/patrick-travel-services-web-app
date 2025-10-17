@@ -17,6 +17,7 @@ import {
     DataSnapshot,
 } from 'firebase/database';
 import { database } from './firebase-client';
+import { logger } from '@/lib/utils/logger';
 
 export interface ChatMessage {
     id?: string;
@@ -58,7 +59,7 @@ export interface TypingIndicator {
 
 export interface ChatRoom {
     id?: string;
-    participants: string[]; // Array of user IDs
+    participants: Record<string, boolean>; // Map of user IDs to true (userId -> true)
     caseId?: string;
     lastMessage?: string;
     lastMessageAt?: number;
@@ -116,6 +117,7 @@ export async function getDirectMessages(userId1: string, userId2: string): Promi
 }
 
 // Send a message
+// HYBRID APPROACH: Saves to Firebase (real-time) AND Neon (history)
 export async function sendMessage(message: Omit<ChatMessage, 'id' | 'sentAt' | 'isRead'>): Promise<string> {
     const messagesRef = ref(database, 'messages');
     const newMessageRef = push(messagesRef);
@@ -126,12 +128,59 @@ export async function sendMessage(message: Omit<ChatMessage, 'id' | 'sentAt' | '
         isRead: false,
     };
 
+    // 1. Save to Firebase first (real-time, instant)
     await set(newMessageRef, messageData);
 
-    // Update or create chat room
+    // 2. Update or create chat room
     await updateChatRoom(message.senderId, message.recipientId, message.caseId, message.content);
 
+    // 3. Archive to Neon PostgreSQL (async, doesn't block)
+    // This allows SQL queries for chat history
+    archiveMessageToNeon(newMessageRef.key!, messageData).catch(error => {
+        logger.error('Failed to archive message to Neon', { error, messageId: newMessageRef.key });
+        // Don't throw - message is already in Firebase, this is just archival
+    });
+
     return newMessageRef.key!;
+}
+
+/**
+ * Archive message to Neon PostgreSQL for history/search
+ * Async - doesn't block real-time Firebase write
+ */
+async function archiveMessageToNeon(firebaseId: string, messageData: ChatMessage): Promise<void> {
+    try {
+        // Call backend API to save to Neon
+        const response = await fetch('/api/chat/archive', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                firebaseId,
+                senderId: messageData.senderId,
+                senderName: messageData.senderName,
+                senderEmail: messageData.senderEmail,
+                recipientId: messageData.recipientId,
+                recipientName: messageData.recipientName,
+                recipientEmail: messageData.recipientEmail,
+                content: messageData.content,
+                caseId: messageData.caseId,
+                subject: messageData.subject,
+                isRead: messageData.isRead,
+                sentAt: new Date(messageData.sentAt),
+                attachments: messageData.attachments || [],
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Archive failed: ${response.statusText}`);
+        }
+
+        logger.info('Message archived to Neon', { firebaseId });
+    } catch (error) {
+        // Log but don't throw - archival failure shouldn't break chat
+        logger.error('Neon archival failed', { error, firebaseId });
+        throw error;
+    }
 }
 
 // Mark message as read
@@ -150,8 +199,8 @@ async function updateChatRoom(
     caseId?: string,
     lastMessage?: string
 ): Promise<void> {
-    const participants = [userId1, userId2].sort();
-    const roomId = caseId || participants.join('_');
+    const participantIds = [userId1, userId2].sort();
+    const roomId = caseId || participantIds.join('_');
 
     const roomRef = ref(database, `chatRooms/${roomId}`);
     const snapshot = await get(roomRef);
@@ -159,7 +208,12 @@ async function updateChatRoom(
     const now = Date.now();
 
     if (!snapshot.exists()) {
-        // Create new room
+        // Create new room with participants as a map
+        const participants: Record<string, boolean> = {};
+        participantIds.forEach(id => {
+            participants[id] = true;
+        });
+
         const room: ChatRoom = {
             participants,
             caseId,
@@ -196,7 +250,7 @@ export async function getUserChatRooms(userId: string): Promise<ChatRoom[]> {
     const rooms: ChatRoom[] = [];
     snapshot.forEach((childSnapshot) => {
         const room = childSnapshot.val();
-        if (room.participants && room.participants.includes(userId)) {
+        if (room.participants && room.participants[userId] === true) {
             rooms.push({
                 id: childSnapshot.key!,
                 ...room,
@@ -240,7 +294,7 @@ export function subscribeToUserChatRooms(
         const rooms: ChatRoom[] = [];
         snapshot.forEach((childSnapshot) => {
             const room = childSnapshot.val();
-            if (room.participants && room.participants.includes(userId)) {
+            if (room.participants && room.participants[userId] === true) {
                 rooms.push({
                     id: childSnapshot.key!,
                     ...room,

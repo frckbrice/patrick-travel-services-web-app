@@ -29,13 +29,15 @@ model User {
   updatedAt         DateTime  @updatedAt
 
   // Relations
-  cases            Case[]         @relation("ClientCases")
-  assignedCases    Case[]         @relation("AgentCases")
-  sentMessages     Message[]      @relation("SentMessages")
-  receivedMessages Message[]      @relation("ReceivedMessages")
-  documents        Document[]
-  notifications    Notification[]
-  activityLogs     ActivityLog[]
+  cases                Case[]         @relation("ClientCases")
+  assignedCases        Case[]         @relation("AgentCases")
+  sentMessages         Message[]      @relation("SentMessages")
+  receivedMessages     Message[]      @relation("ReceivedMessages")
+  documents            Document[]
+  notifications        Notification[]
+  activityLogs         ActivityLog[]
+  inviteCodesCreated   InviteCode[]   @relation("CreatedInviteCodes")
+  inviteCodesLastUsed  InviteCode[]   @relation("LastUsedInviteCodes")
 
   @@index([email])
   @@index([role])
@@ -281,17 +283,19 @@ model SystemSetting {
 }
 
 model InviteCode {
-  id         String    @id @default(uuid())
-  code       String    @unique
-  role       Role
-  createdBy  String
-  lastUsedBy String? // Most recent user who used this code
-  maxUses    Int       @default(1)
-  usedCount  Int       @default(0)
-  expiresAt  DateTime
-  isActive   Boolean   @default(true)
-  createdAt  DateTime  @default(now())
-  lastUsedAt DateTime? // Most recent usage timestamp
+  id           String    @id @default(uuid())
+  code         String    @unique
+  role         Role
+  createdById  String
+  createdByUser User     @relation("CreatedInviteCodes", fields: [createdById], references: [id])
+  lastUsedById String? // Most recent user who used this code
+  lastUsedByUser User?  @relation("LastUsedInviteCodes", fields: [lastUsedById], references: [id])
+  maxUses      Int       @default(1)
+  usedCount    Int       @default(0)
+  expiresAt    DateTime
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime? // Most recent usage timestamp
 
   // Relations
   usages InviteUsage[] // Complete history of all uses
@@ -299,6 +303,8 @@ model InviteCode {
   @@index([code])
   @@index([isActive])
   @@index([expiresAt])
+  @@index([createdById])
+  @@index([lastUsedById])
 }
 
 // InviteUsage Model - Tracks individual invite code usage

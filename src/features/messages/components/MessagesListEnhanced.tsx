@@ -50,7 +50,7 @@ export function MessagesList() {
     const participantIds = useMemo(() => {
         if (!apiConversations) return [];
         return apiConversations
-            .flatMap(room => room.participants || [])
+            .flatMap(room => Object.keys(room.participants || {}))
             .filter(id => id !== user?.id);
     }, [apiConversations, user?.id]);
 
@@ -69,7 +69,7 @@ export function MessagesList() {
 
         return apiConversations.map((room: ChatRoom) => {
             // Get the other participant (not current user)
-            const otherParticipantId = room.participants.find(id => id !== user?.id);
+            const otherParticipantId = Object.keys(room.participants || {}).find(id => id !== user?.id);
             const unreadCount = user?.id && room.unreadCount ? (room.unreadCount[user.id] || 0) : 0;
 
             return {

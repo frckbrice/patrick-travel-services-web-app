@@ -27,7 +27,7 @@ export interface MessageAttachment {
 
 export interface ChatRoom {
     id: string;
-    participants: string[];
+    participants: Record<string, boolean>; // Map of user IDs to true (userId -> true)
     caseId?: string;
     lastMessage?: string;
     lastMessageAt?: number;

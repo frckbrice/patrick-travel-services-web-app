@@ -56,12 +56,13 @@ import {
   subscribeToRoomMessages,
   subscribeToUserChatRooms,
   setUserOnline,
+  setUserOffline,
   setTyping,
   subscribeToUserPresence
 } from './firebase/chat.service';
 ```
 
----
+---ui 
 
 ## 🔄 **Real-Time Communication Flow**
 
@@ -164,10 +165,16 @@ AppState.addEventListener('change', (nextAppState) => {
 import { setTyping } from './firebase/chat.service';
 
 function ChatInput({ chatRoomId, userId, userName }) {
+  let lastTypingUpdate = 0; // Track last update time
+  
   const handleTextChange = (text) => {
     if (text.length > 0) {
-      // Throttled - max 1 update per second
-      setTyping(userId, userName, chatRoomId, true);
+      // Throttle typing updates to prevent excessive Firebase writes (max 1 update/sec)
+      const now = Date.now();
+      if (now - lastTypingUpdate > 1000) {
+        setTyping(userId, userName, chatRoomId, true);
+        lastTypingUpdate = now;
+      }
     }
   };
 
@@ -262,7 +269,10 @@ Mobile apps are **automatically protected** by these rules.
 {
   "chatRooms": {
     "room_xyz": {
-      "participants": ["user_123", "agent_456"],
+      "participants": {
+        "user_123": true,
+        "agent_456": true
+      },
       "caseId": "case_789",
       "lastMessage": "Hello, I need help",
       "lastMessageAt": 1697500000000,
@@ -346,12 +356,26 @@ function handleTyping() {
 import { ref, onValue } from 'firebase/database';
 
 const connectedRef = ref(database, '.info/connected');
-onValue(connectedRef, (snapshot) => {
-  if (snapshot.val() === true) {
-    console.log('Connected to Firebase');
-    setUserOnline(userId, 'mobile');
-  } else {
-    console.log('Disconnected from Firebase');
+onValue(connectedRef, async (snapshot) => {
+  // Ensure userId is available before updating presence
+  if (!userId) {
+    console.warn('Cannot update presence: userId is null or undefined');
+    return;
+  }
+
+  try {
+    if (snapshot.val() === true) {
+      console.log('Connected to Firebase');
+      // Sets user online and automatically records lastSeen timestamp
+      await setUserOnline(userId, 'mobile');
+    } else {
+      console.log('Disconnected from Firebase');
+      // Sets user offline and records lastSeen timestamp for "last seen at" feature
+      await setUserOffline(userId);
+    }
+  } catch (error) {
+    console.error('Failed to update presence status:', error);
+    // Optionally: Report to error tracking service
   }
 });
 ```

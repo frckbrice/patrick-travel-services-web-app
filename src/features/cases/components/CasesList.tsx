@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuthStore } from '@/features/auth/store';
 import { useCases } from '../api';
 import { Case } from '../types';
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Briefcase, Search, Plus, Calendar, Clock, User, FileText } from 'lucide-react';
+import { Briefcase, Search, Plus, Calendar, Clock, User, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -33,18 +33,42 @@ export function CasesList() {
     const { user } = useAuthStore();
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
-    
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10; // Optimized for mobile performance
+
     const { data, isLoading, error } = useCases({ status: statusFilter !== 'all' ? statusFilter : undefined });
-    
+
     if (isLoading) return <CasesListSkeleton />;
     if (error) return <div className="text-center py-12"><p className="text-red-600">Error loading cases. Please try again.</p></div>;
 
     const cases: Case[] = data?.cases || [];
-    const filtered = cases.filter((c: Case) => 
-        searchQuery === '' || 
-        c.referenceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        serviceLabels[c.serviceType]?.toLowerCase().includes(searchQuery.toLowerCase())
+
+    // Memoize filtered results for performance
+    const filtered = useMemo(() =>
+        cases.filter((c: Case) =>
+            searchQuery === '' ||
+            c.referenceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            serviceLabels[c.serviceType]?.toLowerCase().includes(searchQuery.toLowerCase())
+        ),
+        [cases, searchQuery]
     );
+
+    // Pagination calculations
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedCases = filtered.slice(startIndex, endIndex);
+
+    // Reset to page 1 when filters change
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value);
+        setCurrentPage(1);
+    };
+
+    const handleStatusChange = (value: string) => {
+        setStatusFilter(value);
+        setCurrentPage(1);
+    };
 
     const isClient = user?.role === 'CLIENT';
 
@@ -67,11 +91,11 @@ export function CasesList() {
                                 aria-label="Search cases by reference number or service type"
                                 placeholder="Search by reference or service type..."
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(e) => handleSearchChange(e.target.value)}
                                 className="pl-10"
                             />
                         </div>
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <Select value={statusFilter} onValueChange={handleStatusChange}>
                             <SelectTrigger className="w-full sm:w-[200px]"><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Status</SelectItem>
@@ -95,9 +119,10 @@ export function CasesList() {
                     {!isClient && <Button asChild><Link href="/dashboard/cases/new">Create First Case</Link></Button>}
                 </CardContent></Card>
             ) : (
-                <div className="grid gap-4">
-                        {filtered.map((c: Case) => (
-                        <Card key={c.id} className="hover:shadow-md transition-shadow">
+                <>
+                    <div className="grid gap-4">
+                        {paginatedCases.map((c: Case) => (
+                            <Card key={c.id} className="hover:shadow-md transition-shadow">
                             <CardHeader>
                                 <div className="flex items-start justify-between">
                                     <div className="space-y-1">
@@ -137,8 +162,67 @@ export function CasesList() {
                                 </div>
                             </CardContent>
                         </Card>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+
+                    {/* Pagination Controls - Mobile Optimized */}
+                    {totalPages > 1 && (
+                        <Card>
+                            <CardContent className="py-4">
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="text-sm text-muted-foreground">
+                                        Showing {startIndex + 1}-{Math.min(endIndex, filtered.length)} of {filtered.length}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                            disabled={currentPage === 1}
+                                        >
+                                            <ChevronLeft className="h-4 w-4" />
+                                            <span className="hidden sm:inline ml-1">Previous</span>
+                                        </Button>
+                                        <div className="flex items-center gap-1">
+                                            {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                                .filter(page => {
+                                                    // Show first, last, current, and adjacent pages
+                                                    return page === 1 ||
+                                                        page === totalPages ||
+                                                        Math.abs(page - currentPage) <= 1;
+                                                })
+                                                .map((page, index, array) => (
+                                                    <div key={page} className="flex items-center">
+                                                        {index > 0 && array[index - 1] !== page - 1 && (
+                                                            <span className="px-2 text-muted-foreground">...</span>
+                                                        )}
+                                                        <Button
+                                                            variant={currentPage === page ? 'default' : 'ghost'}
+                                                            size="sm"
+                                                            onClick={() => setCurrentPage(page)}
+                                                            className="h-8 w-8 p-0"
+                                                        >
+                                                            {page}
+                                                        </Button>
+                                                    </div>
+                                                ))
+                                            }
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                            disabled={currentPage === totalPages}
+                                        >
+                                            <span className="hidden sm:inline mr-1">Next</span>
+                                            <ChevronRight className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+                </>
             )}
         </div>
     );

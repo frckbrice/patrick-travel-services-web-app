@@ -11,11 +11,18 @@
     
     "chatRooms": {
       ".read": "auth != null",
-      ".indexOn": ["lastMessageAt", "participants"],
+      ".indexOn": [
+        "lastMessageAt"
+      ],
       "$roomId": {
-        ".read": "auth != null && (root.child('chatRooms/' + $roomId + '/participants').val().indexOf(auth.uid) >= 0)",
-        ".write": "auth != null && (root.child('chatRooms/' + $roomId + '/participants').val().indexOf(auth.uid) >= 0 || newData.child('participants').val().indexOf(auth.uid) >= 0)",
-        ".validate": "newData.hasChildren(['participants', 'createdAt', 'updatedAt']) && newData.child('participants').isString() && newData.child('participants').val().indexOf(auth.uid) >= 0"
+        ".read": "auth != null && root.child('chatRooms/' + $roomId + '/participants/' + auth.uid).exists()",
+        ".write": "auth != null && ((root.child('chatRooms/' + $roomId).exists() && root.child('chatRooms/' + $roomId + '/participants/' + auth.uid).exists()) || (!root.child('chatRooms/' + $roomId).exists() && newData.child('participants/' + auth.uid).exists()))",
+        ".validate": "newData.hasChildren(['participants', 'createdAt', 'updatedAt'])",
+        "participants": {
+          "$participantId": {
+            ".validate": "newData.isBoolean() && newData.val() === true"
+          }
+        }
       }
     },
     

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuthStore } from '@/features/auth/store';
 import { useCases } from '../api';
 import { AssignCaseDialog } from './AssignCaseDialog';
@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Briefcase, Search, Calendar, Clock, User, FileText, Edit, AlertTriangle, UserPlus } from 'lucide-react';
+import { Briefcase, Search, Calendar, Clock, User, FileText, Edit, AlertTriangle, UserPlus, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/utils/logger';
@@ -46,7 +46,9 @@ export function AgentCasesList() {
     const [assignmentFilter, setAssignmentFilter] = useState<string>('all'); // all, assigned, unassigned
     const [assignDialogOpen, setAssignDialogOpen] = useState(false);
     const [selectedCaseForAssignment, setSelectedCaseForAssignment] = useState<Case | null>(null);
-    
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10; // Optimized for mobile performance
+
     const { data, isLoading, error, refetch } = useCases({ status: statusFilter !== 'all' && statusFilter !== 'active' && statusFilter !== 'unassigned' ? statusFilter : undefined });
     
     if (isLoading) return <AgentCasesListSkeleton />;
@@ -79,38 +81,50 @@ export function AgentCasesList() {
         );
     }
 
-    let cases: Case[] = data?.cases || [];
+    // Memoized filtered cases for better performance
+    const filteredCases = useMemo(() => {
+        let cases: Case[] = data?.cases || [];
 
-    // For AGENT: Filter to assigned cases only (user.id is guaranteed to exist here)
-    // For ADMIN: Show all cases OR filter based on assignment filter
-    if (user.role === 'AGENT') {
-        cases = cases.filter((c) => c.assignedAgentId === user.id);
-    } else if (user.role === 'ADMIN') {
-        // Apply assignment filter for ADMIN
-        if (assignmentFilter === 'unassigned') {
-            cases = cases.filter((c) => !c.assignedAgentId);
-        } else if (assignmentFilter === 'assigned') {
-            cases = cases.filter((c) => !!c.assignedAgentId);
+        // For AGENT: Filter to assigned cases only
+        // For ADMIN: Show all cases OR filter based on assignment filter
+        if (user.role === 'AGENT') {
+            cases = cases.filter((c) => c.assignedAgentId === user.id);
+        } else if (user.role === 'ADMIN') {
+            if (assignmentFilter === 'unassigned') {
+                cases = cases.filter((c) => !c.assignedAgentId);
+            } else if (assignmentFilter === 'assigned') {
+                cases = cases.filter((c) => !!c.assignedAgentId);
+            }
         }
-        // 'all' shows everything - no additional filter
-    }
-    
-    // Active filter
-    if (statusFilter === 'active') {
-        cases = cases.filter((c) => !['APPROVED', 'REJECTED', 'CLOSED'].includes(c.status));
-    }
-    
-    // Search and priority filter
-    cases = cases.filter((c) => {
-        const clientName = c.client
-            ? `${c.client.firstName ?? ''} ${c.client.lastName ?? ''}`.trim()
-            : '';
-        const matchesSearch = searchQuery === '' || 
-            c.referenceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            clientName.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesPriority = priorityFilter === 'all' || c.priority === priorityFilter;
-        return matchesSearch && matchesPriority;
-    });
+
+        // Active filter
+        if (statusFilter === 'active') {
+            cases = cases.filter((c) => !['APPROVED', 'REJECTED', 'CLOSED'].includes(c.status));
+        }
+
+        // Search and priority filter
+        return cases.filter((c) => {
+            const clientName = c.client
+                ? `${c.client.firstName ?? ''} ${c.client.lastName ?? ''}`.trim()
+                : '';
+            const matchesSearch = searchQuery === '' ||
+                c.referenceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                clientName.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesPriority = priorityFilter === 'all' || c.priority === priorityFilter;
+            return matchesSearch && matchesPriority;
+        });
+    }, [data?.cases, user.role, user.id, assignmentFilter, statusFilter, searchQuery, priorityFilter]);
+
+    // Pagination calculations
+    const totalPages = Math.ceil(filteredCases.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedCases = filteredCases.slice(startIndex, endIndex);
+
+    // Reset to page 1 when filters change
+    const handleFilterChange = () => {
+        setCurrentPage(1);
+    };
 
     return (
         <div className="space-y-6">
@@ -126,7 +140,7 @@ export function AgentCasesList() {
                     </p>
                 </div>
                 <Badge variant="secondary" className="text-base px-4 py-2">
-                    {cases.length} {cases.length === 1 ? 'Case' : 'Cases'}
+                    {filteredCases.length} {filteredCases.length === 1 ? 'Case' : 'Cases'}
                 </Badge>
             </div>
 
@@ -138,7 +152,7 @@ export function AgentCasesList() {
                             <Input placeholder="Search by reference or client name..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
                         </div>
                         {user.role === 'ADMIN' && (
-                            <Select value={assignmentFilter} onValueChange={setAssignmentFilter}>
+                            <Select value={assignmentFilter} onValueChange={(value) => { setAssignmentFilter(value); handleFilterChange(); }}>
                                 <SelectTrigger className="w-full lg:w-[200px]"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Cases</SelectItem>
@@ -147,7 +161,7 @@ export function AgentCasesList() {
                                 </SelectContent>
                             </Select>
                         )}
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); handleFilterChange(); }}>
                             <SelectTrigger className="w-full lg:w-[200px]"><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="active">Active Cases</SelectItem>
@@ -160,7 +174,7 @@ export function AgentCasesList() {
                                 <SelectItem value="REJECTED">Rejected</SelectItem>
                             </SelectContent>
                         </Select>
-                        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                        <Select value={priorityFilter} onValueChange={(value) => { setPriorityFilter(value); handleFilterChange(); }}>
                             <SelectTrigger className="w-full lg:w-[150px]"><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Priority</SelectItem>
@@ -174,15 +188,16 @@ export function AgentCasesList() {
                 </CardContent>
             </Card>
 
-            {cases.length === 0 ? (
+            {filteredCases.length === 0 ? (
                 <Card><CardContent className="py-12 text-center">
                     <Briefcase className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                     <h3 className="text-lg font-semibold mb-2">No Cases Found</h3>
                     <p className="text-muted-foreground">No cases match your current filters</p>
                 </CardContent></Card>
             ) : (
-                <div className="grid gap-4">
-                        {cases.map((c) => (
+                <>
+                    <div className="grid gap-4">
+                        {paginatedCases.map((c) => (
                         <Card key={c.id} className="hover:shadow-md transition-shadow">
                             <CardHeader>
                                 <div className="flex items-start justify-between">
@@ -250,8 +265,66 @@ export function AgentCasesList() {
                                 </div>
                             </CardContent>
                         </Card>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+
+                    {/* Pagination Controls - Mobile Optimized */}
+                    {totalPages > 1 && (
+                        <Card>
+                            <CardContent className="py-4">
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="text-sm text-muted-foreground">
+                                        Showing {startIndex + 1}-{Math.min(endIndex, filteredCases.length)} of {filteredCases.length}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                            disabled={currentPage === 1}
+                                        >
+                                            <ChevronLeft className="h-4 w-4" />
+                                            <span className="hidden sm:inline ml-1">Previous</span>
+                                        </Button>
+                                        <div className="flex items-center gap-1">
+                                            {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                                .filter(page => {
+                                                    return page === 1 ||
+                                                        page === totalPages ||
+                                                        Math.abs(page - currentPage) <= 1;
+                                                })
+                                                .map((page, index, array) => (
+                                                    <div key={page} className="flex items-center">
+                                                        {index > 0 && array[index - 1] !== page - 1 && (
+                                                            <span className="px-2 text-muted-foreground">...</span>
+                                                        )}
+                                                        <Button
+                                                            variant={currentPage === page ? 'default' : 'ghost'}
+                                                            size="sm"
+                                                            onClick={() => setCurrentPage(page)}
+                                                            className="h-8 w-8 p-0"
+                                                        >
+                                                            {page}
+                                                        </Button>
+                                                    </div>
+                                                ))
+                                            }
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                            disabled={currentPage === totalPages}
+                                        >
+                                            <span className="hidden sm:inline mr-1">Next</span>
+                                            <ChevronRight className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+                </>
             )}
 
             {/* Assign Case Dialog */}
