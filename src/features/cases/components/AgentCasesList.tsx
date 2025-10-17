@@ -3,15 +3,18 @@
 import { useState } from 'react';
 import { useAuthStore } from '@/features/auth/store';
 import { useCases } from '../api';
+import { AssignCaseDialog } from './AssignCaseDialog';
+import type { Case } from '../types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Briefcase, Search, Calendar, Clock, User, FileText, MessageSquare, Edit } from 'lucide-react';
+import { Briefcase, Search, Calendar, Clock, User, FileText, Edit, AlertTriangle, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/utils/logger';
 
 const statusConfig: Record<string, { label: string; color: string }> = {
     SUBMITTED: { label: 'New Submission', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' },
@@ -38,29 +41,73 @@ const serviceLabels: Record<string, string> = {
 export function AgentCasesList() {
     const { user } = useAuthStore();
     const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState<string>('active');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
     const [priorityFilter, setPriorityFilter] = useState<string>('all');
+    const [assignmentFilter, setAssignmentFilter] = useState<string>('all'); // all, assigned, unassigned
+    const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+    const [selectedCaseForAssignment, setSelectedCaseForAssignment] = useState<Case | null>(null);
     
-    const { data, isLoading, error } = useCases({ status: statusFilter !== 'all' ? statusFilter : undefined });
+    const { data, isLoading, error, refetch } = useCases({ status: statusFilter !== 'all' && statusFilter !== 'active' && statusFilter !== 'unassigned' ? statusFilter : undefined });
     
     if (isLoading) return <AgentCasesListSkeleton />;
     if (error) return <div className="text-center py-12"><p className="text-red-600">Error loading cases</p></div>;
 
-    let cases = data?.cases || [];
-    
-    // Filter to assigned cases only
-    cases = cases.filter((c: any) => c.assignedAgentId === user?.id);
+    // Guard: Check if user ID is available before filtering
+    if (!user?.id) {
+        logger.warn('AgentCasesList: user.id is missing, cannot filter cases by assigned agent');
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold">My Cases</h1>
+                        <p className="text-muted-foreground mt-2">Manage your assigned immigration cases</p>
+                    </div>
+                </div>
+                <Card>
+                    <CardContent className="py-12 text-center">
+                        <AlertTriangle className="mx-auto h-12 w-12 text-amber-500 mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">Could Not Determine Current User</h3>
+                        <p className="text-muted-foreground mb-4">
+                            We're unable to identify your user account. Please try refreshing the page or logging in again.
+                        </p>
+                        <Button asChild variant="default">
+                            <Link href="/login">Return to Login</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
+    let cases: Case[] = data?.cases || [];
+
+    // For AGENT: Filter to assigned cases only (user.id is guaranteed to exist here)
+    // For ADMIN: Show all cases OR filter based on assignment filter
+    if (user.role === 'AGENT') {
+        cases = cases.filter((c) => c.assignedAgentId === user.id);
+    } else if (user.role === 'ADMIN') {
+        // Apply assignment filter for ADMIN
+        if (assignmentFilter === 'unassigned') {
+            cases = cases.filter((c) => !c.assignedAgentId);
+        } else if (assignmentFilter === 'assigned') {
+            cases = cases.filter((c) => !!c.assignedAgentId);
+        }
+        // 'all' shows everything - no additional filter
+    }
     
     // Active filter
     if (statusFilter === 'active') {
-        cases = cases.filter((c: any) => !['APPROVED', 'REJECTED', 'CLOSED'].includes(c.status));
+        cases = cases.filter((c) => !['APPROVED', 'REJECTED', 'CLOSED'].includes(c.status));
     }
     
     // Search and priority filter
-    cases = cases.filter((c: any) => {
+    cases = cases.filter((c) => {
+        const clientName = c.client
+            ? `${c.client.firstName ?? ''} ${c.client.lastName ?? ''}`.trim()
+            : '';
         const matchesSearch = searchQuery === '' || 
             c.referenceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            `${c.client?.firstName} ${c.client?.lastName}`.toLowerCase().includes(searchQuery.toLowerCase());
+            clientName.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesPriority = priorityFilter === 'all' || c.priority === priorityFilter;
         return matchesSearch && matchesPriority;
     });
@@ -69,11 +116,17 @@ export function AgentCasesList() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold">My Cases</h1>
-                    <p className="text-muted-foreground mt-2">Manage your assigned immigration cases</p>
+                    <h1 className="text-3xl font-bold">
+                        {user.role === 'ADMIN' ? 'All Cases' : 'My Cases'}
+                    </h1>
+                    <p className="text-muted-foreground mt-2">
+                        {user.role === 'ADMIN'
+                            ? 'Manage all immigration cases and assignments'
+                            : 'Manage your assigned immigration cases'}
+                    </p>
                 </div>
                 <Badge variant="secondary" className="text-base px-4 py-2">
-                    {cases.length} Cases
+                    {cases.length} {cases.length === 1 ? 'Case' : 'Cases'}
                 </Badge>
             </div>
 
@@ -84,11 +137,21 @@ export function AgentCasesList() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input placeholder="Search by reference or client name..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
                         </div>
+                        {user.role === 'ADMIN' && (
+                            <Select value={assignmentFilter} onValueChange={setAssignmentFilter}>
+                                <SelectTrigger className="w-full lg:w-[200px]"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Cases</SelectItem>
+                                    <SelectItem value="unassigned">⚠️ Unassigned</SelectItem>
+                                    <SelectItem value="assigned">Assigned</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        )}
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
                             <SelectTrigger className="w-full lg:w-[200px]"><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="active">Active Cases</SelectItem>
-                                <SelectItem value="all">All Cases</SelectItem>
+                                <SelectItem value="all">All Status</SelectItem>
                                 <SelectItem value="SUBMITTED">New Submissions</SelectItem>
                                 <SelectItem value="UNDER_REVIEW">Under Review</SelectItem>
                                 <SelectItem value="DOCUMENTS_REQUIRED">Awaiting Documents</SelectItem>
@@ -119,7 +182,7 @@ export function AgentCasesList() {
                 </CardContent></Card>
             ) : (
                 <div className="grid gap-4">
-                    {cases.map((c: any) => (
+                        {cases.map((c) => (
                         <Card key={c.id} className="hover:shadow-md transition-shadow">
                             <CardHeader>
                                 <div className="flex items-start justify-between">
@@ -156,23 +219,55 @@ export function AgentCasesList() {
                                     </div>
                                     <div className="flex items-center gap-2 text-muted-foreground">
                                         <FileText className="h-4 w-4" />
-                                        <span>{c.documents?.length || 0} docs</span>
-                                        <MessageSquare className="h-4 w-4 ml-2" />
-                                        <span>{c.messages?.length || 0} msgs</span>
+                                            <span>{c.documents?.length || 0} documents</span>
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <Button asChild variant="default" size="sm" className="flex-1">
-                                        <Link href={`/dashboard/cases/${c.id}`}><Edit className="mr-2 h-4 w-4" />Manage Case</Link>
-                                    </Button>
-                                    <Button asChild variant="outline" size="sm">
-                                        <Link href={`/dashboard/messages?case=${c.id}`}>Message Client</Link>
-                                    </Button>
+                                        {/* Quick Assign Button for ADMIN on unassigned cases */}
+                                        {user.role === 'ADMIN' && !c.assignedAgentId ? (
+                                            <Button
+                                                variant="default"
+                                                size="sm"
+                                                className="flex-1"
+                                                onClick={() => {
+                                                    setSelectedCaseForAssignment(c);
+                                                    setAssignDialogOpen(true);
+                                                }}
+                                            >
+                                                <UserPlus className="mr-2 h-4 w-4" />
+                                                Assign to Agent
+                                            </Button>
+                                        ) : (
+                                                <Button asChild variant="default" size="sm" className="flex-1">
+                                                    <Link href={`/dashboard/cases/${c.id}`}><Edit className="mr-2 h-4 w-4" />Manage Case</Link>
+                                                </Button>
+                                        )}
+                                        {c.assignedAgentId && (
+                                            <Button asChild variant="outline" size="sm">
+                                                <Link href={`/dashboard/messages?case=${c.id}`}>Message Client</Link>
+                                            </Button>
+                                        )}
                                 </div>
                             </CardContent>
                         </Card>
                     ))}
                 </div>
+            )}
+
+            {/* Assign Case Dialog */}
+            {selectedCaseForAssignment && (
+                <AssignCaseDialog
+                    caseData={selectedCaseForAssignment}
+                    open={assignDialogOpen}
+                    onOpenChange={(open) => {
+                        setAssignDialogOpen(open);
+                        if (!open) setSelectedCaseForAssignment(null);
+                    }}
+                    onSuccess={() => {
+                        refetch();
+                        setSelectedCaseForAssignment(null);
+                    }}
+                />
             )}
         </div>
     );

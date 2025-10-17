@@ -12,7 +12,8 @@ export function RoleDashboard() {
     }
 
     if (user?.role === 'ADMIN') {
-        return <AgentDashboard />; //TODO: ADMIN sees same as AGENT for now, will enhance later
+        // ADMIN has full system access and sees all cases (not filtered by assignment)
+        return <AgentDashboard />;
     }
 
     return <DashboardHome />; // CLIENT

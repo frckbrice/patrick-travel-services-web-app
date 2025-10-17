@@ -1,3 +1,3 @@
 // Notifications Components exports
-export * from './NotificationsList';
+export * from './NotificationsListEnhanced-API';
 

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuthStore } from '@/features/auth/store';
 import { useCases } from '../api';
+import { Case } from '../types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -38,8 +39,8 @@ export function CasesList() {
     if (isLoading) return <CasesListSkeleton />;
     if (error) return <div className="text-center py-12"><p className="text-red-600">Error loading cases. Please try again.</p></div>;
 
-    const cases = data?.cases || [];
-    const filtered = cases.filter((c: any) => 
+    const cases: Case[] = data?.cases || [];
+    const filtered = cases.filter((c: Case) => 
         searchQuery === '' || 
         c.referenceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
         serviceLabels[c.serviceType]?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -62,7 +63,13 @@ export function CasesList() {
                     <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1 relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Search by reference or service type..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
+                            <Input
+                                aria-label="Search cases by reference number or service type"
+                                placeholder="Search by reference or service type..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-10"
+                            />
                         </div>
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
                             <SelectTrigger className="w-full sm:w-[200px]"><SelectValue /></SelectTrigger>
@@ -89,7 +96,7 @@ export function CasesList() {
                 </CardContent></Card>
             ) : (
                 <div className="grid gap-4">
-                    {filtered.map((c: any) => (
+                        {filtered.map((c: Case) => (
                         <Card key={c.id} className="hover:shadow-md transition-shadow">
                             <CardHeader>
                                 <div className="flex items-start justify-between">

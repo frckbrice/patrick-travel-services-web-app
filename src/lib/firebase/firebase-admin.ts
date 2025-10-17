@@ -3,6 +3,7 @@
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getAuth, Auth } from 'firebase-admin/auth';
 import { getDatabase, Database } from 'firebase-admin/database';
+import { logger } from '@/lib/utils/logger';
 
 let adminApp: App | null = null;
 let adminAuth: Auth | null = null;
@@ -20,7 +21,7 @@ const initializeFirebaseAdmin = () => {
             try {
                 adminDatabase = getDatabase(adminApp);
             } catch (error) {
-                console.warn('Firebase Realtime Database already initialized or not available');
+                logger.warn('Firebase Realtime Database already initialized or not available');
             }
         }
         return;
@@ -34,23 +35,45 @@ const initializeFirebaseAdmin = () => {
             process.env.FIREBASE_CLIENT_EMAIL);
 
     if (!hasCredentials) {
-        console.warn(
+        logger.warn(
             'Firebase Admin credentials not found. Firebase Admin features will not be available.'
         );
         return;
     }
 
     try {
+        // Validate required environment variables
+        const missingVars: string[] = [];
+
+        if (!process.env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID.trim() === '') {
+            missingVars.push('FIREBASE_PROJECT_ID');
+        }
+        if (!process.env.FIREBASE_PRIVATE_KEY || process.env.FIREBASE_PRIVATE_KEY.trim() === '') {
+            missingVars.push('FIREBASE_PRIVATE_KEY');
+        }
+        if (!process.env.FIREBASE_CLIENT_EMAIL || process.env.FIREBASE_CLIENT_EMAIL.trim() === '') {
+            missingVars.push('FIREBASE_CLIENT_EMAIL');
+        }
+
+        if (missingVars.length > 0) {
+            throw new Error(
+                `Missing or empty required Firebase environment variable(s): ${missingVars.join(', ')}`
+            );
+        }
+
         // Use individual environment variables (most reliable for Next.js)
+        // Safe to use non-null assertion here after validation
         const serviceAccount = {
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            projectId: process.env.FIREBASE_PROJECT_ID!,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, '\n'),
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
         };
 
-        console.log('✅ Initializing Firebase Admin with individual environment variables');
-        console.log('   Project ID:', serviceAccount.projectId);
-        console.log('   Client Email:', serviceAccount.clientEmail);
+        // Only log sensitive config details in development mode
+        logger.debug('Initializing Firebase Admin with individual environment variables', {
+            projectId: serviceAccount.projectId,
+            clientEmail: serviceAccount.clientEmail,
+        });
 
         const initConfig: {
             credential: ReturnType<typeof cert>;
@@ -71,15 +94,15 @@ const initializeFirebaseAdmin = () => {
         if (process.env.FIREBASE_DATABASE_URL) {
             try {
                 adminDatabase = getDatabase(adminApp);
-                console.log('✅ Firebase Realtime Database initialized');
+                logger.debug('Firebase Realtime Database initialized');
             } catch (dbError) {
-                console.warn('⚠️ Firebase Realtime Database not initialized (optional)');
+                logger.warn('Firebase Realtime Database not initialized (optional)');
             }
         }
 
-        console.log('✅ Firebase Admin initialized successfully');
+        logger.debug('Firebase Admin initialized successfully');
     } catch (error) {
-        console.error('❌ Failed to initialize Firebase Admin:', error instanceof Error ? error.message : 'Unknown error');
+        logger.error('Failed to initialize Firebase Admin', error);
     }
 };
 

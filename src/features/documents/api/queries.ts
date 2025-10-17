@@ -8,7 +8,7 @@ export const DOCUMENTS_KEY = 'documents';
 
 // Get all documents
 export function useDocuments(filters?: { caseId?: string; type?: string; page?: number; limit?: number }) {
-    return useQuery({
+    return useQuery<{ documents: Document[] }>({
         queryKey: [DOCUMENTS_KEY, filters],
         queryFn: async () => {
             const params = new URLSearchParams();

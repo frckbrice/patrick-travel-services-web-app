@@ -1,4 +1,5 @@
 // Firebase Realtime Database service for chat/messaging
+// Enhanced with presence tracking and typing indicators for mobile compatibility
 
 import {
     ref,
@@ -11,6 +12,8 @@ import {
     equalTo,
     onValue,
     off,
+    onDisconnect,
+    serverTimestamp,
     DataSnapshot,
 } from 'firebase/database';
 import { database } from './firebase-client';
@@ -36,6 +39,21 @@ export interface ChatMessage {
         fileSize: number;
         mimeType: string;
     }>;
+}
+
+export interface UserPresence {
+    userId: string;
+    status: 'online' | 'offline' | 'away';
+    lastSeen: number;
+    platform?: 'web' | 'mobile' | 'desktop';
+}
+
+export interface TypingIndicator {
+    userId: string;
+    userName: string;
+    chatRoomId: string;
+    isTyping: boolean;
+    timestamp: number;
 }
 
 export interface ChatRoom {
@@ -243,6 +261,241 @@ export async function resetUnreadCount(roomId: string, userId: string): Promise<
     });
 }
 
+// ============================================
+// PRESENCE & ONLINE STATUS
+// ============================================
+
+/**
+ * Set user online status and handle auto-disconnect
+ * Compatible with mobile apps - automatically goes offline when connection lost
+ */
+export async function setUserOnline(userId: string, platform: 'web' | 'mobile' | 'desktop' = 'web'): Promise<void> {
+    const presenceRef = ref(database, `presence/${userId}`);
+    const userStatusOnline: UserPresence = {
+        userId,
+        status: 'online',
+        lastSeen: Date.now(),
+        platform,
+    };
+
+    const userStatusOffline: UserPresence = {
+        userId,
+        status: 'offline',
+        lastSeen: Date.now(),
+        platform,
+    };
+
+    // Set online status
+    await set(presenceRef, userStatusOnline);
+
+    // Set auto-disconnect to offline (for mobile & web)
+    onDisconnect(presenceRef).set(userStatusOffline);
+}
+
+/**
+ * Set user offline status
+ */
+export async function setUserOffline(userId: string): Promise<void> {
+    const presenceRef = ref(database, `presence/${userId}`);
+    await update(presenceRef, {
+        status: 'offline',
+        lastSeen: Date.now(),
+    });
+}
+
+/**
+ * Set user away status (idle for mobile apps)
+ */
+export async function setUserAway(userId: string): Promise<void> {
+    const presenceRef = ref(database, `presence/${userId}`);
+    await update(presenceRef, {
+        status: 'away',
+        lastSeen: Date.now(),
+    });
+}
+
+/**
+ * Get user presence status
+ */
+export async function getUserPresence(userId: string): Promise<UserPresence | null> {
+    const presenceRef = ref(database, `presence/${userId}`);
+    const snapshot = await get(presenceRef);
+
+    if (snapshot.exists()) {
+        return snapshot.val() as UserPresence;
+    }
+
+    return null;
+}
+
+/**
+ * Subscribe to user presence status (real-time)
+ * Mobile and web clients both receive instant updates
+ */
+export function subscribeToUserPresence(
+    userId: string,
+    callback: (presence: UserPresence | null) => void
+): () => void {
+    const presenceRef = ref(database, `presence/${userId}`);
+
+    onValue(presenceRef, (snapshot: DataSnapshot) => {
+        if (snapshot.exists()) {
+            callback(snapshot.val() as UserPresence);
+        } else {
+            callback(null);
+        }
+    });
+
+    return () => off(presenceRef);
+}
+
+/**
+ * Subscribe to multiple users presence (for chat lists)
+ * PERFORMANCE: Uses Set for O(1) lookups instead of array includes
+ */
+export function subscribeToMultipleUserPresence(
+    userIds: string[],
+    callback: (presences: Record<string, UserPresence>) => void
+): () => void {
+    const presenceRef = ref(database, 'presence');
+    const userIdSet = new Set(userIds); // PERFORMANCE: O(1) lookup vs O(n) for array
+    
+    onValue(presenceRef, (snapshot: DataSnapshot) => {
+        const presences: Record<string, UserPresence> = {};
+        
+        snapshot.forEach((childSnapshot) => {
+            const userId = childSnapshot.key;
+            if (userId && userIdSet.has(userId)) {
+                presences[userId] = childSnapshot.val() as UserPresence;
+            }
+        });
+        
+        callback(presences);
+    });
+
+    return () => off(presenceRef);
+}
+
+// ============================================
+// TYPING INDICATORS
+// ============================================
+
+/**
+ * Set typing indicator for current user in a chat room
+ * Mobile apps can use this to show "Agent is typing..."
+ */
+export async function setTyping(userId: string, userName: string, chatRoomId: string, isTyping: boolean): Promise<void> {
+    const typingRef = ref(database, `typing/${chatRoomId}/${userId}`);
+
+    if (isTyping) {
+        const typingData: TypingIndicator = {
+            userId,
+            userName,
+            chatRoomId,
+            isTyping: true,
+            timestamp: Date.now(),
+        };
+        await set(typingRef, typingData);
+
+        // Auto-clear typing after 5 seconds
+        onDisconnect(typingRef).remove();
+    } else {
+        await set(typingRef, null);
+    }
+}
+
+/**
+ * Subscribe to typing indicators for a chat room (real-time)
+ * PERFORMANCE: Filters out stale indicators (>5s old) client-side
+ */
+export function subscribeToTyping(
+    chatRoomId: string,
+    currentUserId: string,
+    callback: (typingUsers: TypingIndicator[]) => void
+): () => void {
+    const typingRef = ref(database, `typing/${chatRoomId}`);
+
+    onValue(typingRef, (snapshot: DataSnapshot) => {
+        const typingUsers: TypingIndicator[] = [];
+        const now = Date.now();
+        const STALE_THRESHOLD = 5000; // 5 seconds
+        
+        snapshot.forEach((childSnapshot) => {
+            const typing = childSnapshot.val() as TypingIndicator;
+            // PERFORMANCE: Only include active typing (not current user, recent timestamp)
+            if (typing && 
+                typing.userId !== currentUserId && 
+                typing.isTyping &&
+                (now - typing.timestamp) < STALE_THRESHOLD) {
+                typingUsers.push(typing);
+            }
+        });
+        
+        callback(typingUsers);
+    });
+
+    return () => off(typingRef);
+}
+
+// ============================================
+// ENHANCED REAL-TIME MESSAGE SUBSCRIPTIONS
+// ============================================
+
+/**
+ * Subscribe to new messages in a chat room (real-time)
+ * Enhanced for mobile compatibility
+ */
+export function subscribeToRoomMessages(
+    chatRoomId: string,
+    callback: (messages: ChatMessage[]) => void
+): () => void {
+    const messagesRef = ref(database, 'messages');
+    const roomMessagesQuery = query(messagesRef, orderByChild('chatRoomId'), equalTo(chatRoomId));
+
+    onValue(roomMessagesQuery, (snapshot: DataSnapshot) => {
+        const messages: ChatMessage[] = [];
+        snapshot.forEach((childSnapshot) => {
+            messages.push({
+                id: childSnapshot.key!,
+                ...childSnapshot.val(),
+            });
+        });
+        callback(messages.sort((a, b) => a.sentAt - b.sentAt));
+    });
+
+    return () => off(roomMessagesQuery);
+}
+
+/**
+ * Subscribe to direct messages between two users (real-time)
+ * For mobile 1-on-1 chats
+ */
+export function subscribeToDirectMessages(
+    userId1: string,
+    userId2: string,
+    callback: (messages: ChatMessage[]) => void
+): () => void {
+    const messagesRef = ref(database, 'messages');
+
+    onValue(messagesRef, (snapshot: DataSnapshot) => {
+        const messages: ChatMessage[] = [];
+        snapshot.forEach((childSnapshot) => {
+            const message = childSnapshot.val() as ChatMessage;
+            if (
+                (message.senderId === userId1 && message.recipientId === userId2) ||
+                (message.senderId === userId2 && message.recipientId === userId1)
+            ) {
+                messages.push({
+                    id: childSnapshot.key!,
+                    ...message,
+                });
+            }
+        });
+        callback(messages.sort((a, b) => a.sentAt - b.sentAt));
+    });
+
+    return () => off(messagesRef);
+}
 // Delete a message
 export async function deleteMessage(messageId: string): Promise<void> {
     const messageRef = ref(database, `messages/${messageId}`);

@@ -135,8 +135,22 @@ export function getNavigationForRole(role: UserRole): NavItem[] {
 
 // Check if user has access to a route
 export function hasAccessToRoute(role: UserRole, route: string): boolean {
-    const navItem = navigationItems.find((item) => route.startsWith(item.href));
-    return navItem ? navItem.roles.includes(role) : false;
+    // Filter all matching items where route starts with item.href
+    const matchingItems = navigationItems.filter((item) => route.startsWith(item.href));
+
+    // Find the most specific match (longest href)
+    const mostSpecificItem = matchingItems.reduce<NavItem | null>(
+        (best, current) => {
+            if (!best || current.href.length > best.href.length) {
+                return current;
+            }
+            return best;
+        },
+        null
+    );
+
+    // Check if the most specific item's roles include the user's role
+    return mostSpecificItem ? mostSpecificItem.roles.includes(role) : false;
 }
 
 // Role display names

@@ -27,16 +27,31 @@ export const formatDateTime = (date: Date | string): string => {
     });
 };
 
-// Sanitize input to prevent XSS
-export const sanitizeInput = (input: string): string => {
-    return input
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#x27;')
-        .replace(/\//g, '&#x2F;');
+/**
+ * Escapes HTML special characters to prevent XSS attacks
+ * @param text - The text to escape
+ * @returns The escaped text safe for HTML insertion
+ * @example
+ * escapeHtml('<script>alert("xss")</script>')
+ * // Returns: '&lt;script&gt;alert(&quot;xss&quot;)&lt;&#x2F;script&gt;'
+ */
+export const escapeHtml = (text: string): string => {
+    const htmlEscapeMap: { [key: string]: string } = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;',
+        '/': '&#x2F;',
+    };
+    return text.replace(/[&<>"'/]/g, (char) => htmlEscapeMap[char]);
 };
+
+/**
+ * @deprecated Use escapeHtml instead
+ * Alias for backward compatibility
+ */
+export const sanitizeInput = escapeHtml;
 
 // Validate UUID
 export const isValidUUID = (uuid: string): boolean => {
@@ -44,9 +59,40 @@ export const isValidUUID = (uuid: string): boolean => {
     return uuidRegex.test(uuid);
 };
 
-// Get initials from name
-export const getInitials = (firstName: string, lastName: string): string => {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+/**
+ * Safely generates initials from a name string.
+ * Handles edge cases like empty strings, extra whitespace, and undefined values.
+ * @param name - The full name string to generate initials from (e.g., "John Doe")
+ * @returns A string of initials (e.g., "JD" for "John Doe"), or a fallback character "?"
+ * @example
+ * getInitials("John Doe") // Returns "JD"
+ * getInitials("  John   Doe  ") // Returns "JD"
+ * getInitials("") // Returns "?"
+ * getInitials("John") // Returns "J"
+ */
+export const getInitials = (name: string): string => {
+    if (!name) return '?';
+
+    const trimmedName = name.trim();
+    if (!trimmedName) return '?';
+
+    // Split on whitespace and filter out empty segments
+    const nameParts = trimmedName.split(/\s+/).filter(part => part.length > 0);
+
+    if (nameParts.length === 0) {
+        // Fallback: try to get first non-space character
+        const firstChar = trimmedName.replace(/\s/g, '')[0];
+        return firstChar ? firstChar.toUpperCase() : '?';
+    }
+
+    // Map each segment to its first character
+    const initials = nameParts
+        .map(part => part[0])
+        .filter(char => char)
+        .join('')
+        .toUpperCase();
+
+    return initials || '?';
 };
 
 // Format file size

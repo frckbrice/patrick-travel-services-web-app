@@ -1,6 +1,17 @@
-// Messages API Routes - GET (list conversations) and POST (send message)
-// Uses Firebase Firestore for real-time messaging
-// Compatible with both web and mobile clients
+// Messages API Routes - DEPRECATED
+// ⚠️ This API layer is no longer needed - use direct Firebase client-side
+// 
+// MIGRATION: All messaging now uses Firebase Realtime Database directly from client
+// - Web app: Uses hooks in src/features/messages/hooks/useRealtimeChat.ts
+// - Mobile app: Uses same Firebase SDK with chat.service.ts functions
+//
+// Benefits:
+// - Faster (no API overhead)
+// - True real-time (WebSocket)
+// - Better offline support
+// - Lower server costs
+//
+// Security: Managed by Firebase Security Rules (see firebase-security-rules.json)
 
 import { NextRequest } from 'next/server';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants';

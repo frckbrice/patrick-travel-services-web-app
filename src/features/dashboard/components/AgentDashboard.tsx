@@ -2,6 +2,7 @@
 
 import { useAuthStore } from '@/features/auth/store';
 import { useCases } from '@/features/cases/api';
+import { Case } from '@/features/cases/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,23 +16,72 @@ export function AgentDashboard() {
     
     if (isLoading) return <AgentDashboardSkeleton />;
 
-    const cases = casesData?.cases || [];
-    const assignedCases = cases.filter((c: any) => c.assignedAgentId === user?.id);
-    const activeAssigned = assignedCases.filter((c: any) => !['APPROVED', 'REJECTED', 'CLOSED'].includes(c.status));
-    const completedThisMonth = assignedCases.filter((c: any) => {
+    const cases: Case[] = casesData?.cases || [];
+    const assignedCases = cases.filter((c: Case) => c.assignedAgentId === user?.id);
+    const activeAssigned = assignedCases.filter((c: Case) => !['APPROVED', 'REJECTED', 'CLOSED'].includes(c.status));
+    const completedThisMonth = assignedCases.filter((c: Case) => {
         if (c.status !== 'APPROVED') return false;
-        const completedDate = new Date(c.lastUpdated);
+
+        // Use dedicated completion timestamp: completedAt or approvedAt, fallback to lastUpdated
+        const completionTimestamp = c.completedAt || c.approvedAt || c.lastUpdated;
+        if (!completionTimestamp) return false;
+
+        const completedDate = new Date(completionTimestamp);
+        // Guard against invalid dates
+        if (isNaN(completedDate.getTime())) return false;
+
         const now = new Date();
         return completedDate.getMonth() === now.getMonth() && completedDate.getFullYear() === now.getFullYear();
     });
+
+    // Calculate documents requiring verification (PENDING status)
+    const documentsToVerify = assignedCases.reduce((count: number, c: Case) => {
+        if (c.documents && Array.isArray(c.documents)) {
+            return count + c.documents.filter((doc) => doc.status === 'PENDING').length;
+        }
+        return count;
+    }, 0);
+
+    // Calculate average response time
+    const calculateResponseTime = (): string => {
+        // Filter cases that have been updated after submission (excluding just-submitted cases)
+        const processedCases = assignedCases.filter((c: Case) => {
+            const submitted = new Date(c.submissionDate);
+            const updated = new Date(c.lastUpdated);
+            return updated.getTime() - submitted.getTime() > 60000; // More than 1 minute difference
+        });
+
+        if (processedCases.length === 0) return 'N/A';
+
+        // Calculate average time difference in milliseconds
+        const totalResponseTime = processedCases.reduce((total: number, c: Case) => {
+            const submitted = new Date(c.submissionDate);
+            const updated = new Date(c.lastUpdated);
+            return total + (updated.getTime() - submitted.getTime());
+        }, 0);
+
+        const avgResponseTimeMs = totalResponseTime / processedCases.length;
+        const avgResponseTimeHours = avgResponseTimeMs / (1000 * 60 * 60);
+
+        // Format the response time
+        if (avgResponseTimeHours < 1) {
+            const minutes = Math.round(avgResponseTimeMs / (1000 * 60));
+            return `${minutes} min${minutes !== 1 ? 's' : ''}`;
+        } else if (avgResponseTimeHours < 24) {
+            return `${avgResponseTimeHours.toFixed(1)} hrs`;
+        } else {
+            const days = avgResponseTimeHours / 24;
+            return `${days.toFixed(1)} days`;
+        }
+    };
 
     const stats = {
         assignedCases: assignedCases.length,
         activeCases: activeAssigned.length,
         completedThisMonth: completedThisMonth.length,
-        pendingReview: assignedCases.filter((c: any) => c.status === 'UNDER_REVIEW').length,
-        documentsToVerify: 0,
-        responseTime: '2.5 hrs',
+        pendingReview: assignedCases.filter((c: Case) => c.status === 'UNDER_REVIEW').length,
+        documentsToVerify,
+        responseTime: calculateResponseTime(),
     };
 
     return (
@@ -79,7 +129,9 @@ export function AgentDashboard() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{stats.responseTime}</div>
-                        <p className="text-xs text-green-600">15% faster than avg</p>
+                        <p className="text-xs text-muted-foreground">
+                            {stats.responseTime === 'N/A' ? 'No data available' : 'Average across all cases'}
+                        </p>
                     </CardContent>
                 </Card>
             </div>
@@ -88,7 +140,7 @@ export function AgentDashboard() {
                 <Card className="col-span-4">
                     <CardHeader><CardTitle>Recent Cases</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
-                        {activeAssigned.slice(0, 5).map((c: any) => (
+                        {activeAssigned.slice(0, 5).map((c: Case) => (
                             <div key={c.id} className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <Briefcase className="h-5 w-5 text-primary" />

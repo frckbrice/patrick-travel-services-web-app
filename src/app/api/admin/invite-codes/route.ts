@@ -100,28 +100,57 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
     const { searchParams } = new URL(request.url);
     const isActive = searchParams.get('active');
 
-    const inviteCodes = await prisma.inviteCode.findMany({
-        where: isActive === 'true' ? {
-            isActive: true,
-            expiresAt: { gt: new Date() },
-        } : undefined,
-        orderBy: { createdAt: 'desc' },
-        select: {
-            id: true,
-            code: true,
-            role: true,
-            createdBy: true,
-            usedBy: true,
-            maxUses: true,
-            usedCount: true,
-            expiresAt: true,
-            isActive: true,
-            createdAt: true,
-            usedAt: true,
-        },
-    });
+    // Parse and validate pagination params with safe defaults
+    const pageParam = searchParams.get('page');
+    const limitParam = searchParams.get('limit');
 
-    return successResponse({ inviteCodes }, 'Invite codes retrieved');
+    const page = Math.max(1, parseInt(pageParam || '1', 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(limitParam || '50', 10) || 50));
+
+    // Compute skip for pagination
+    const skip = (page - 1) * limit;
+
+    // Build where clause
+    const whereClause = isActive === 'true' ? {
+        isActive: true,
+        expiresAt: { gt: new Date() },
+    } : undefined;
+
+    // Execute queries in parallel
+    const [inviteCodes, total] = await Promise.all([
+        prisma.inviteCode.findMany({
+            where: whereClause,
+            skip,
+            take: limit,
+            orderBy: { createdAt: 'desc' },
+            select: {
+                id: true,
+                code: true,
+                role: true,
+                createdBy: true,
+                lastUsedBy: true,
+                maxUses: true,
+                usedCount: true,
+                expiresAt: true,
+                isActive: true,
+                createdAt: true,
+                lastUsedAt: true,
+            },
+        }),
+        prisma.inviteCode.count({
+            where: whereClause,
+        }),
+    ]);
+
+    return successResponse({
+        inviteCodes,
+        pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+        },
+    }, 'Invite codes retrieved');
 });
 
 // Apply middleware

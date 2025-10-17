@@ -13,11 +13,11 @@ datasource db {
 model User {
   id                String    @id @default(uuid())
   email             String    @unique
-  password          String    // hashed
+  password          String // hashed
   firstName         String
   lastName          String
   phone             String?
-  profilePicture    String?   // For Google OAuth profile photos
+  profilePicture    String? // For Google OAuth profile photos
   role              Role      @default(CLIENT)
   isActive          Boolean   @default(true)
   isVerified        Boolean   @default(false)
@@ -27,16 +27,16 @@ model User {
   lastLogin         DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
-  
+
   // Relations
-  cases             Case[]    @relation("ClientCases")
-  assignedCases     Case[]    @relation("AgentCases")
-  sentMessages      Message[] @relation("SentMessages")
-  receivedMessages  Message[] @relation("ReceivedMessages")
-  documents         Document[]
-  notifications     Notification[]
-  activityLogs      ActivityLog[]
-  
+  cases            Case[]         @relation("ClientCases")
+  assignedCases    Case[]         @relation("AgentCases")
+  sentMessages     Message[]      @relation("SentMessages")
+  receivedMessages Message[]      @relation("ReceivedMessages")
+  documents        Document[]
+  notifications    Notification[]
+  activityLogs     ActivityLog[]
+
   @@index([email])
   @@index([role])
 }
@@ -49,27 +49,28 @@ enum Role {
 
 // Case Model
 model Case {
-  id                  String       @id @default(uuid())
-  referenceNumber     String       @unique
+  id                  String      @id @default(uuid())
+  referenceNumber     String      @unique
   clientId            String
-  client              User         @relation("ClientCases", fields: [clientId], references: [id])
+  client              User        @relation("ClientCases", fields: [clientId], references: [id])
   assignedAgentId     String?
-  assignedAgent       User?        @relation("AgentCases", fields: [assignedAgentId], references: [id])
+  assignedAgent       User?       @relation("AgentCases", fields: [assignedAgentId], references: [id])
   serviceType         ServiceType
-  status              CaseStatus   @default(SUBMITTED)
-  priority            Priority     @default(NORMAL)
-  submissionDate      DateTime     @default(now())
-  lastUpdated         DateTime     @updatedAt
-  internalNotes       String?      @db.Text
+  status              CaseStatus  @default(SUBMITTED)
+  priority            Priority    @default(NORMAL)
+  submissionDate      DateTime    @default(now())
+  lastUpdated         DateTime    @updatedAt
+  internalNotes       String?     @db.Text
   estimatedCompletion DateTime?
-  
+
   // Relations
-  documents        Document[]
-  messages         Message[]
-  statusHistory    StatusHistory[]
-  notifications    Notification[]
-  formData         CaseFormData?
-  
+  documents       Document[]
+  messages        Message[]
+  statusHistory   StatusHistory[]
+  notifications   Notification[]
+  formData        CaseFormData?
+  transferHistory TransferHistory[]
+
   @@index([clientId])
   @@index([assignedAgentId])
   @@index([status])
@@ -108,21 +109,21 @@ model CaseFormData {
   id        String   @id @default(uuid())
   caseId    String   @unique
   case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  data      Json     // Flexible JSON structure for different service types
+  data      Json // Flexible JSON structure for different service types
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 // StatusHistory Model (for timeline tracking)
 model StatusHistory {
-  id          String     @id @default(uuid())
-  caseId      String
-  case        Case       @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  status      CaseStatus
-  changedBy   String
-  notes       String?
-  timestamp   DateTime   @default(now())
-  
+  id        String     @id @default(uuid())
+  caseId    String
+  case      Case       @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  status    CaseStatus
+  changedBy String
+  notes     String?
+  timestamp DateTime   @default(now())
+
   @@index([caseId])
   @@index([timestamp])
 }
@@ -145,7 +146,7 @@ model Document {
   verifiedBy      String?
   verifiedAt      DateTime?
   rejectionReason String?
-  
+
   @@index([caseId])
   @@index([status])
 }
@@ -171,20 +172,20 @@ enum DocumentStatus {
 
 // Message Model
 model Message {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   senderId    String
-  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  sender      User      @relation("SentMessages", fields: [senderId], references: [id])
   recipientId String
-  recipient   User     @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  recipient   User      @relation("ReceivedMessages", fields: [recipientId], references: [id])
   caseId      String?
-  case        Case?    @relation(fields: [caseId], references: [id])
+  case        Case?     @relation(fields: [caseId], references: [id])
   subject     String?
-  content     String   @db.Text
-  isRead      Boolean  @default(false)
+  content     String    @db.Text
+  isRead      Boolean   @default(false)
   readAt      DateTime?
-  sentAt      DateTime @default(now())
-  attachments Json?    // Array of file references
-  
+  sentAt      DateTime  @default(now())
+  attachments Json? // Array of file references
+
   @@index([senderId])
   @@index([recipientId])
   @@index([caseId])
@@ -193,19 +194,19 @@ model Message {
 
 // Notification Model
 model Notification {
-  id               String           @id @default(uuid())
-  userId           String
-  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  caseId           String?
-  case             Case?            @relation(fields: [caseId], references: [id])
-  type             NotificationType
-  title            String
-  message          String
-  isRead           Boolean          @default(false)
-  readAt           DateTime?
-  createdAt        DateTime         @default(now())
-  actionUrl        String?
-  
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caseId    String?
+  case      Case?            @relation(fields: [caseId], references: [id])
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  actionUrl String?
+
   @@index([userId])
   @@index([isRead])
   @@index([createdAt])
@@ -232,7 +233,7 @@ model ActivityLog {
   userAgent   String?
   metadata    Json?
   timestamp   DateTime @default(now())
-  
+
   @@index([userId])
   @@index([timestamp])
   @@index([action])
@@ -248,7 +249,7 @@ model FAQ {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([category])
   @@index([isActive])
 }
@@ -274,25 +275,98 @@ model SystemSetting {
   category  String
   updatedAt DateTime @updatedAt
   updatedBy String
-  
+
   @@index([key])
   @@index([category])
 }
 
 model InviteCode {
-  id           String    @id @default(uuid())
-  code         String    @unique
-  role         Role
-  createdBy    String
-  usedBy       String?
-  maxUses      Int       @default(1)
-  usedCount    Int       @default(0)
-  expiresAt    DateTime
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  usedAt       DateTime?
-  
+  id         String    @id @default(uuid())
+  code       String    @unique
+  role       Role
+  createdBy  String
+  lastUsedBy String? // Most recent user who used this code
+  maxUses    Int       @default(1)
+  usedCount  Int       @default(0)
+  expiresAt  DateTime
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime? // Most recent usage timestamp
+
+  // Relations
+  usages InviteUsage[] // Complete history of all uses
+
   @@index([code])
   @@index([isActive])
   @@index([expiresAt])
+}
+
+// InviteUsage Model - Tracks individual invite code usage
+model InviteUsage {
+  id           String     @id @default(uuid())
+  inviteCodeId String
+  inviteCode   InviteCode @relation(fields: [inviteCodeId], references: [id], onDelete: Cascade)
+  userId       String // Firebase UID of the user who used the code
+  usedAt       DateTime   @default(now())
+
+  @@index([inviteCodeId])
+  @@index([userId])
+  @@index([usedAt])
+}
+
+// TransferHistory Model - Tracks case transfers between agents
+model TransferHistory {
+  id     String @id @default(uuid())
+  caseId String
+  case   Case   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  fromAgentId   String?
+  fromAgentName String? // Denormalized for historical record
+
+  toAgentId   String
+  toAgentName String // Denormalized for historical record
+
+  reason        TransferReason
+  handoverNotes String?        @db.Text
+  transferredAt DateTime       @default(now())
+  transferredBy String // User ID who initiated the transfer
+
+  notifyClient Boolean @default(true)
+  notifyAgent  Boolean @default(true)
+
+  @@index([caseId])
+  @@index([fromAgentId])
+  @@index([toAgentId])
+  @@index([transferredAt])
+}
+
+enum TransferReason {
+  REASSIGNMENT
+  COVERAGE
+  SPECIALIZATION
+  WORKLOAD
+  OTHER
+}
+
+// Contact Model - Stores contact form submissions
+model Contact {
+  id        String        @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  message   String
+  status    ContactStatus @default(NEW)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum ContactStatus {
+  NEW
+  REVIEWED
+  RESPONDED
+  CLOSED
 }

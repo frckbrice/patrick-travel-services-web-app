@@ -127,6 +127,7 @@ export const ERROR_MESSAGES = {
     SERVER_ERROR: 'Internal server error',
     INVALID_CREDENTIALS: 'Invalid email or password',
     EMAIL_ALREADY_EXISTS: 'Email already exists',
+    USER_ALREADY_EXISTS: 'User account already exists',
     ACCOUNT_NOT_VERIFIED: 'Account not verified. Please check your email',
     ACCOUNT_INACTIVE: 'Account is inactive',
     INVALID_TOKEN: 'Invalid or expired token',

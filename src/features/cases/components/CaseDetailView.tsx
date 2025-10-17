@@ -2,7 +2,11 @@
 
 import { useState } from 'react';
 import { useAuthStore } from '@/features/auth/store';
-import { useCase } from '../api';
+import { useCase, useUpdateCaseStatus, useAddInternalNote } from '../api';
+import { useApproveDocument, useRejectDocument } from '@/features/documents/api';
+import { AssignCaseDialog } from './AssignCaseDialog';
+import { CaseTransferDialog } from './CaseTransferDialog';
+import type { Case, Document } from '../types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,10 +19,11 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { 
     Briefcase, Calendar, Clock, User, Mail, Phone, FileText, MessageSquare, 
-    CheckCircle, XCircle, AlertCircle, Edit, Save, Flag, Eye 
+    CheckCircle, XCircle, AlertCircle, Edit, Save, Flag, Eye, UserPlus, RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/utils/logger';
 
 interface CaseDetailViewProps {
     caseId: string;
@@ -43,41 +48,99 @@ const priorityOptions = [
 export function CaseDetailView({ caseId }: CaseDetailViewProps) {
     const { user } = useAuthStore();
     const { data, isLoading, error, refetch } = useCase(caseId);
+    const updateCaseStatus = useUpdateCaseStatus();
+    const addInternalNote = useAddInternalNote();
+    const approveDocument = useApproveDocument();
+    const rejectDocument = useRejectDocument();
     const [statusDialogOpen, setStatusDialogOpen] = useState(false);
     const [newStatus, setNewStatus] = useState('');
     const [statusNote, setStatusNote] = useState('');
     const [internalNote, setInternalNote] = useState('');
+    const [savingNote, setSavingNote] = useState(false);
+    const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+    const [selectedDocId, setSelectedDocId] = useState('');
+    const [rejectReason, setRejectReason] = useState('');
+    const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+    const [transferDialogOpen, setTransferDialogOpen] = useState(false);
 
     if (isLoading) return <CaseDetailSkeleton />;
     if (error || !data) return <div className="text-center py-12"><p className="text-red-600">Case not found</p></div>;
 
-    const caseData = data.case;
+    const caseData = data as Case;
     const isAgent = user?.role === 'AGENT' || user?.role === 'ADMIN';
+    const isAdmin = user?.role === 'ADMIN';
+    const isUnassigned = !caseData.assignedAgentId;
 
     const handleStatusUpdate = async () => {
-        // TODO: API call
-        toast.success('Case status updated successfully');
-        setStatusDialogOpen(false);
-        refetch();
+        try {
+            await updateCaseStatus.mutateAsync({
+                id: caseId,
+                status: newStatus,
+                note: statusNote || undefined,
+            });
+            toast.success('Case status updated successfully');
+            setStatusNote('');
+            setNewStatus('');
+            setStatusDialogOpen(false);
+            refetch();
+        } catch (error) {
+            const err = error as { response?: { data?: { error?: string } }; message?: string };
+            toast.error(err.response?.data?.error || err.message || 'Failed to update case status');
+        }
     };
 
     const handleApproveDocument = async (docId: string) => {
-        // TODO: API call
-        toast.success('Document approved');
-        refetch();
+        try {
+            await approveDocument.mutateAsync(docId);
+            toast.success('Document approved successfully');
+            refetch();
+        } catch (error) {
+            const err = error as { response?: { data?: { error?: string } }; message?: string };
+            const errorMessage = err.response?.data?.error || err.message || 'Failed to approve document';
+            toast.error(errorMessage);
+            logger.error('Failed to approve document', error, { docId, caseId });
+        }
     };
 
     const handleRejectDocument = async (docId: string, reason: string) => {
-        // TODO: API call
-        toast.success('Document rejected');
-        refetch();
+        try {
+            await rejectDocument.mutateAsync({ id: docId, reason });
+            toast.success('Document rejected successfully');
+            setRejectDialogOpen(false);
+            setRejectReason('');
+            setSelectedDocId('');
+            refetch();
+        } catch (error) {
+            const err = error as { response?: { data?: { error?: string } }; message?: string };
+            const errorMessage = err.response?.data?.error || err.message || 'Failed to reject document';
+            toast.error(errorMessage);
+            logger.error('Failed to reject document', error, { docId, caseId, reason });
+        }
     };
 
     const handleSaveNote = async () => {
-        // TODO: API call
-        toast.success('Internal note saved');
-        setInternalNote('');
-        refetch();
+        if (!internalNote.trim()) {
+            toast.error('Note cannot be empty');
+            return;
+        }
+
+        setSavingNote(true);
+        try {
+            await addInternalNote.mutateAsync({
+                id: caseId,
+                note: internalNote,
+            });
+            toast.success('Internal note saved successfully');
+            setInternalNote('');
+            refetch();
+        } catch (error) {
+            const err = error as { response?: { data?: { error?: string } }; message?: string };
+            const errorMessage = err.response?.data?.error || err.message || 'Failed to save note';
+            toast.error(errorMessage);
+            logger.error('Failed to save internal note', error, { caseId, noteLength: internalNote.length });
+        } finally {
+            setSavingNote(false);
+        }
     };
 
     return (
@@ -91,31 +154,95 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                             <Flag className="h-3 w-3 mr-1" />
                             {caseData.priority}
                         </Badge>
+                        {isUnassigned && (
+                            <Badge variant="destructive">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Unassigned
+                            </Badge>
+                        )}
                     </div>
                     <p className="text-muted-foreground">{caseData.serviceType.replace(/_/g, ' ')}</p>
                 </div>
-                {isAgent && (
-                    <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button><Edit className="mr-2 h-4 w-4" />Update Status</Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Update Case Status</DialogTitle>
-                                <DialogDescription>Change the status of this case</DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                                <div><Label>New Status</Label><Select value={newStatus} onValueChange={setNewStatus}><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger><SelectContent>{statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent></Select></div>
-                                <div><Label>Note (optional)</Label><Textarea placeholder="Add a note about this status change..." value={statusNote} onChange={(e) => setStatusNote(e.target.value)} /></div>
-                            </div>
-                            <DialogFooter>
-                                <Button variant="outline" onClick={() => setStatusDialogOpen(false)}>Cancel</Button>
-                                <Button onClick={handleStatusUpdate} disabled={!newStatus}>Update Status</Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
-                )}
+                <div className="flex items-center gap-2">
+                    {/* Assign to Agent Button (ADMIN only, unassigned cases) */}
+                    {isAdmin && isUnassigned && (
+                        <Button variant="default" onClick={() => setAssignDialogOpen(true)}>
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            Assign to Agent
+                        </Button>
+                    )}
+                    {/* Transfer Case Button (ADMIN only, assigned cases) */}
+                    {isAdmin && !isUnassigned && (
+                        <Button variant="outline" onClick={() => setTransferDialogOpen(true)}>
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Transfer Case
+                        </Button>
+                    )}
+                    {/* Update Status Button (Agent/Admin, assigned cases) */}
+                    {isAgent && !isUnassigned && (
+                        <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button><Edit className="mr-2 h-4 w-4" />Update Status</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Update Case Status</DialogTitle>
+                                    <DialogDescription>Change the status of this case</DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4 py-4">
+                                    <div><Label>New Status</Label><Select value={newStatus} onValueChange={setNewStatus}><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger><SelectContent>{statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent></Select></div>
+                                    <div><Label>Note (optional)</Label><Textarea placeholder="Add a note about this status change..." value={statusNote} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setStatusNote(e.target.value)} /></div>
+                                </div>
+                                <DialogFooter>
+                                    <Button variant="outline" onClick={() => setStatusDialogOpen(false)}>Cancel</Button>
+                                    <Button onClick={handleStatusUpdate} disabled={!newStatus}>Update Status</Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                    )}
+                </div>
             </div>
+
+            {/* Assign Case Dialog */}
+            <AssignCaseDialog
+                caseData={caseData}
+                open={assignDialogOpen}
+                onOpenChange={setAssignDialogOpen}
+                onSuccess={refetch}
+            />
+
+            {/* Transfer Case Dialog */}
+            <CaseTransferDialog
+                caseData={caseData}
+                open={transferDialogOpen}
+                onOpenChange={setTransferDialogOpen}
+                onSuccess={refetch}
+            />
+
+            {/* Reject Document Dialog */}
+            <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Reject Document</DialogTitle>
+                        <DialogDescription>Please provide a reason for rejecting this document</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div>
+                            <Label>Rejection Reason</Label>
+                            <Textarea
+                                placeholder="Enter the reason for rejection..."
+                                value={rejectReason}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRejectReason(e.target.value)}
+                                rows={4}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => { setRejectDialogOpen(false); setRejectReason(''); setSelectedDocId(''); }}>Cancel</Button>
+                        <Button variant="destructive" onClick={() => handleRejectDocument(selectedDocId, rejectReason)} disabled={!rejectReason.trim()}>Reject Document</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <Tabs defaultValue="overview" className="space-y-4">
                 <TabsList>
@@ -140,7 +267,15 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                         <Card>
                             <CardHeader><CardTitle className="text-base">Client Information</CardTitle></CardHeader>
                             <CardContent className="space-y-3">
-                                <InfoRow icon={User} label="Name" value={`${caseData.client?.firstName} ${caseData.client?.lastName}`} />
+                                <InfoRow
+                                    icon={User}
+                                    label="Name"
+                                    value={
+                                        caseData.client?.firstName || caseData.client?.lastName
+                                            ? `${caseData.client?.firstName ?? ''} ${caseData.client?.lastName ?? ''}`.trim()
+                                            : '—'
+                                    }
+                                />
                                 <InfoRow icon={Mail} label="Email" value={caseData.client?.email || 'N/A'} />
                                 <InfoRow icon={Phone} label="Phone" value={caseData.client?.phone || 'N/A'} />
                             </CardContent>
@@ -151,7 +286,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                 <TabsContent value="documents" className="space-y-4">
                     {caseData.documents && caseData.documents.length > 0 ? (
                         <div className="grid gap-4">
-                            {caseData.documents.map((doc: any) => (
+                            {caseData.documents.map((doc: Document) => (
                                 <Card key={doc.id}>
                                     <CardContent className="pt-6">
                                         <div className="flex items-center justify-between">
@@ -170,7 +305,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                                                 {isAgent && doc.status === 'PENDING' && (
                                                     <>
                                                         <Button variant="default" size="sm" onClick={() => handleApproveDocument(doc.id)}><CheckCircle className="mr-1 h-4 w-4" />Approve</Button>
-                                                        <Button variant="destructive" size="sm" onClick={() => handleRejectDocument(doc.id, 'Reason')}><XCircle className="mr-1 h-4 w-4" />Reject</Button>
+                                                        <Button variant="destructive" size="sm" onClick={() => { setSelectedDocId(doc.id); setRejectDialogOpen(true); }}><XCircle className="mr-1 h-4 w-4" />Reject</Button>
                                                     </>
                                                 )}
                                             </div>
@@ -186,7 +321,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
 
                 <TabsContent value="timeline">
                     <Card>
-                        <CardHeader><CardTitle>Case Timeline</CardTitle></CardHeader>
+                        <CardHeader><CardTitle>Case Timeline & Transfer History</CardTitle></CardHeader>
                         <CardContent>
                             <div className="space-y-4">
                                 <TimelineItem
@@ -195,12 +330,34 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                                     description={`Client submitted ${caseData.serviceType.replace(/_/g, ' ')} application`}
                                     icon={Briefcase}
                                 />
+
+                                {/* Transfer History (Future: from caseData.transferHistory) */}
+                                {/* When transfer history API is connected, display transfers here */}
+                                {caseData.assignedAgent && (
+                                    <TimelineItem
+                                        date={caseData.lastUpdated}
+                                        title="Currently Assigned"
+                                        description={`Agent: ${caseData.assignedAgent.firstName} ${caseData.assignedAgent.lastName}`}
+                                        icon={User}
+                                    />
+                                )}
+
                                 <TimelineItem
                                     date={caseData.lastUpdated}
                                     title="Last Updated"
                                     description={`Status: ${caseData.status.replace(/_/g, ' ')}`}
                                     icon={Clock}
                                 />
+
+                                {/* Note: Transfer history will appear here when case is transferred */}
+                                {!caseData.assignedAgent && (
+                                    <div className="flex items-start gap-2 p-3 rounded-md bg-orange-50 dark:bg-orange-950/20 text-sm mt-4">
+                                        <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
+                                        <p className="text-orange-700 dark:text-orange-300">
+                                            This case has not been assigned to an agent yet. Transfer history will appear here once the case is assigned and transferred.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
@@ -211,7 +368,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                         <Card>
                             <CardHeader><CardTitle>Internal Notes</CardTitle><CardDescription>Notes visible only to agents and admins</CardDescription></CardHeader>
                             <CardContent className="space-y-4">
-                                <div><Textarea placeholder="Add internal note..." value={internalNote} onChange={(e) => setInternalNote(e.target.value)} rows={4} /><Button className="mt-2" onClick={handleSaveNote} disabled={!internalNote}><Save className="mr-2 h-4 w-4" />Save Note</Button></div>
+                                <div><Textarea placeholder="Add internal note..." value={internalNote} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInternalNote(e.target.value)} rows={4} disabled={savingNote} /><Button className="mt-2" onClick={handleSaveNote} disabled={!internalNote || savingNote}><Save className="mr-2 h-4 w-4" />{savingNote ? 'Saving...' : 'Save Note'}</Button></div>
                                 <Separator />
                                 <div className="space-y-2">
                                     {caseData.internalNotes && <p className="text-sm whitespace-pre-wrap bg-muted p-3 rounded">{caseData.internalNotes}</p>}
@@ -226,7 +383,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
     );
 }
 
-function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value: any }) {
+function InfoRow({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: React.ReactNode }) {
     return (
         <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2 text-muted-foreground"><Icon className="h-4 w-4" /><span>{label}</span></div>
@@ -235,7 +392,7 @@ function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value
     );
 }
 
-function TimelineItem({ date, title, description, icon: Icon }: { date: string; title: string; description: string; icon: any }) {
+function TimelineItem({ date, title, description, icon: Icon }: { date: string; title: string; description: string; icon: React.ComponentType<{ className?: string }> }) {
     return (
         <div className="flex gap-4">
             <div className="flex flex-col items-center">

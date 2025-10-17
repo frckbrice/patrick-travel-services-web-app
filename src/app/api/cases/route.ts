@@ -53,6 +53,14 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
                         lastName: true,
                     },
                 },
+                assignedAgent: {
+                    select: {
+                        id: true,
+                        email: true,
+                        firstName: true,
+                        lastName: true,
+                    },
+                },
             },
             orderBy: { submissionDate: 'desc' },
             skip,

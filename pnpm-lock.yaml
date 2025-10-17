@@ -53,9 +53,6 @@ importers:
       '@tanstack/react-query-devtools':
         specifier: ^5.90.2
         version: 5.90.2(@tanstack/react-query@5.90.3(react@19.1.0))(react@19.1.0)
-      '@types/nodemailer':
-        specifier: ^7.0.2
-        version: 7.0.2
       '@uploadthing/react':
         specifier: ^7.2.0
         version: 7.3.3(next@15.5.5(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)(uploadthing@7.7.4(next@15.5.5(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(tailwindcss@4.1.14))
@@ -147,6 +144,9 @@ importers:
       '@types/node':
         specifier: ^20
         version: 20.19.21
+      '@types/nodemailer':
+        specifier: ^7.0.2
+        version: 7.0.2
       '@types/react':
         specifier: ^19
         version: 19.2.2

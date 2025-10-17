@@ -41,7 +41,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
     });
 
     const clientDocs = new Map<string, typeof updatedDocs>();
-    updatedDocs.forEach(doc => {
+    updatedDocs.forEach((doc: typeof updatedDocs[number]) => {
         const clientId = doc.case.clientId;
         if (!clientDocs.has(clientId)) clientDocs.set(clientId, []);
         clientDocs.get(clientId)?.push(doc);
@@ -49,7 +49,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
 
     for (const [clientId, docs] of clientDocs.entries()) {
         const client = docs[0].case.client;
-        const docNames = docs.map(d => d.originalName).join(', ');
+        const docNames = docs.map((d: typeof updatedDocs[number]) => d.originalName).join(', ');
 
         try {
             await Promise.all([

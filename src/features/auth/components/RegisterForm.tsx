@@ -100,7 +100,7 @@ export function RegisterForm() {
                             <Separator />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-card px-2 text-muted-foreground">Or continue with email</span>
+                            <span className="bg-card px-2 text-muted-foreground">{t('auth.orContinueWithEmail')}</span>
                         </div>
                     </div>
 
@@ -215,16 +215,16 @@ export function RegisterForm() {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            Invite Code <span className="text-xs text-muted-foreground">(Optional - for staff registration)</span>
+                                            {t('auth.inviteCode.label')} <span className="text-xs text-muted-foreground">{t('auth.inviteCode.subLabel')}</span>
                                         </FormLabel>
                                         <FormControl>
                                             <Input
-                                                placeholder="agent-xxxxxxxxx or admin-xxxxxxxxx"
+                                                placeholder={t('auth.inviteCode.placeholder')}
                                                 {...field}
                                             />
                                         </FormControl>
                                         <p className="text-xs text-muted-foreground">
-                                            Have an invite code? Enter it to register as staff member.
+                                            {t('auth.inviteCode.helper')}
                                         </p>
                                         <FormMessage />
                                     </FormItem>

@@ -18,8 +18,36 @@ import {
 import { asyncHandler, ApiError, HttpStatus } from '@/lib/utils/error-handler';
 import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
+import { Prisma } from '@prisma/client';
+import { randomBytes } from 'crypto';
 
 const handler = asyncHandler(async (request: NextRequest) => {
+    // Check if Firebase Admin is initialized
+    if (!adminAuth) {
+        logger.error('Firebase Admin not initialized');
+        throw new ApiError('Authentication service unavailable', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    // Verify Firebase ID token from Authorization header
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+        throw new ApiError('Unauthorized - Missing or invalid token', HttpStatus.UNAUTHORIZED);
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+    let decodedToken;
+
+    try {
+        decodedToken = await adminAuth.verifyIdToken(token);
+        logger.info('Firebase token verified', { uid: decodedToken.uid });
+    } catch (error: any) {
+        logger.error('Firebase token verification failed', { error: error.message });
+        throw new ApiError('Invalid authentication token', HttpStatus.UNAUTHORIZED);
+    }
+
+    // Extract Firebase UID from verified token (this is secure)
+    const firebaseUid = decodedToken.uid;
+
     const body = await request.json();
 
     // Validate input
@@ -39,20 +67,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
         return validationErrorResponse(errors, ERROR_MESSAGES.VALIDATION_ERROR);
     }
 
-    const { email, firstName, lastName, phone, inviteCode, firebaseUid } = validationResult.data;
-
-    if (!firebaseUid) {
-        throw new ApiError('Firebase UID is required', HttpStatus.BAD_REQUEST);
-    }
-
-    // Check if user already exists in database
-    const existingUser = await prisma.user.findUnique({
-        where: { id: firebaseUid },
-    });
-
-    if (existingUser) {
-        return errorResponse(ERROR_MESSAGES.EMAIL_ALREADY_EXISTS, 409);
-    }
+    const { email, firstName, lastName, phone, inviteCode } = validationResult.data;
 
     // Determine role based on invite code
     let userRole: 'CLIENT' | 'AGENT' | 'ADMIN' = 'CLIENT';
@@ -82,45 +97,69 @@ const handler = asyncHandler(async (request: NextRequest) => {
         // Use the role from invite code
         userRole = invite.role;
 
-        // Update invite code usage
-        await prisma.inviteCode.update({
-            where: { id: invite.id },
-            data: {
-                usedCount: { increment: 1 },
-                usedBy: firebaseUid,
-                usedAt: new Date(),
-            },
-        });
+        // Record invite code usage with complete history
+        // This creates a persistent record of each use and updates the invite code
+        await prisma.$transaction([
+            // Create usage record for complete history
+            prisma.inviteUsage.create({
+                data: {
+                    inviteCodeId: invite.id,
+                    userId: firebaseUid,
+                    usedAt: new Date(),
+                },
+            }),
+            // Update invite code: increment count and track most recent user
+            prisma.inviteCode.update({
+                where: { id: invite.id },
+                data: {
+                    usedCount: { increment: 1 },
+                    lastUsedBy: firebaseUid,
+                    lastUsedAt: new Date(),
+                },
+            }),
+        ]);
 
         logger.info('Invite code used', { code: inviteCode, role: userRole, userId: firebaseUid });
     }
 
     // Create user in database (Firebase user already created on client)
-    const user = await prisma.user.create({
-        data: {
-            id: firebaseUid, // Use Firebase UID as database ID
-            email,
-            password: 'firebase_managed', // Password managed by Firebase
-            firstName,
-            lastName,
-            phone,
-            role: userRole,
-            isVerified: false,
-        },
-        select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-            role: true,
-            isActive: true,
-            isVerified: true,
-            createdAt: true,
-            updatedAt: true,
-            lastLogin: true,
-        },
-    });
+    // Attempt direct creation to avoid TOCTOU race; handle unique constraint violations
+    let user;
+    try {
+        user = await prisma.user.create({
+            data: {
+                id: firebaseUid, // Use Firebase UID as database ID
+                email,
+                password: randomBytes(32).toString('hex'), // Random value for Firebase-managed users
+                firstName,
+                lastName,
+                phone,
+                role: userRole,
+                isVerified: false,
+            },
+            select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                phone: true,
+                role: true,
+                isActive: true,
+                isVerified: true,
+                createdAt: true,
+                updatedAt: true,
+                lastLogin: true,
+            },
+        });
+    } catch (error) {
+        // Handle Prisma unique constraint violation (P2002)
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+            logger.warn('User already exists during registration', { firebaseUid, email });
+            return errorResponse(ERROR_MESSAGES.USER_ALREADY_EXISTS, 409);
+        }
+        // Rethrow any other errors
+        throw error;
+    }
 
     // Set custom claims in Firebase (if admin is available)
     if (adminAuth) {

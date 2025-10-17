@@ -4,10 +4,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Award, Target, Users, Heart, ArrowRight, CheckCircle2, Globe, Shield, Zap } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Globe, Shield, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { values, team } from '@/components/about/api/data';
 
 export function AboutView() {
     const [mounted, setMounted] = useState(false);
@@ -24,54 +25,6 @@ export function AboutView() {
             </div>
         );
     }
-
-    const values = [
-        {
-            icon: Award,
-            titleKey: 'about.values.excellence.title',
-            descriptionKey: 'about.values.excellence.description',
-            gradient: 'from-blue-500 to-cyan-500',
-        },
-        {
-            icon: Heart,
-            titleKey: 'about.values.compassion.title',
-            descriptionKey: 'about.values.compassion.description',
-            gradient: 'from-red-500 to-pink-500',
-        },
-        {
-            icon: Target,
-            titleKey: 'about.values.results.title',
-            descriptionKey: 'about.values.results.description',
-            gradient: 'from-green-500 to-emerald-500',
-        },
-        {
-            icon: Users,
-            titleKey: 'about.values.partnership.title',
-            descriptionKey: 'about.values.partnership.description',
-            gradient: 'from-purple-500 to-pink-500',
-        },
-    ];
-
-    const team = [
-        {
-            nameKey: 'about.team.member1.name',
-            roleKey: 'about.team.member1.role',
-            descriptionKey: 'about.team.member1.description',
-            avatar: 'PE',
-        },
-        {
-            nameKey: 'about.team.member2.name',
-            roleKey: 'about.team.member2.role',
-            descriptionKey: 'about.team.member2.description',
-            avatar: 'ST',
-        },
-        {
-            nameKey: 'about.team.member3.name',
-            roleKey: 'about.team.member3.role',
-            descriptionKey: 'about.team.member3.description',
-            avatar: 'DC',
-        },
-    ];
 
     return (
         <>

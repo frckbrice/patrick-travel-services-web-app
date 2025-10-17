@@ -2,8 +2,54 @@
 
 import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
-import { Shield, Award, Users, TrendingUp, Clock, Globe } from 'lucide-react';
+import { Shield, Award, Users, TrendingUp, Clock, Globe, type LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+
+interface FeatureCardProps {
+    icon: LucideIcon;
+    titleKey: string;
+    descriptionKey: string;
+    gradient: string;
+    position?: string;
+    isDesktop?: boolean;
+}
+
+function FeatureCard({ icon: Icon, titleKey, descriptionKey, gradient, position, isDesktop }: FeatureCardProps) {
+    const { t } = useTranslation();
+
+    return (
+        <Card
+            className={`group relative overflow-hidden border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-xl ${isDesktop
+                ? `absolute w-56 ${position} hover:scale-105 z-20 bg-card/95 backdrop-blur-sm`
+                : 'hover:-translate-y-1'
+                }`}
+        >
+            <CardContent className="p-5 space-y-3">
+                {/* Icon */}
+                <div className="relative">
+                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                        <Icon className="h-6 w-6 text-white" />
+                    </div>
+                    {/* Glow Effect */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${gradient} rounded-2xl blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300`} />
+                </div>
+
+                {/* Content */}
+                <div className={isDesktop ? 'space-y-2' : 'space-y-1'}>
+                    <h3 className="text-lg font-bold group-hover:text-primary transition-colors duration-300">
+                        {t(titleKey)}
+                    </h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                        {t(descriptionKey)}
+                    </p>
+                </div>
+
+                {/* Hover Effect Gradient */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none`} />
+            </CardContent>
+        </Card>
+    );
+}
 
 const features = [
     {
@@ -82,39 +128,15 @@ export function WhyChooseUs() {
                 <div className="relative pt-12 lg:pt-20 lg:pb-10">
                     {/* Mobile/Tablet: Simple Grid Layout */}
                     <div className="grid sm:grid-cols-2 lg:hidden gap-6 max-w-2xl mx-auto">
-                        {features.map((feature, index) => {
-                            const Icon = feature.icon;
-                            return (
-                                <Card
-                                    key={index}
-                                    className="group relative overflow-hidden border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-                                >
-                                    <CardContent className="p-5 space-y-3">
-                                        {/* Icon */}
-                                        <div className="relative">
-                                            <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                                                <Icon className="h-6 w-6 text-white" />
-                                            </div>
-                                            {/* Glow Effect */}
-                                            <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} rounded-2xl blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300`}></div>
-                                        </div>
-
-                                        {/* Content */}
-                                        <div className="space-y-1">
-                                            <h3 className="text-lg font-bold group-hover:text-primary transition-colors duration-300">
-                                                {t(feature.titleKey)}
-                                            </h3>
-                                            <p className="text-xs text-muted-foreground leading-relaxed">
-                                                {t(feature.descriptionKey)}
-                                            </p>
-                                        </div>
-
-                                        {/* Hover Effect Gradient */}
-                                        <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none`}></div>
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
+                        {features.map((feature, index) => (
+                            <FeatureCard
+                                key={index}
+                                icon={feature.icon}
+                                titleKey={feature.titleKey}
+                                descriptionKey={feature.descriptionKey}
+                                gradient={feature.gradient}
+                            />
+                        ))}
                     </div>
 
                     {/* Desktop: Circular Layout Around Image */}
@@ -145,7 +167,7 @@ export function WhyChooseUs() {
                                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-2xl rounded-full p-8 shadow-2xl border-4 border-primary/40 z-10">
                                         <div className="text-center">
                                             <div className="text-5xl font-extrabold bg-gradient-to-r from-primary via-blue-600 to-primary bg-clip-text text-transparent mb-2">
-                                                94%
+                                                {t('landing.hero.successRateValue')}
                                             </div>
                                             <div className="text-sm font-bold text-muted-foreground uppercase tracking-wide">
                                                 {t('landing.whyChooseUs.successRate')}
@@ -156,39 +178,17 @@ export function WhyChooseUs() {
                             </div>
 
                             {/* Feature Cards in Circle */}
-                            {features.map((feature, index) => {
-                                const Icon = feature.icon;
-                                return (
-                                    <Card
-                                        key={index}
-                                        className={`group absolute w-56 ${feature.position} overflow-hidden border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:scale-105 z-20 bg-card/95 backdrop-blur-sm`}
-                                    >
-                                        <CardContent className="p-5 space-y-3">
-                                            {/* Icon */}
-                                            <div className="relative">
-                                                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                                                    <Icon className="h-6 w-6 text-white" />
-                                                </div>
-                                                {/* Glow Effect */}
-                                                <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} rounded-2xl blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300`}></div>
-                                            </div>
-
-                                            {/* Content */}
-                                            <div className="space-y-2">
-                                                <h3 className="text-lg font-bold group-hover:text-primary transition-colors duration-300">
-                                                    {t(feature.titleKey)}
-                                                </h3>
-                                                <p className="text-xs text-muted-foreground leading-relaxed">
-                                                    {t(feature.descriptionKey)}
-                                                </p>
-                                            </div>
-
-                                            {/* Hover Effect Gradient */}
-                                            <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none`}></div>
-                                        </CardContent>
-                                    </Card>
-                                );
-                            })}
+                            {features.map((feature, index) => (
+                                <FeatureCard
+                                    key={index}
+                                    icon={feature.icon}
+                                    titleKey={feature.titleKey}
+                                    descriptionKey={feature.descriptionKey}
+                                    gradient={feature.gradient}
+                                    position={feature.position}
+                                    isDesktop
+                                />
+                            ))}
                         </div>
                     </div>
                 </div>

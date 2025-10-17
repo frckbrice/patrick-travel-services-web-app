@@ -1,5 +1,14 @@
 // Types for Cases feature
 
+export interface Document {
+    id: string;
+    originalName: string;
+    documentType: string;
+    uploadDate: string;
+    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    filePath: string;
+}
+
 export interface Case {
     id: string;
     referenceNumber: string;
@@ -12,7 +21,17 @@ export interface Case {
     lastUpdated: string;
     internalNotes?: string;
     estimatedCompletion?: string;
+    completedAt?: string;
+    approvedAt?: string;
+    documents?: Document[];
     client?: {
+        id: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        phone?: string;
+    };
+    assignedAgent?: {
         id: string;
         email: string;
         firstName: string;

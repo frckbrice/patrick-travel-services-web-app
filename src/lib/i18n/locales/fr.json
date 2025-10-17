@@ -53,7 +53,15 @@
     "sending": "Envoi en cours...",
     "backToLogin": "Retour à la connexion",
     "checkEmail": "Vérifiez votre e-mail",
-    "resetLinkSent": "Nous avons envoyé les instructions de réinitialisation à votre e-mail"
+    "resetLinkSent": "Nous avons envoyé les instructions de réinitialisation à votre e-mail",
+    "orContinueWithEmail": "Ou continuer avec e-mail",
+    "continueWithGoogle": "Continuer avec Google",
+    "inviteCode": {
+      "label": "Code d'Invitation",
+      "subLabel": "(Optionnel - pour l'inscription du personnel)",
+      "placeholder": "agent-xxxxxxxxx ou admin-xxxxxxxxx",
+      "helper": "Vous avez un code d'invitation? Entrez-le pour vous inscrire en tant que membre du personnel."
+    }
   },
   "dashboard": {
     "title": "Tableau de bord",
@@ -118,11 +126,45 @@
   },
   "settings": {
     "title": "Paramètres",
+    "subtitle": "Gérez vos préférences et paramètres de compte",
     "general": "Paramètres généraux",
     "security": "Sécurité",
     "notifications": "Notifications",
     "language": "Langue",
     "theme": "Thème",
+    "appearance": {
+      "title": "Apparence",
+      "description": "Personnalisez l'apparence de l'application",
+      "themeLabel": "Thème",
+      "themeDescription": "Choisissez votre thème d'affichage (clair, sombre ou système)",
+      "languageLabel": "Langue",
+      "languageDescription": "Sélectionnez votre langue préférée"
+    },
+    "notificationSettings": {
+      "title": "Notifications",
+      "description": "Configurez comment vous recevez les notifications",
+      "emailLabel": "Notifications par E-mail",
+      "emailDescription": "Recevez des mises à jour par e-mail sur vos dossiers",
+      "pushLabel": "Notifications Push",
+      "pushDescription": "Recevez des notifications push dans votre navigateur",
+      "smsLabel": "Notifications SMS",
+      "smsDescription": "Recevez des SMS pour les mises à jour critiques"
+    },
+    "securitySettings": {
+      "title": "Sécurité",
+      "description": "Gérez la sécurité et l'authentification de votre compte",
+      "changePassword": "Changer le Mot de Passe",
+      "changePasswordTitle": "Changer le Mot de Passe",
+      "changePasswordDescription": "Mettez à jour votre mot de passe pour sécuriser votre compte",
+      "currentPassword": "Mot de Passe Actuel",
+      "newPassword": "Nouveau Mot de Passe",
+      "confirmPassword": "Confirmer le Nouveau Mot de Passe",
+      "updatePassword": "Mettre à Jour le Mot de Passe",
+      "cancel": "Annuler",
+      "passwordUpdated": "Mot de passe mis à jour avec succès!",
+      "twoFactorAuth": "Authentification à Deux Facteurs",
+      "comingSoon": "Bientôt Disponible"
+    },
     "emailNotifications": "Notifications par e-mail",
     "pushNotifications": "Notifications push",
     "smsNotifications": "Notifications SMS",
@@ -131,6 +173,38 @@
     "lightMode": "Mode clair",
     "darkMode": "Mode sombre",
     "systemMode": "Système par défaut"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "pageTitle": "Notifications",
+    "pageSubtitle": "Restez informé de l'avancement de votre dossier",
+    "markAllAsRead": "Tout marquer comme lu",
+    "markingAsRead": "Marquage en cours...",
+    "unread": "non lu",
+    "allNotifications": "Toutes les notifications",
+    "filters": {
+      "all": "Toutes les notifications",
+      "caseUpdates": "Mises à jour de cas",
+      "messages": "Messages",
+      "documentVerified": "Document vérifié",
+      "documentRejected": "Document rejeté",
+      "announcements": "Annonces"
+    },
+    "showUnreadOnly": "Afficher seulement les non lus",
+    "showingUnread": "Affichage des non lus",
+    "noNotifications": "Aucune notification",
+    "noMatchingFilters": "Aucune notification ne correspond à vos filtres",
+    "allCaughtUp": "Vous êtes à jour!",
+    "errorLoading": "Erreur lors du chargement des notifications",
+    "justNow": "À l'instant",
+    "hoursAgo": "Il y a {{hours}}h",
+    "yesterday": "Hier",
+    "daysAgo": "Il y a {{days}} jours",
+    "invalidDate": "Date invalide",
+    "markAsReadSuccess": "Notification marquée comme lue",
+    "markAsReadError": "Échec du marquage de la notification comme lue. Veuillez réessayer.",
+    "markAllAsReadSuccess": "Toutes les notifications marquées comme lues",
+    "markAllAsReadError": "Échec du marquage de toutes les notifications comme lues. Veuillez réessayer."
   },
   "users": {
     "title": "Utilisateurs",
@@ -176,12 +250,16 @@
       "support247": "Support 24/7",
       "alwaysHere": "Toujours là pour vous",
       "fastProcessing": "Traitement Rapide",
-      "quickTurnaround": "Délais de traitement rapides"
+      "quickTurnaround": "Délais de traitement rapides",
+      "trustedBy": "Approuvé par {{count}}+",
+      "successRate": "Taux de Réussite",
+      "successRateValue": "94%"
     },
     "whyChooseUs": {
       "title": "Pourquoi Nous Choisir",
       "subtitle": "Nous combinons expertise, dévouement et résultats prouvés pour vous aider à atteindre vos objectifs d'immigration en toute confiance",
       "imageText": "Notre Équipe d'Experts en Immigration",
+      "successRate": "Taux de Réussite",
       "features": {
         "security": {
           "title": "Sécurisé et Confidentiel",
@@ -263,6 +341,7 @@
       "send": "Envoyer le Message",
       "sending": "Envoi en cours...",
       "success": "Message envoyé avec succès! Nous vous répondrons bientôt.",
+      "error": "Échec de l'envoi du message. Veuillez réessayer.",
       "cannotFind": "Vous ne trouvez pas ce que vous cherchez?",
       "supportTeam": "Notre équipe d'assistance est là pour vous aider",
       "contactSupport": "Contacter le Support"

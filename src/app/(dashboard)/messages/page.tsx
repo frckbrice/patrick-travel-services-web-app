@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { MessagesList, MessagesListSkeleton } from '@/features/messages/components/MessagesListEnhanced';
+import { MessagesList, MessagesListSkeleton } from '@/features/messages/components';
 
 export default function MessagesPage() {
     return (

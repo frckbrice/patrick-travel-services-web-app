@@ -1,17 +1,21 @@
 'use client';
 
 import { useAuthStore } from '@/features/auth/store';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import { useCases } from '@/features/cases/api';
+import { Case } from '@/features/cases/types';
 import { BarChart3, TrendingUp, FileCheck, Target } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function AnalyticsView() {
     const { user } = useAuthStore();
     const router = useRouter();
     const { t } = useTranslation();
+    const { data, isLoading } = useCases({});
 
     useEffect(() => {
         // Only ADMIN and AGENT can access this page
@@ -24,31 +28,39 @@ export function AnalyticsView() {
         return null;
     }
 
+    if (isLoading) return <AnalyticsViewSkeleton />;
+
+    const cases: Case[] = data?.cases || [];
+    const totalCases = cases.length;
+    const activeCases = cases.filter((c: Case) => !['APPROVED', 'REJECTED', 'CLOSED'].includes(c.status)).length;
+    const approvedCases = cases.filter((c: Case) => c.status === 'APPROVED').length;
+    const successRate = totalCases > 0 ? Math.round((approvedCases / totalCases) * 100) : 0;
+
     const stats = [
         {
             label: 'Total Cases',
-            value: '156',
+            value: totalCases.toString(),
             trend: '+12%',
             icon: BarChart3,
             description: 'All time cases'
         },
         {
             label: 'Active Cases',
-            value: '48',
+            value: activeCases.toString(),
             trend: '+8%',
             icon: TrendingUp,
             description: 'Currently processing'
         },
         {
             label: 'Approved Cases',
-            value: '92',
+            value: approvedCases.toString(),
             trend: '+15%',
             icon: FileCheck,
             description: 'Successfully approved'
         },
         {
             label: 'Success Rate',
-            value: '94%',
+            value: `${successRate}%`,
             trend: '+3%',
             icon: Target,
             description: 'Approval percentage'
@@ -154,6 +166,38 @@ export function AnalyticsView() {
                     </Card>
                 </TabsContent>
             </Tabs>
+        </div>
+    );
+}
+
+export function AnalyticsViewSkeleton() {
+    return (
+        <div className="space-y-6">
+            <div>
+                <Skeleton className="h-9 w-32" />
+                <Skeleton className="h-5 w-64 mt-2" />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {[1, 2, 3, 4].map(i => (
+                    <Card key={i}>
+                        <CardHeader>
+                            <Skeleton className="h-4 w-24" />
+                        </CardHeader>
+                        <CardContent>
+                            <Skeleton className="h-8 w-12" />
+                            <Skeleton className="h-3 w-20 mt-2" />
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-48" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-64 w-full" />
+                </CardContent>
+            </Card>
         </div>
     );
 }

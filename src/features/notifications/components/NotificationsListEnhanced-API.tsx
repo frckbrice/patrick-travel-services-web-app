@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useNotifications } from '../api';
-import { useNotificationMutations } from '../api/mutations';
+import { useMarkNotificationRead, useMarkAllNotificationsRead } from '../api/mutations';
 import { Bell, CheckCheck, Briefcase, MessageSquare, FileText, CheckCircle2, AlertCircle, User, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +12,18 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { logger } from '@/lib/utils/logger';
+
+interface Notification {
+    id: string;
+    type: string;
+    title: string;
+    message: string;
+    createdAt: string;
+    isRead: boolean;
+    actionUrl?: string;
+}
 
 const notifConfig: Record<string, { icon: any; className: string }> = {
     CASE_STATUS_UPDATE: { icon: Briefcase, className: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
@@ -22,39 +36,53 @@ const notifConfig: Record<string, { icon: any; className: string }> = {
 };
 
 export function NotificationsList() {
+    const { t } = useTranslation();
+    const router = useRouter();
     const [filterType, setFilterType] = useState<string>('all');
     const [showUnreadOnly, setShowUnreadOnly] = useState(false);
     
     const { data, isLoading, error, refetch } = useNotifications(showUnreadOnly);
-    const { markAsRead, markAllAsRead } = useNotificationMutations();
+    const markAsRead = useMarkNotificationRead();
+    const markAllAsRead = useMarkAllNotificationsRead();
     
     if (isLoading) return <NotificationsListSkeleton />;
-    if (error) return <div className="text-center py-12"><p className="text-red-600">Error loading notifications</p></div>;
+    if (error) return <div className="text-center py-12"><p className="text-red-600">{t('notifications.errorLoading')}</p></div>;
 
-    const notifications = data?.notifications || [];
+    const notifications: Notification[] = data?.notifications || [];
     const unreadCount = data?.unreadCount || 0;
-    const filtered = notifications.filter((n: any) => filterType === 'all' || n.type === filterType);
+    const filtered = notifications.filter((n: Notification) => filterType === 'all' || n.type === filterType);
 
     const formatTime = (date: string) => {
         const d = new Date(date);
+        if (isNaN(d.getTime())) return t('notifications.invalidDate');
         const now = new Date();
         const hours = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60));
-        if (hours < 1) return 'Just now';
-        if (hours < 24) return `${hours}h ago`;
+        if (hours < 1) return t('notifications.justNow');
+        if (hours < 24) return t('notifications.hoursAgo', { hours });
         const days = Math.floor(hours / 24);
-        if (days === 1) return 'Yesterday';
-        if (days < 7) return `${days} days ago`;
+        if (days === 1) return t('notifications.yesterday');
+        if (days < 7) return t('notifications.daysAgo', { days });
         return d.toLocaleDateString();
     };
 
     const handleMarkAsRead = async (id: string) => {
-        await markAsRead.mutateAsync(id);
-        refetch();
+        try {
+            await markAsRead.mutateAsync(id);
+            refetch();
+        } catch (error) {
+            logger.error('Failed to mark notification as read:', error);
+            toast.error(t('notifications.markAsReadError'));
+        }
     };
 
     const handleMarkAllAsRead = async () => {
-        await markAllAsRead.mutateAsync();
-        refetch();
+        try {
+            await markAllAsRead.mutateAsync();
+            refetch();
+        } catch (error) {
+            logger.error('Failed to mark all notifications as read:', error);
+            toast.error(t('notifications.markAllAsReadError'));
+        }
     };
 
     return (
@@ -62,37 +90,55 @@ export function NotificationsList() {
             <div className="flex items-center justify-between">
                 <div>
                     <div className="flex items-center gap-3">
-                        <h1 className="text-3xl font-bold">Notifications</h1>
-                        {unreadCount > 0 && <Badge variant="default">{unreadCount} unread</Badge>}
+                        <h1 className="text-3xl font-bold">{t('notifications.pageTitle')}</h1>
+                        {unreadCount > 0 && <Badge variant="default">{unreadCount} {t('notifications.unread')}</Badge>}
                     </div>
-                    <p className="text-muted-foreground mt-2">Stay updated on your case progress</p>
+                    <p className="text-muted-foreground mt-2">{t('notifications.pageSubtitle')}</p>
                 </div>
-                {unreadCount > 0 && <Button variant="outline" onClick={handleMarkAllAsRead} disabled={markAllAsRead.isPending}><CheckCheck className="mr-2 h-4 w-4" />Mark All as Read</Button>}
+                {unreadCount > 0 && <Button variant="outline" onClick={handleMarkAllAsRead} disabled={markAllAsRead.isPending}><CheckCheck className="mr-2 h-4 w-4" />{t('notifications.markAllAsRead')}</Button>}
             </div>
             <Card><CardContent className="pt-6">
                 <div className="flex flex-col sm:flex-row gap-4">
                     <Select value={filterType} onValueChange={setFilterType}>
                         <SelectTrigger className="w-full sm:w-[250px]"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All Notifications</SelectItem>
-                            <SelectItem value="CASE_STATUS_UPDATE">Case Updates</SelectItem>
-                            <SelectItem value="NEW_MESSAGE">Messages</SelectItem>
-                            <SelectItem value="DOCUMENT_VERIFIED">Document Verified</SelectItem>
-                            <SelectItem value="DOCUMENT_REJECTED">Document Rejected</SelectItem>
-                            <SelectItem value="SYSTEM_ANNOUNCEMENT">Announcements</SelectItem>
+                            <SelectItem value="all">{t('notifications.filters.all')}</SelectItem>
+                            <SelectItem value="CASE_STATUS_UPDATE">{t('notifications.filters.caseUpdates')}</SelectItem>
+                            <SelectItem value="NEW_MESSAGE">{t('notifications.filters.messages')}</SelectItem>
+                            <SelectItem value="DOCUMENT_VERIFIED">{t('notifications.filters.documentVerified')}</SelectItem>
+                            <SelectItem value="DOCUMENT_REJECTED">{t('notifications.filters.documentRejected')}</SelectItem>
+                            <SelectItem value="SYSTEM_ANNOUNCEMENT">{t('notifications.filters.announcements')}</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button variant={showUnreadOnly ? 'default' : 'outline'} onClick={() => setShowUnreadOnly(!showUnreadOnly)}>{showUnreadOnly ? 'Showing Unread' : 'Show Unread Only'}</Button>
+                    <Button variant={showUnreadOnly ? 'default' : 'outline'} onClick={() => setShowUnreadOnly(!showUnreadOnly)}>{showUnreadOnly ? t('notifications.showingUnread') : t('notifications.showUnreadOnly')}</Button>
                 </div>
             </CardContent></Card>
             {filtered.length === 0 ? (
-                <Card><CardContent className="py-12 text-center"><Bell className="mx-auto h-12 w-12 text-muted-foreground mb-4" /><h3 className="text-lg font-semibold mb-2">No Notifications</h3><p className="text-muted-foreground">{showUnreadOnly || filterType !== 'all' ? 'No notifications match your filters' : 'You are all caught up!'}</p></CardContent></Card>
+                <Card><CardContent className="py-12 text-center"><Bell className="mx-auto h-12 w-12 text-muted-foreground mb-4" /><h3 className="text-lg font-semibold mb-2">{t('notifications.noNotifications')}</h3><p className="text-muted-foreground">{showUnreadOnly || filterType !== 'all' ? t('notifications.noMatchingFilters') : t('notifications.allCaughtUp')}</p></CardContent></Card>
             ) : (
                 <div className="space-y-2">
-                    {filtered.map((notif: any) => {
+                        {filtered.map((notif: Notification) => {
                         const Icon = notifConfig[notif.type]?.icon || Bell;
+
+                            const handleNotificationClick = async () => {
+                                try {
+                                    // Mark as read if unread, and wait for it to complete
+                                    if (!notif.isRead) {
+                                        await handleMarkAsRead(notif.id);
+                                    }
+                                } catch (error) {
+                                    // Log error but don't block navigation
+                                    logger.error('Error marking notification as read:', error);
+                                }
+
+                                // Navigate if actionUrl exists
+                                if (notif.actionUrl) {
+                                    router.push(notif.actionUrl);
+                                }
+                            };
+
                         return (
-                            <Card key={notif.id} className={cn('hover:shadow-md transition-all cursor-pointer', !notif.isRead && 'border-l-4 border-l-primary bg-muted/30')} onClick={() => { if (!notif.isRead) handleMarkAsRead(notif.id); if (notif.actionUrl) window.location.href = notif.actionUrl; }}>
+                            <Card key={notif.id} className={cn('hover:shadow-md transition-all cursor-pointer', !notif.isRead && 'border-l-4 border-l-primary bg-muted/30')} onClick={handleNotificationClick}>
                                 <CardContent className="pt-6">
                                     <div className="flex items-start gap-4">
                                         <div className={cn('p-3 rounded-lg', notifConfig[notif.type]?.className || '')}><Icon className="h-5 w-5" /></div>

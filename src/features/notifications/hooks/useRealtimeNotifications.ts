@@ -1,6 +1,7 @@
 // React hook for real-time notifications using Firebase
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/features/auth/store';
 import { subscribeToUserNotifications, RealtimeNotification } from '@/lib/firebase/notifications.service';
 import { showNotification } from '@/lib/notifications/push-notifications';
@@ -11,6 +12,7 @@ import { NOTIFICATIONS_KEY } from '../api/queries';
 export function useRealtimeNotifications() {
     const { user, isAuthenticated } = useAuthStore();
     const queryClient = useQueryClient();
+    const router = useRouter();
 
     useEffect(() => {
         if (!isAuthenticated || !user?.id) return;
@@ -23,17 +25,32 @@ export function useRealtimeNotifications() {
                     description: notification.message,
                     action: notification.actionUrl ? {
                         label: 'View',
-                        onClick: () => window.location.href = notification.actionUrl!,
+                        onClick: () => router.push(notification.actionUrl || '/'),
                     } : undefined,
                     duration: 5000,
                 });
 
-                // Show browser push
-                showNotification(notification.title, {
-                    body: notification.message,
-                    tag: notification.id,
-                    data: { url: notification.actionUrl },
-                });
+                // Show browser push notification with proper error handling
+                if (typeof window !== 'undefined' && 'Notification' in window) {
+                    // Check if permission is already granted
+                    if (Notification.permission === 'granted') {
+                        try {
+                            showNotification(notification.title, {
+                                body: notification.message,
+                                tag: notification.id,
+                                data: { url: notification.actionUrl },
+                            });
+                        } catch (error) {
+                            // Silently handle notification errors - don't break the app
+                            console.warn('Failed to show browser notification:', error);
+                        }
+                    }
+                    // Optionally, you could request permission if it's 'default'
+                    else if (Notification.permission === 'default') {
+                        // Request permission for future notifications
+                        Notification.requestPermission().catch(() => { });
+                    }
+                }
 
                 // Refresh list
                 queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY] });
@@ -41,6 +58,6 @@ export function useRealtimeNotifications() {
         );
 
         return () => unsubscribe();
-    }, [isAuthenticated, user?.id, queryClient]);
+    }, [isAuthenticated, user?.id, queryClient, router]);
 }
 

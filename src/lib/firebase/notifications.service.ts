@@ -23,15 +23,32 @@ export function subscribeToUserNotifications(
     const notificationsRef = ref(database, `notifications/${userId}`);
     let lastNotificationTime = Date.now();
 
-    const unsubscribe = onValue(notificationsRef, (snapshot) => {
+    const callback = (snapshot: any) => {
         if (!snapshot.exists()) return;
 
         const notifications = snapshot.val();
+        let maxValidTimestamp = lastNotificationTime;
         
         // Find new notifications (created after subscription)
         Object.entries(notifications).forEach(([key, value]: [string, any]) => {
+            // Validate and parse notification timestamp
             const notificationTime = new Date(value.createdAt).getTime();
             
+            // Skip entries with invalid dates (NaN)
+            if (!Number.isFinite(notificationTime)) {
+                logger.warn('Invalid notification date encountered', {
+                    notificationId: key,
+                    createdAt: value.createdAt
+                });
+                return;
+            }
+
+            // Track the maximum valid timestamp seen
+            if (notificationTime > maxValidTimestamp) {
+                maxValidTimestamp = notificationTime;
+            }
+
+            // Only emit notifications that are newer than last processed time
             if (notificationTime > lastNotificationTime) {
                 onNewNotification({
                     id: key,
@@ -39,9 +56,14 @@ export function subscribeToUserNotifications(
                 });
             }
         });
-    });
 
-    return () => off(notificationsRef);
+        // Update lastNotificationTime to the largest timestamp seen (or keep current if no valid timestamps)
+        lastNotificationTime = maxValidTimestamp;
+    };
+
+    onValue(notificationsRef, callback);
+
+    return () => off(notificationsRef, 'value', callback);
 }
 
 // Create notification in Firebase Realtime Database
@@ -62,13 +84,24 @@ export async function createRealtimeNotification(
 
         await set(newNotificationRef, notificationData);
         
+        // Check if key generation failed
+        if (!newNotificationRef.key) {
+            throw new Error(
+                `Firebase failed to generate notification key. ` +
+                `Path: notifications/${userId}, ` +
+                `Payload: ${JSON.stringify(notificationData)}, ` +
+                `Type: ${notification.type}, ` +
+                `Title: ${notification.title}`
+            );
+        }
+
         logger.info('Realtime notification created', { 
             userId, 
             type: notification.type,
             notificationId: newNotificationRef.key 
         });
 
-        return newNotificationRef.key || '';
+        return newNotificationRef.key;
     } catch (error) {
         logger.error('Failed to create realtime notification', error);
         throw error;

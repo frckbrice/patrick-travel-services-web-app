@@ -53,7 +53,15 @@
     "sending": "Sending...",
     "backToLogin": "Back to Login",
     "checkEmail": "Check Your Email",
-    "resetLinkSent": "We've sent password reset instructions to your email"
+    "resetLinkSent": "We've sent password reset instructions to your email",
+    "orContinueWithEmail": "Or continue with email",
+    "continueWithGoogle": "Continue with Google",
+    "inviteCode": {
+      "label": "Invite Code",
+      "subLabel": "(Optional - for staff registration)",
+      "placeholder": "agent-xxxxxxxxx or admin-xxxxxxxxx",
+      "helper": "Have an invite code? Enter it to register as staff member."
+    }
   },
   "dashboard": {
     "title": "Dashboard",
@@ -118,11 +126,45 @@
   },
   "settings": {
     "title": "Settings",
+    "subtitle": "Manage your account preferences and settings",
     "general": "General Settings",
     "security": "Security",
     "notifications": "Notifications",
     "language": "Language",
     "theme": "Theme",
+    "appearance": {
+      "title": "Appearance",
+      "description": "Customize how the application looks",
+      "themeLabel": "Theme",
+      "themeDescription": "Choose your display theme (light, dark, or system)",
+      "languageLabel": "Language",
+      "languageDescription": "Select your preferred language"
+    },
+    "notificationSettings": {
+      "title": "Notifications",
+      "description": "Configure how you receive notifications",
+      "emailLabel": "Email Notifications",
+      "emailDescription": "Receive email updates about your cases",
+      "pushLabel": "Push Notifications",
+      "pushDescription": "Get push notifications in your browser",
+      "smsLabel": "SMS Notifications",
+      "smsDescription": "Receive SMS for critical updates"
+    },
+    "securitySettings": {
+      "title": "Security",
+      "description": "Manage your account security and authentication",
+      "changePassword": "Change Password",
+      "changePasswordTitle": "Change Password",
+      "changePasswordDescription": "Update your password to keep your account secure",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm New Password",
+      "updatePassword": "Update Password",
+      "cancel": "Cancel",
+      "passwordUpdated": "Password updated successfully!",
+      "twoFactorAuth": "Two-Factor Authentication",
+      "comingSoon": "Coming Soon"
+    },
     "emailNotifications": "Email Notifications",
     "pushNotifications": "Push Notifications",
     "smsNotifications": "SMS Notifications",
@@ -131,6 +173,38 @@
     "lightMode": "Light Mode",
     "darkMode": "Dark Mode",
     "systemMode": "System Default"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "pageTitle": "Notifications",
+    "pageSubtitle": "Stay updated on your case progress",
+    "markAllAsRead": "Mark All as Read",
+    "markingAsRead": "Marking as Read...",
+    "unread": "unread",
+    "allNotifications": "All Notifications",
+    "filters": {
+      "all": "All Notifications",
+      "caseUpdates": "Case Updates",
+      "messages": "Messages",
+      "documentVerified": "Document Verified",
+      "documentRejected": "Document Rejected",
+      "announcements": "Announcements"
+    },
+    "showUnreadOnly": "Show Unread Only",
+    "showingUnread": "Showing Unread",
+    "noNotifications": "No Notifications",
+    "noMatchingFilters": "No notifications match your filters",
+    "allCaughtUp": "You are all caught up!",
+    "errorLoading": "Error loading notifications",
+    "justNow": "Just now",
+    "hoursAgo": "{{hours}}h ago",
+    "yesterday": "Yesterday",
+    "daysAgo": "{{days}} days ago",
+    "invalidDate": "Invalid date",
+    "markAsReadSuccess": "Notification marked as read",
+    "markAsReadError": "Failed to mark notification as read. Please try again.",
+    "markAllAsReadSuccess": "All notifications marked as read",
+    "markAllAsReadError": "Failed to mark all notifications as read. Please try again."
   },
   "users": {
     "title": "Users",
@@ -176,12 +250,16 @@
       "support247": "24/7 Support",
       "alwaysHere": "Always here for you",
       "fastProcessing": "Fast Processing",
-      "quickTurnaround": "Quick turnaround times"
+      "quickTurnaround": "Quick turnaround times",
+      "trustedBy": "Trusted by {{count}}+",
+      "successRate": "Success Rate",
+      "successRateValue": "94%"
     },
     "whyChooseUs": {
       "title": "Why Choose Us",
       "subtitle": "We combine expertise, dedication, and proven results to help you achieve your immigration goals with confidence",
       "imageText": "Our Team of Immigration Experts",
+      "successRate": "Success Rate",
       "features": {
         "security": {
           "title": "Secure & Confidential",
@@ -263,6 +341,7 @@
       "send": "Send Message",
       "sending": "Sending...",
       "success": "Message sent successfully! We'll get back to you soon.",
+      "error": "Failed to send message. Please try again.",
       "cannotFind": "Can't find what you're looking for?",
       "supportTeam": "Our support team is here to help",
       "contactSupport": "Contact Support"

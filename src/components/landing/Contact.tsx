@@ -12,6 +12,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { logger } from '@/lib/utils/logger';
+import { apiClient } from '@/lib/utils/axios';
+import { AxiosError } from 'axios';
+import { contactInfo } from './api/data';
 
 const contactSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -36,38 +39,45 @@ export function Contact() {
     });
 
     const onSubmit = async (data: ContactInput) => {
-        // TODO: Implement actual form submission
-        logger.info('Contact form data:', data);
-        toast.success(t('landing.contact.success'));
-        form.reset();
-    };
+        try {
+            logger.info('Submitting contact form', { email: data.email, name: data.name });
 
-    const contactInfo = [
-        {
-            icon: Phone,
-            title: t('landing.contact.phone'),
-            value: '+1 (234) 567-890',
-            href: 'tel:+1234567890',
-            color: 'text-green-600 dark:text-green-400',
-            bgColor: 'bg-green-100 dark:bg-green-900/20',
-        },
-        {
-            icon: Mail,
-            title: t('landing.contact.email'),
-            value: 'info@patricktravelservices.com',
-            href: 'mailto:info@patricktravelservices.com',
-            color: 'text-blue-600 dark:text-blue-400',
-            bgColor: 'bg-blue-100 dark:bg-blue-900/20',
-        },
-        {
-            icon: MapPin,
-            title: t('landing.contact.address'),
-            value: '123 Immigration Street, City, Country',
-            // href: 'https://maps.google.com/?q=123+Immigration+Street,+City,+Country',
-            color: 'text-purple-600 dark:text-purple-400',
-            bgColor: 'bg-purple-100 dark:bg-purple-900/20',
-        },
-    ];
+            // Submit to contact API endpoint
+            const response = await apiClient.post('/api/contact', data);
+
+            logger.info('Contact form submitted successfully', {
+                contactId: response.data.data?.id,
+            });
+
+            // Show success message
+            toast.success(
+                response.data.data?.message || t('landing.contact.success')
+            );
+
+            // Reset form only on success
+            form.reset();
+        } catch (error) {
+            // Handle errors
+            logger.error('Contact form submission failed', error);
+
+            let errorMessage = t('landing.contact.error') || 'Failed to submit contact form. Please try again.';
+
+            if (error instanceof AxiosError) {
+                // Extract error message from API response
+                if (error.response?.data?.message) {
+                    errorMessage = error.response.data.message;
+                } else if (error.response?.status === 429) {
+                    errorMessage = 'Too many requests. Please try again later.';
+                } else if (error.response && error.response.status >= 500) {
+                    errorMessage = 'Server error. Please try again later.';
+                } else if (!error.response) {
+                    errorMessage = 'Network error. Please check your internet connection.';
+                }
+            }
+
+            toast.error(errorMessage);
+        }
+    };
 
     return (
         <section className="relative py-16 md:py-20 lg:py-24">
@@ -86,7 +96,7 @@ export function Contact() {
                     {/* Contact Information - Left Side */}
                     <div className="lg:col-span-2 space-y-6">
                         {/* Contact Cards */}
-                        {contactInfo.map((info, index) => {
+                        {contactInfo(t).map((info, index) => {
                             const Icon = info.icon;
                             return (
                                 <Card key={index} className="hover:shadow-lg transition-shadow border-2">

@@ -10,6 +10,7 @@ import { asyncHandler, ApiError, HttpStatus } from '@/lib/utils/error-handler';
 import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 import { randomBytes } from 'crypto';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 const handler = asyncHandler(async (request: NextRequest) => {
     // Check if Firebase Admin is initialized
@@ -20,24 +21,31 @@ const handler = asyncHandler(async (request: NextRequest) => {
         );
     }
 
-    const body = await request.json();
-    const { firebaseUid, email, displayName, photoURL, isNewUser } = body;
-
-    if (!firebaseUid || !email) {
-        throw new ApiError('Invalid request data', HttpStatus.BAD_REQUEST);
-    }
-
     // Verify the Firebase token
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-        throw new ApiError('Unauthorized', HttpStatus.UNAUTHORIZED);
+        throw new ApiError('Unauthorized - Missing or invalid token', HttpStatus.UNAUTHORIZED);
     }
 
     const token = authHeader.split('Bearer ')[1];
-    const decodedToken = await adminAuth.verifyIdToken(token);
+    let decodedToken;
 
-    if (decodedToken.uid !== firebaseUid) {
-        throw new ApiError('Invalid authentication', HttpStatus.UNAUTHORIZED);
+    try {
+        decodedToken = await adminAuth.verifyIdToken(token);
+        logger.info('Firebase token verified for Google sign-in', { uid: decodedToken.uid });
+    } catch (error: any) {
+        logger.error('Firebase token verification failed', { error: error.message });
+        throw new ApiError('Invalid authentication token', HttpStatus.UNAUTHORIZED);
+    }
+
+    // Extract Firebase UID from verified token (this is secure)
+    const firebaseUid = decodedToken.uid;
+
+    const body = await request.json();
+    const { email, displayName, photoURL } = body;
+
+    if (!email) {
+        throw new ApiError('Email is required', HttpStatus.BAD_REQUEST);
     }
 
     // Check if user exists in database
@@ -87,42 +95,75 @@ const handler = asyncHandler(async (request: NextRequest) => {
     const firstName = names[0] || 'User';
     const lastName = names.slice(1).join(' ') || '';
 
-    user = await prisma.user.create({
-        data: {
-            id: firebaseUid,
-            email,
-            password: randomBytes(32).toString('hex'), // Random value for OAuth users, // Password managed by Google
-            firstName,
-            lastName,
-            phone: null,
+    try {
+        user = await prisma.user.create({
+            data: {
+                id: firebaseUid,
+                email,
+                password: randomBytes(32).toString('hex'), // Random value for OAuth users
+                firstName,
+                lastName,
+                phone: null,
+                role: 'CLIENT',
+                isVerified: true, // Google accounts are already verified
+                profilePicture: photoURL || null,
+            },
+            select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                phone: true,
+                role: true,
+                isActive: true,
+                isVerified: true,
+                createdAt: true,
+                updatedAt: true,
+                lastLogin: true,
+            },
+        });
+
+        // Set custom claims
+        await adminAuth.setCustomUserClaims(firebaseUid, {
             role: 'CLIENT',
-            isVerified: true, // Google accounts are already verified
-            profilePicture: photoURL || null,
-        },
-        select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-            role: true,
-            isActive: true,
-            isVerified: true,
-            createdAt: true,
-            updatedAt: true,
-            lastLogin: true,
-        },
-    });
+            userId: user.id,
+        });
 
-    // Set custom claims
-    await adminAuth.setCustomUserClaims(firebaseUid, {
-        role: 'CLIENT',
-        userId: user.id,
-    });
+        logger.info('User registered with Google', { userId: user.id, email: user.email });
 
-    logger.info('User registered with Google', { userId: user.id, email: user.email });
+        return successResponse({ user }, 'Registration successful', 201);
+    } catch (error) {
+        // Handle race condition: concurrent requests trying to create the same user
+        if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
+            logger.info('Concurrent user creation detected, fetching existing user', { firebaseUid });
 
-    return successResponse({ user }, 'Registration successful', 201);
+            // User was created by another concurrent request, fetch and update it
+            user = await prisma.user.update({
+                where: { id: firebaseUid },
+                data: { lastLogin: new Date() },
+                select: {
+                    id: true,
+                    email: true,
+                    firstName: true,
+                    lastName: true,
+                    phone: true,
+                    role: true,
+                    isActive: true,
+                    isVerified: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    lastLogin: true,
+                },
+            });
+
+            logger.info('User logged in with Google (after race condition)', { userId: user.id });
+            return successResponse({ user }, 'Login successful');
+        }
+
+        // For any other error, log and rethrow
+        logger.error('Error creating user with Google', { error, firebaseUid, email });
+        throw error;
+    }
 });
 
 // Apply middleware

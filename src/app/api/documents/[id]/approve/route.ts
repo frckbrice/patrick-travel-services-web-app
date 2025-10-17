@@ -7,12 +7,17 @@ import { logger } from '@/lib/utils/logger';
 import { successResponse } from '@/lib/utils/api-response';
 import { asyncHandler, ApiError, HttpStatus } from '@/lib/utils/error-handler';
 import { withCorsMiddleware } from '@/lib/middleware/cors';
-import { with RateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
+import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
 import { sendDocumentVerifiedEmail } from '@/lib/notifications/email.service';
 import { createRealtimeNotification } from '@/lib/firebase/notifications.service';
 
-const handler = asyncHandler(async (request: NextRequest, { params }: { params: { id: string } }) => {
+const handler = asyncHandler(async (request: NextRequest, context?: { params: Promise<{ id: string }> }) => {
+    const params = await context?.params;
+
+    if (!params) {
+        throw new ApiError('Invalid request parameters', HttpStatus.BAD_REQUEST);
+    }
     const req = request as AuthenticatedRequest;
     
     if (!req.user) {

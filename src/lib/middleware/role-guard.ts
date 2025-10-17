@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase/firebase-admin';
 import { prisma } from '@/lib/db/prisma';
 import { ApiError, HttpStatus } from '@/lib/utils/error-handler';
-import { UserRole, hasAccessToRoute } from '@/lib/utils/role-permissions';
+import { UserRole } from '@/lib/utils/role-permissions';
 
 export async function withRoleGuard(
     handler: (request: NextRequest, userId: string, userRole: UserRole) => Promise<NextResponse>,
@@ -64,10 +64,23 @@ export async function withRoleGuard(
             // Call the handler with user info
             return await handler(request, user.id, user.role as UserRole);
         } catch (error) {
-            console.error('Role guard error:', error);
+            // console.error('Role guard error:', error);
+            // return NextResponse.json(
+            //     { success: false, error: 'Authentication failed' },
+            //     { status: HttpStatus.UNAUTHORIZED }
+            // );
+            // Firebase auth errors should return UNAUTHORIZED
+            if (error instanceof Error && error.message.includes('auth')) {
+                return NextResponse.json(
+                    { success: false, error: 'Authentication failed' },
+                    { status: HttpStatus.UNAUTHORIZED }
+            );
+            }
+
+            // Other errors are server errors
             return NextResponse.json(
-                { success: false, error: 'Authentication failed' },
-                { status: HttpStatus.UNAUTHORIZED }
+                { success: false, error: 'Internal server error' },
+                { status: HttpStatus.INTERNAL_SERVER_ERROR }
             );
         }
     };

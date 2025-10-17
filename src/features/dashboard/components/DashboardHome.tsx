@@ -2,6 +2,8 @@
 
 import { useAuthStore } from '@/features/auth/store';
 import { useCases } from '@/features/cases/api';
+import { useDocuments } from '@/features/documents/api';
+import { useConversations } from '@/features/messages/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,22 +12,37 @@ import Link from 'next/link';
 
 export function DashboardHome() {
     const { user } = useAuthStore();
-    const { data: casesData, isLoading } = useCases({});
+    const { data: casesData, isLoading: casesLoading } = useCases({});
+    const { data: documentsData } = useDocuments({});
+    const { data: conversationsData } = useConversations();
+
+    // Calculate pending documents (documents with PENDING status)
+    const pendingDocuments = documentsData?.documents?.filter(doc => doc.status === 'PENDING').length || 0;
+
+    // Calculate unread messages from conversations
+    const unreadMessages = conversationsData?.reduce((total, room) => {
+        if (room.unreadCount && user?.id) {
+            return total + (room.unreadCount[user.id] || 0);
+        }
+        return total;
+    }, 0) || 0;
     
     const stats = {
         totalCases: casesData?.cases?.length || 0,
         activeCases: casesData?.cases?.filter((c: any) => !['APPROVED', 'REJECTED', 'CLOSED'].includes(c.status)).length || 0,
         completedCases: casesData?.cases?.filter((c: any) => c.status === 'APPROVED').length || 0,
-        pendingDocuments: 0,
-        unreadMessages: 0,
+        pendingDocuments,
+        unreadMessages,
     };
 
-    if (isLoading) return <DashboardHomeSkeleton />;
+    if (casesLoading) return <DashboardHomeSkeleton />;
 
     return (
         <div className="space-y-8">
             <div>
-                <h1 className="text-3xl font-bold">Welcome back, {user?.firstName}!</h1>
+                <h1 className="text-3xl font-bold">
+                    Welcome back{user?.firstName ? `, ${user.firstName}` : ''}!
+                </h1>
                 <p className="text-muted-foreground mt-2">Here is an overview of your immigration cases</p>
             </div>
 

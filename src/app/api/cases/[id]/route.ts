@@ -36,6 +36,14 @@ const getHandler = asyncHandler(async (request: NextRequest, context?: RouteCont
                     lastName: true,
                 },
             },
+            assignedAgent: {
+                select: {
+                    id: true,
+                    email: true,
+                    firstName: true,
+                    lastName: true,
+                },
+            },
             documents: {
                 select: {
                     id: true,
@@ -101,6 +109,14 @@ const putHandler = asyncHandler(async (request: NextRequest, context?: RouteCont
         },
         include: {
             client: {
+                select: {
+                    id: true,
+                    email: true,
+                    firstName: true,
+                    lastName: true,
+                },
+            },
+            assignedAgent: {
                 select: {
                     id: true,
                     email: true,

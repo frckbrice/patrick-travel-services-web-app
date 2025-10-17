@@ -43,17 +43,6 @@ export const generateReferenceNumber = (): string => {
     return `PTS-${timestamp}-${randomStr}`.toUpperCase();
 };
 
-// Sanitize input to prevent XSS
-export const sanitizeInput = (input: string): string => {
-    return input
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#x27;')
-        .replace(/\//g, '&#x2F;');
-};
-
 // Validate UUID
 export const isValidUUID = (uuid: string): boolean => {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

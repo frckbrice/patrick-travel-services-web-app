@@ -120,3 +120,56 @@ export function useUpdateCasePriority() {
         },
     });
 }
+
+// Assign case to agent (ADMIN only)
+export function useAssignCase() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ caseId, agentId }: { caseId: string; agentId: string }) => {
+            const response = await apiClient.patch(`/api/cases/${caseId}/assign`, { agentId });
+            return response.data.data.case as Case;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: [CASES_KEY] });
+            queryClient.invalidateQueries({ queryKey: [CASES_KEY, data.id] });
+            toast.success('Case assigned successfully!');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || 'Failed to assign case');
+        },
+    });
+}
+
+// Transfer case to another agent (ADMIN only)
+export function useTransferCase() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (data: {
+            caseId: string;
+            newAgentId: string;
+            reason: string;
+            handoverNotes?: string;
+            notifyClient: boolean;
+            notifyAgent: boolean;
+        }) => {
+            const response = await apiClient.post(`/api/cases/${data.caseId}/transfer`, {
+                newAgentId: data.newAgentId,
+                reason: data.reason,
+                handoverNotes: data.handoverNotes,
+                notifyClient: data.notifyClient,
+                notifyAgent: data.notifyAgent,
+            });
+            return response.data.data.case as Case;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: [CASES_KEY] });
+            queryClient.invalidateQueries({ queryKey: [CASES_KEY, data.id] });
+            toast.success('Case transferred successfully!');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || 'Failed to transfer case');
+        },
+    });
+}

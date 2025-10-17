@@ -24,6 +24,24 @@ export function useMarkNotificationRead() {
     });
 }
 
+// Mark all notifications as read
+export function useMarkAllNotificationsRead() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async () => {
+            const response = await apiClient.put('/api/notifications/mark-all-read');
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY] });
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || 'Failed to mark all as read');
+        },
+    });
+}
+
 // Delete notification
 export function useDeleteNotification() {
     const queryClient = useQueryClient();

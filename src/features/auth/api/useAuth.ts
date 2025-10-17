@@ -8,6 +8,7 @@ import {
     GoogleAuthProvider,
     signOut,
     User as FirebaseUser,
+    getAdditionalUserInfo,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase/firebase-client';
 import { apiClient } from '@/lib/utils/axios';
@@ -43,14 +44,25 @@ export const useRegister = () => {
                 data.password
             );
 
-            // Register user in backend database
-            const response = await apiClient.post('/api/auth/register', {
-                ...data,
-                firebaseUid: userCredential.user.uid,
-            });
-
-            // Get Firebase ID token
+            // Get Firebase ID token (will be sent in Authorization header)
             const token = await userCredential.user.getIdToken();
+
+            // Register user in backend database (firebaseUid is extracted from token on server)
+            const response = await apiClient.post(
+                '/api/auth/register',
+                {
+                    email: data.email,
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    phone: data.phone,
+                    inviteCode: data.inviteCode,
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
 
             return {
                 user: response.data.data.user,
@@ -100,13 +112,14 @@ export const useLogin = () => {
                 data.password
             );
 
-            // Get Firebase ID token
+            // Get Firebase ID token (will be sent in Authorization header)
             const token = await userCredential.user.getIdToken();
 
             // Sync with backend (update last login, get user data)
+            // firebaseUid is extracted from token on server
             const response = await apiClient.post(
                 '/api/auth/login',
-                { firebaseUid: userCredential.user.uid },
+                {},
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -258,13 +271,13 @@ export const useGoogleSignIn = () => {
             const token = await firebaseUser.getIdToken();
 
             // Check if this is a new user
-            const isNewUser = userCredential.user.metadata.creationTime === userCredential.user.metadata.lastSignInTime;
+            const additionalUserInfo = getAdditionalUserInfo(userCredential);
+            const isNewUser = additionalUserInfo?.isNewUser ?? false;
 
-            // Sync with backend
+            // Sync with backend (firebaseUid is extracted from token on server)
             const response = await apiClient.post(
                 '/api/auth/google',
                 {
-                    firebaseUid: firebaseUser.uid,
                     email: firebaseUser.email,
                     displayName: firebaseUser.displayName,
                     photoURL: firebaseUser.photoURL,

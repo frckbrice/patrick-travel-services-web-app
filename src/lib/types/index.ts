@@ -77,6 +77,7 @@ export interface User {
     firstName: string;
     lastName: string;
     phone?: string | null;
+    profilePicture?: string | null;
     role: Role;
     isActive: boolean;
     isVerified: boolean;

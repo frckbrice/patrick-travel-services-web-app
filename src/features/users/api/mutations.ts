@@ -6,18 +6,18 @@ import { toast } from 'sonner';
 import type { User, UpdateUserInput } from '../types';
 import { USERS_KEY } from './queries';
 
-// Update user
-export function useUpdateUser(id: string) {
+// Update user (ADMIN only)
+export function useUpdateUser() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (data: UpdateUserInput) => {
-            const response = await apiClient.put(`/api/users/${id}`, data);
+        mutationFn: async ({ id, updates }: { id: string; updates: UpdateUserInput }) => {
+            const response = await apiClient.patch(`/api/users/${id}`, updates);
             return response.data.data.user as User;
         },
-        onSuccess: () => {
+        onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: [USERS_KEY] });
-            queryClient.invalidateQueries({ queryKey: [USERS_KEY, id] });
+            queryClient.invalidateQueries({ queryKey: [USERS_KEY, variables.id] });
             toast.success('User updated successfully');
         },
         onError: (error: any) => {
@@ -26,8 +26,8 @@ export function useUpdateUser(id: string) {
     });
 }
 
-// Deactivate user
-export function useDeactivateUser() {
+// Delete user (ADMIN only)
+export function useDeleteUser() {
     const queryClient = useQueryClient();
 
     return useMutation({
@@ -36,10 +36,10 @@ export function useDeactivateUser() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [USERS_KEY] });
-            toast.success('User deactivated successfully');
+            toast.success('User deleted successfully');
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.error || 'Failed to deactivate user');
+            toast.error(error.response?.data?.error || 'Failed to delete user');
         },
     });
 }

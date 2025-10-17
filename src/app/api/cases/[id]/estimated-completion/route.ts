@@ -10,8 +10,13 @@ import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
 
-const handler = asyncHandler(async (request: NextRequest, { params }: { params: { id: string } }) => {
+const handler = asyncHandler(async (request: NextRequest, context?: { params: Promise<{ id: string }> }) => {
     const req = request as AuthenticatedRequest;
+    const params = await context?.params;
+
+    if (!params) {
+        throw new ApiError('Invalid request parameters', HttpStatus.BAD_REQUEST);
+    }
 
     if (!req.user || !['AGENT', 'ADMIN'].includes(req.user.role)) {
         throw new ApiError(ERROR_MESSAGES.FORBIDDEN, HttpStatus.FORBIDDEN);

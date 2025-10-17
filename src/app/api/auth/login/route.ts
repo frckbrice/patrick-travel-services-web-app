@@ -5,6 +5,7 @@
 
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
+import { adminAuth } from '@/lib/firebase/firebase-admin';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants';
 import { logger } from '@/lib/utils/logger';
 import {
@@ -17,12 +18,31 @@ import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 
 const handler = asyncHandler(async (request: NextRequest) => {
-    const body = await request.json();
-    const { firebaseUid } = body;
-
-    if (!firebaseUid) {
-        throw new ApiError('Firebase UID is required', HttpStatus.BAD_REQUEST);
+    // Check if Firebase Admin is initialized
+    if (!adminAuth) {
+        logger.error('Firebase Admin not initialized');
+        throw new ApiError('Authentication service unavailable', HttpStatus.SERVICE_UNAVAILABLE);
     }
+
+    // Verify Firebase ID token from Authorization header
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+        throw new ApiError('Unauthorized - Missing or invalid token', HttpStatus.UNAUTHORIZED);
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+    let decodedToken;
+
+    try {
+        decodedToken = await adminAuth.verifyIdToken(token);
+        logger.info('Firebase token verified for login', { uid: decodedToken.uid });
+    } catch (error: any) {
+        logger.error('Firebase token verification failed', { error: error.message });
+        throw new ApiError('Invalid authentication token', HttpStatus.UNAUTHORIZED);
+    }
+
+    // Extract Firebase UID from verified token (this is secure)
+    const firebaseUid = decodedToken.uid;
 
         // Find user by Firebase UID
         const user = await prisma.user.findUnique({

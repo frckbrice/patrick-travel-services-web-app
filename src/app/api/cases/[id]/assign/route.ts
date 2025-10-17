@@ -11,7 +11,13 @@ import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
 import { createRealtimeNotification } from '@/lib/firebase/notifications.service';
 
-const handler = asyncHandler(async (request: NextRequest, { params }: { params: { id: string } }) => {
+const handler = asyncHandler(async (request: NextRequest, context?: { params: Promise<{ id: string }> }) => {
+    const params = await context?.params;
+
+    if (!params) {
+        throw new ApiError('Invalid request parameters', HttpStatus.BAD_REQUEST);
+    }
+
     const req = request as AuthenticatedRequest;
 
     if (!req.user || req.user.role !== 'ADMIN') {
@@ -38,7 +44,24 @@ const handler = asyncHandler(async (request: NextRequest, { params }: { params: 
     const caseData = await prisma.case.update({
         where: { id: params.id },
         data: { assignedAgentId: agentId },
-        include: { client: true },
+        include: {
+            client: {
+                select: {
+                    id: true,
+                    email: true,
+                    firstName: true,
+                    lastName: true,
+                },
+            },
+            assignedAgent: {
+                select: {
+                    id: true,
+                    email: true,
+                    firstName: true,
+                    lastName: true,
+                },
+            },
+        },
     });
 
     // Notify the assigned agent

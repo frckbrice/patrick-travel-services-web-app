@@ -2,28 +2,47 @@
 
 // Enhanced profile view with edit mode
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '@/features/auth/store';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { User, Mail, Phone, Shield, CheckCircle, XCircle, Edit2, Save, X, Camera } from 'lucide-react';
+import { User, Mail, Phone, Shield, CheckCircle, XCircle, Edit2, Save, X, Camera, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useUpdateProfile, useUploadAvatar } from '../api/mutations';
 
 const profileSchema = z.object({
     firstName: z.string().min(2, 'First name must be at least 2 characters'),
     lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-    phone: z.string().regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number').optional().or(z.literal('')),
+    phone: z.string()
+        .transform((val) => {
+            // Handle empty values
+            if (!val || val.trim() === '') return '';
+
+            // Strip formatting characters (spaces, hyphens, parentheses) while preserving leading '+'
+            const trimmed = val.trim();
+            const hasLeadingPlus = trimmed.startsWith('+');
+            const digitsOnly = trimmed.replace(/[\s\-()]/g, '');
+
+            // Ensure '+' is preserved if it was present
+            return hasLeadingPlus && !digitsOnly.startsWith('+')
+                ? '+' + digitsOnly
+                : digitsOnly;
+        })
+        .refine(
+            (val) => val === '' || /^(\+\d{7,15}|0\d{6,14})$/.test(val),
+            { message: 'Phone must be international (+1234567890) or national (0123456789) format' }
+        ),
 });
 
 type ProfileInput = z.infer<typeof profileSchema>;
@@ -32,6 +51,10 @@ export function ProfileView() {
     const { user } = useAuthStore();
     const { t } = useTranslation();
     const [isEditing, setIsEditing] = useState(false);
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const avatarInputRef = useRef<HTMLInputElement>(null);
+    const updateProfileMutation = useUpdateProfile();
+    const uploadAvatarMutation = useUploadAvatar();
 
     const form = useForm<ProfileInput>({
         resolver: zodResolver(profileSchema),
@@ -42,14 +65,21 @@ export function ProfileView() {
         },
     });
 
+    // Re-sync form fields when user prop changes
+    useEffect(() => {
+        form.reset({
+            firstName: user?.firstName || '',
+            lastName: user?.lastName || '',
+            phone: user?.phone || '',
+        });
+    }, [user, form]);
+
     const onSubmit = async (data: ProfileInput) => {
         try {
-            // TODO: API call to update profile
-            console.log('Updating profile:', data);
-            toast.success('Profile updated successfully!');
+            await updateProfileMutation.mutateAsync(data);
             setIsEditing(false);
         } catch (error) {
-            toast.error('Failed to update profile');
+            // Error is already handled in the mutation's onError callback
         }
     };
 
@@ -76,6 +106,51 @@ export function ProfileView() {
         return names[user?.role || ''] || user?.role || 'Unknown';
     };
 
+    const handleAvatarClick = () => {
+        avatarInputRef.current?.click();
+    };
+
+    const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            toast.error('Invalid file type', {
+                description: 'Please select an image file (JPEG, PNG, GIF, etc.)'
+            });
+            return;
+        }
+
+        // Validate file size (4MB max)
+        const maxSize = 4 * 1024 * 1024; // 4MB
+        if (file.size > maxSize) {
+            toast.error('File too large', {
+                description: 'Image size must be less than 4MB'
+            });
+            return;
+        }
+
+        // Create preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setAvatarPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+
+        // Upload the file
+        try {
+            await uploadAvatarMutation.mutateAsync(file);
+            setAvatarPreview(null); // Clear preview after successful upload
+        } catch (error) {
+            // Error is handled in the mutation
+            setAvatarPreview(null); // Clear preview on error
+        }
+
+        // Reset input so the same file can be selected again
+        event.target.value = '';
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -100,18 +175,40 @@ export function ProfileView() {
                     <CardHeader className="text-center pb-4">
                         <div className="flex justify-center mb-4 relative">
                             <Avatar className="h-24 w-24">
+                                <AvatarImage
+                                    src={avatarPreview || user?.profilePicture || undefined}
+                                    alt={`${user?.firstName} ${user?.lastName}`}
+                                />
                                 <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
                                     {getInitials()}
                                 </AvatarFallback>
                             </Avatar>
                             {isEditing && (
-                                <Button
-                                    size="icon"
-                                    variant="secondary"
-                                    className="absolute bottom-0 right-0 rounded-full h-8 w-8"
-                                >
-                                    <Camera className="h-4 w-4" />
-                                </Button>
+                                <>
+                                    <Button
+                                        size="icon"
+                                        variant="secondary"
+                                        className="absolute bottom-0 right-0 rounded-full h-8 w-8"
+                                        onClick={handleAvatarClick}
+                                        type="button"
+                                        disabled={uploadAvatarMutation.isPending}
+                                    >
+                                        {uploadAvatarMutation.isPending ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                                <Camera className="h-4 w-4" />
+                                        )}
+                                    </Button>
+                                    {/* Hidden file input for avatar upload */}
+                                    <input
+                                        ref={avatarInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        aria-label="Upload avatar"
+                                        onChange={handleAvatarChange}
+                                    />
+                                </>
                             )}
                         </div>
                         <CardTitle>
@@ -200,9 +297,12 @@ export function ProfileView() {
                                         )}
                                     />
                                     <div className="flex items-center gap-2 pt-4">
-                                        <Button type="submit" disabled={form.formState.isSubmitting}>
+                                        <Button
+                                            type="submit"
+                                            disabled={form.formState.isSubmitting || updateProfileMutation.isPending}
+                                        >
                                             <Save className="mr-2 h-4 w-4" />
-                                            Save Changes
+                                            {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
                                         </Button>
                                         <Button
                                             type="button"
@@ -211,6 +311,7 @@ export function ProfileView() {
                                                 form.reset();
                                                 setIsEditing(false);
                                             }}
+                                            disabled={updateProfileMutation.isPending}
                                         >
                                             <X className="mr-2 h-4 w-4" />
                                             Cancel

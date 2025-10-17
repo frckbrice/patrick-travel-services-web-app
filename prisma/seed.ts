@@ -17,7 +17,7 @@ async function main() {
     }
 
     const existingAdmin = await prisma.user.findUnique({
-        where: { email: adminEmail },
+        where: { id: adminId },
     });
 
     if (existingAdmin) {

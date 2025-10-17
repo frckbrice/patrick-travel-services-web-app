@@ -1,0 +1,41 @@
+{
+  "rules": {
+    "messages": {
+      ".read": "auth != null",
+      ".indexOn": ["caseId", "senderId", "recipientId", "sentAt"],
+      "$messageId": {
+        ".write": "auth != null && auth.uid == newData.child('senderId').val()",
+        ".validate": "newData.hasChildren(['senderId', 'senderName', 'recipientId', 'content', 'sentAt', 'isRead']) && newData.child('content').isString() && newData.child('content').val().length > 0 && newData.child('content').val().length <= 5000"
+      }
+    },
+    
+    "chatRooms": {
+      ".read": "auth != null",
+      ".indexOn": ["lastMessageAt", "participants"],
+      "$roomId": {
+        ".read": "auth != null && (root.child('chatRooms/' + $roomId + '/participants').val().indexOf(auth.uid) >= 0)",
+        ".write": "auth != null && (root.child('chatRooms/' + $roomId + '/participants').val().indexOf(auth.uid) >= 0 || newData.child('participants').val().indexOf(auth.uid) >= 0)",
+        ".validate": "newData.hasChildren(['participants', 'createdAt', 'updatedAt']) && newData.child('participants').isString() && newData.child('participants').val().indexOf(auth.uid) >= 0"
+      }
+    },
+    
+    "presence": {
+      ".read": true,
+      "$userId": {
+        ".write": "$userId === auth.uid",
+        ".validate": "newData.hasChildren(['userId', 'status', 'lastSeen']) && newData.child('status').val().matches(/^(online|offline|away)$/)"
+      }
+    },
+    
+    "typing": {
+      "$roomId": {
+        ".read": "auth != null",
+        "$userId": {
+          ".write": "$userId === auth.uid",
+          ".validate": "newData.hasChildren(['userId', 'userName', 'chatRoomId', 'isTyping', 'timestamp']) || !newData.exists()"
+        }
+      }
+    }
+  }
+}
+

@@ -94,6 +94,7 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
         );
     }
 
+    // create notification in database
     const notification = await prisma.notification.create({
         data: {
             userId,
@@ -104,17 +105,15 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
         },
     });
 
-    // Also create in Firebase Realtime Database for instant notifications
-    try {
-        await createRealtimeNotification(userId, {
-            type: notification.type,
-            title: notification.title,
-            message: notification.message,
-            actionUrl: notification.actionUrl || undefined,
-        });
-    } catch (firebaseError) {
-        logger.warn('Failed to create Firebase notification, but PostgreSQL notification exists', firebaseError);
-    }
+    // Also create in Firebase Realtime Database for instant notifications (fire-and-forget)
+    createRealtimeNotification(userId, {
+        type: notification.type,
+        title: notification.title,
+        message: notification.message,
+        actionUrl: notification.actionUrl || undefined,
+    }).catch((error) => {
+        logger.warn('Failed to create Firebase notification, but PostgreSQL notification exists', { error });
+    });
 
     // TODO: Send push notification to mobile device
     // TODO: Send email notification if enabled
