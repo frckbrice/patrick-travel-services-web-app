@@ -29,15 +29,19 @@ model User {
   updatedAt         DateTime  @updatedAt
 
   // Relations
-  cases                Case[]         @relation("ClientCases")
-  assignedCases        Case[]         @relation("AgentCases")
-  sentMessages         Message[]      @relation("SentMessages")
-  receivedMessages     Message[]      @relation("ReceivedMessages")
+  cases                Case[]              @relation("ClientCases")
+  assignedCases        Case[]              @relation("AgentCases")
+  sentMessages         Message[]           @relation("SentMessages")
+  receivedMessages     Message[]           @relation("ReceivedMessages")
   documents            Document[]
   notifications        Notification[]
   activityLogs         ActivityLog[]
-  inviteCodesCreated   InviteCode[]   @relation("CreatedInviteCodes")
-  inviteCodesLastUsed  InviteCode[]   @relation("LastUsedInviteCodes")
+  inviteCodesCreated   InviteCode[]        @relation("CreatedInviteCodes")
+  inviteCodesLastUsed  InviteCode[]        @relation("LastUsedInviteCodes")
+  inviteUsages         InviteUsage[]       @relation("UserInviteUsages")
+  transferredFrom      TransferHistory[]   @relation("TransferFrom")
+  transferredTo        TransferHistory[]   @relation("TransferTo")
+  transfersInitiated   TransferHistory[]   @relation("TransferInitiator")
 
   @@index([email])
   @@index([role])
@@ -308,11 +312,14 @@ model InviteCode {
 }
 
 // InviteUsage Model - Tracks individual invite code usage
+// Maintains referential integrity with User model for audit trail
+// userId references User.id (Firebase UID) - SetNull on delete preserves history
 model InviteUsage {
   id           String     @id @default(uuid())
   inviteCodeId String
   inviteCode   InviteCode @relation(fields: [inviteCodeId], references: [id], onDelete: Cascade)
-  userId       String // Firebase UID of the user who used the code
+  userId       String?
+  user         User?      @relation("UserInviteUsages", fields: [userId], references: [id], onDelete: SetNull)
   usedAt       DateTime   @default(now())
 
   @@index([inviteCodeId])
@@ -326,16 +333,23 @@ model TransferHistory {
   caseId String
   case   Case   @relation(fields: [caseId], references: [id], onDelete: Cascade)
 
+  // Agent who transferred the case (nullable - case could be from unassigned)
   fromAgentId   String?
+  fromAgent     User?   @relation("TransferFrom", fields: [fromAgentId], references: [id], onDelete: SetNull)
   fromAgentName String? // Denormalized for historical record
 
+  // Agent who received the case
   toAgentId   String
+  toAgent     User   @relation("TransferTo", fields: [toAgentId], references: [id], onDelete: Cascade)
   toAgentName String // Denormalized for historical record
+
+  // User who initiated the transfer (typically an admin)
+  transferredBy     String?
+  transferredByUser User?   @relation("TransferInitiator", fields: [transferredBy], references: [id], onDelete: SetNull)
 
   reason        TransferReason
   handoverNotes String?        @db.Text
   transferredAt DateTime       @default(now())
-  transferredBy String // User ID who initiated the transfer
 
   notifyClient Boolean @default(true)
   notifyAgent  Boolean @default(true)
@@ -343,6 +357,7 @@ model TransferHistory {
   @@index([caseId])
   @@index([fromAgentId])
   @@index([toAgentId])
+  @@index([transferredBy])
   @@index([transferredAt])
 }
 
@@ -352,6 +367,57 @@ enum TransferReason {
   SPECIALIZATION
   WORKLOAD
   OTHER
+}
+
+// ============================================
+// HYBRID CHAT ARCHITECTURE
+// Real-time in Firebase + Archive in Neon
+// ============================================
+
+// Chat message archive for SQL queries, search, analytics
+model ChatMessage {
+  id              String    @id @default(uuid())
+  firebaseId      String    @unique // Link to Firebase Realtime DB message
+  senderId        String
+  senderName      String
+  senderEmail     String
+  recipientId     String
+  recipientName   String
+  recipientEmail  String
+  content         String    @db.Text
+  caseId          String?
+  subject         String?
+  isRead          Boolean   @default(false)
+  readAt          DateTime?
+  sentAt          DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  
+  // Attachments stored as JSON (same structure as Firebase)
+  attachments     Json?
+
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([caseId])
+  @@index([sentAt])
+  @@index([firebaseId])
+  @@index([isRead])
+  @@index([senderId, recipientId, sentAt])
+}
+
+// Chat room metadata archive
+model ChatRoom {
+  id              String    @id @default(uuid())
+  firebaseId      String    @unique // Link to Firebase Realtime DB room
+  participantIds  String[]  // Array of user IDs
+  caseId          String?
+  lastMessage     String?   @db.Text
+  lastMessageAt   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([firebaseId])
+  @@index([caseId])
+  @@index([lastMessageAt])
 }
 
 // Contact Model - Stores contact form submissions

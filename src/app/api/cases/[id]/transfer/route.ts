@@ -132,17 +132,17 @@ const handler = asyncHandler(async (request: NextRequest, context?: { params: Pr
             },
         });
 
-        // 2. Create transfer history record
+        // 2. Create transfer history record with proper relations
         await tx.transferHistory.create({
             data: {
                 caseId: params.id,
                 fromAgentId: oldAgentId,
-                fromAgentName: oldAgentName,
+                fromAgentName: oldAgentName, // Denormalized for historical record
                 toAgentId: newAgentId,
-                toAgentName: `${newAgent.firstName} ${newAgent.lastName}`,
+                toAgentName: `${newAgent.firstName} ${newAgent.lastName}`, // Denormalized for historical record
                 reason,
                 handoverNotes,
-                transferredBy: req.user.userId,
+                transferredBy: req.user.userId, // Will be linked via relation to User
                 notifyClient,
                 notifyAgent,
             },

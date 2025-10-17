@@ -71,9 +71,10 @@ const handler = asyncHandler(async (request: NextRequest) => {
 
     // Determine role based on invite code
     let userRole: 'CLIENT' | 'AGENT' | 'ADMIN' = 'CLIENT';
+    let validatedInvite: { id: string; role: 'CLIENT' | 'AGENT' | 'ADMIN' } | null = null;
 
     if (inviteCode) {
-        // Validate and use invite code
+        // Validate invite code
         const invite = await prisma.inviteCode.findUnique({
             where: { code: inviteCode },
         });
@@ -96,33 +97,11 @@ const handler = asyncHandler(async (request: NextRequest) => {
 
         // Use the role from invite code
         userRole = invite.role;
-
-        // Record invite code usage with complete history
-        // This creates a persistent record of each use and updates the invite code
-        await prisma.$transaction([
-            // Create usage record for complete history
-            prisma.inviteUsage.create({
-                data: {
-                    inviteCodeId: invite.id,
-                    userId: firebaseUid,
-                    usedAt: new Date(),
-                },
-            }),
-            // Update invite code: increment count and track most recent user
-            prisma.inviteCode.update({
-                where: { id: invite.id },
-                data: {
-                    usedCount: { increment: 1 },
-                    lastUsedBy: firebaseUid,
-                    lastUsedAt: new Date(),
-                },
-            }),
-        ]);
-
-        logger.info('Invite code used', { code: inviteCode, role: userRole, userId: firebaseUid });
+        validatedInvite = { id: invite.id, role: invite.role };
     }
 
-    // Create user in database (Firebase user already created on client)
+    // Create user in database first (Firebase user already created on client)
+    // This ensures the User exists before creating InviteUsage (for referential integrity)
     // Attempt direct creation to avoid TOCTOU race; handle unique constraint violations
     let user;
     try {
@@ -159,6 +138,37 @@ const handler = asyncHandler(async (request: NextRequest) => {
         }
         // Rethrow any other errors
         throw error;
+    }
+
+    // Record invite code usage after user creation (maintains referential integrity)
+    if (validatedInvite) {
+        try {
+            await prisma.$transaction([
+                // Create usage record for complete history - now User exists for FK constraint
+                prisma.inviteUsage.create({
+                    data: {
+                        inviteCodeId: validatedInvite.id,
+                        userId: firebaseUid,
+                        usedAt: new Date(),
+                    },
+                }),
+                // Update invite code: increment count and track most recent user
+                prisma.inviteCode.update({
+                    where: { id: validatedInvite.id },
+                    data: {
+                        usedCount: { increment: 1 },
+                        lastUsedBy: firebaseUid,
+                        lastUsedAt: new Date(),
+                    },
+                }),
+            ]);
+
+            logger.info('Invite code used', { code: inviteCode, role: userRole, userId: firebaseUid });
+        } catch (error) {
+            logger.error('Failed to record invite code usage', { error, inviteCode, userId: firebaseUid });
+            // User is already created, so we don't fail registration
+            // Just log the error for manual investigation
+        }
     }
 
     // Set custom claims in Firebase (if admin is available)
