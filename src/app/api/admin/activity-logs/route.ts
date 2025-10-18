@@ -36,7 +36,7 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
   const endDate = searchParams.get('endDate') || undefined;
 
   // Build where clause
-  const where: any = {};
+  const where: Record<string, any> = {};
 
   if (action) {
     where.action = { contains: action, mode: 'insensitive' };
