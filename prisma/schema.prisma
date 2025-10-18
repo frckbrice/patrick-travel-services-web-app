@@ -36,12 +36,13 @@ model User {
   documents            Document[]
   notifications        Notification[]
   activityLogs         ActivityLog[]
-  inviteCodesCreated   InviteCode[]        @relation("CreatedInviteCodes")
-  inviteCodesLastUsed  InviteCode[]        @relation("LastUsedInviteCodes")
-  inviteUsages         InviteUsage[]       @relation("UserInviteUsages")
-  transferredFrom      TransferHistory[]   @relation("TransferFrom")
-  transferredTo        TransferHistory[]   @relation("TransferTo")
-  transfersInitiated   TransferHistory[]   @relation("TransferInitiator")
+  inviteCodesCreated   InviteCode[]          @relation("CreatedInviteCodes")
+  inviteCodesLastUsed  InviteCode[]          @relation("LastUsedInviteCodes")
+  inviteUsages         InviteUsage[]         @relation("UserInviteUsages")
+  transferredFrom      TransferHistory[]     @relation("TransferFrom")
+  transferredTo        TransferHistory[]     @relation("TransferTo")
+  transfersInitiated   TransferHistory[]     @relation("TransferInitiator")
+  templatesCreated     DocumentTemplate[]    @relation("TemplatesCreated")
 
   @@index([email])
   @@index([role])
@@ -178,24 +179,34 @@ enum DocumentStatus {
 
 // Message Model
 model Message {
-  id          String    @id @default(uuid())
-  senderId    String
-  sender      User      @relation("SentMessages", fields: [senderId], references: [id])
-  recipientId String
-  recipient   User      @relation("ReceivedMessages", fields: [recipientId], references: [id])
-  caseId      String?
-  case        Case?     @relation(fields: [caseId], references: [id])
-  subject     String?
-  content     String    @db.Text
-  isRead      Boolean   @default(false)
-  readAt      DateTime?
-  sentAt      DateTime  @default(now())
-  attachments Json? // Array of file references
+  id            String       @id @default(uuid())
+  senderId      String
+  sender        User         @relation("SentMessages", fields: [senderId], references: [id])
+  recipientId   String
+  recipient     User         @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  caseId        String?
+  case          Case?        @relation(fields: [caseId], references: [id])
+  subject       String?
+  content       String       @db.Text
+  isRead        Boolean      @default(false)
+  readAt        DateTime?
+  sentAt        DateTime     @default(now())
+  attachments   Json? // Array of file references
+  messageType   MessageType  @default(CHAT) // CHAT or EMAIL
+  emailThreadId String? // For tracking email replies
+  replyToId     String? // ID of message being replied to
 
   @@index([senderId])
   @@index([recipientId])
   @@index([caseId])
   @@index([isRead])
+  @@index([messageType])
+  @@index([emailThreadId])
+}
+
+enum MessageType {
+  CHAT
+  EMAIL
 }
 
 // Notification Model
@@ -221,6 +232,7 @@ model Notification {
 enum NotificationType {
   CASE_STATUS_UPDATE
   NEW_MESSAGE
+  NEW_EMAIL
   DOCUMENT_UPLOADED
   DOCUMENT_VERIFIED
   DOCUMENT_REJECTED
@@ -262,15 +274,28 @@ model FAQ {
 
 // DocumentTemplate Model
 model DocumentTemplate {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  filePath    String
-  fileSize    Int
-  category    String
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String       @id @default(uuid())
+  name          String       // "Student Visa Application Form"
+  description   String       @db.Text // Detailed description
+  serviceType   ServiceType? // Optional - which service needs this
+  fileUrl       String       // URL to template file
+  fileName      String       // "student-visa-form.pdf"
+  fileSize      Int          // File size in bytes
+  mimeType      String       // "application/pdf"
+  category      String       // "FORM", "GUIDE", "SAMPLE", "CHECKLIST"
+  isRequired    Boolean      @default(false) // Must be submitted for this service?
+  isActive      Boolean      @default(true) // Visible to clients?
+  downloadCount Int          @default(0) // Track popularity
+  version       String?      // "v2.1" for versioning
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  createdById   String?      // Admin who uploaded it
+  createdBy     User?        @relation("TemplatesCreated", fields: [createdById], references: [id])
+
+  @@index([serviceType])
+  @@index([category])
+  @@index([isActive])
+  @@index([isRequired])
 }
 
 // SystemSetting Model
@@ -298,6 +323,7 @@ model InviteCode {
   usedCount    Int       @default(0)
   expiresAt    DateTime
   isActive     Boolean   @default(true)
+  purpose      String?   // Optional: 'SEED', 'ADMIN_CREATED', etc. for tracking origin
   createdAt    DateTime  @default(now())
   lastUsedAt   DateTime? // Most recent usage timestamp
 
@@ -309,6 +335,7 @@ model InviteCode {
   @@index([expiresAt])
   @@index([createdById])
   @@index([lastUsedById])
+  @@index([purpose])
 }
 
 // InviteUsage Model - Tracks individual invite code usage

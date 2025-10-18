@@ -12,54 +12,95 @@ import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
 import { sendCaseStatusEmail } from '@/lib/notifications/email.service';
 import { createRealtimeNotification } from '@/lib/firebase/notifications.service';
 
-const handler = asyncHandler(async (request: NextRequest, { params }: { params: { id: string } }) => {
+const handler = asyncHandler(
+  async (request: NextRequest, context: { params: Promise<{ id: string }> }) => {
+    const params = await context.params;
+
     const req = request as AuthenticatedRequest;
-    
+
     if (!req.user || !['AGENT', 'ADMIN'].includes(req.user.role)) {
-        throw new ApiError(ERROR_MESSAGES.FORBIDDEN, HttpStatus.FORBIDDEN);
+      throw new ApiError(ERROR_MESSAGES.FORBIDDEN, HttpStatus.FORBIDDEN);
     }
+
+    const VALID_STATUSES = ['OPEN', 'IN_PROGRESS', 'PENDING', 'RESOLVED', 'CLOSED'] as const;
 
     const body = await request.json();
     const { status, note } = body;
 
     if (!status) {
-        throw new ApiError('Status is required', HttpStatus.BAD_REQUEST);
+      throw new ApiError('Status is required', HttpStatus.BAD_REQUEST);
+    }
+
+    if (!VALID_STATUSES.includes(status)) {
+      throw new ApiError('Invalid status value', HttpStatus.BAD_REQUEST);
+    }
+
+    // Fetch case for resource-level authorization
+    const existingCase = await prisma.case.findUnique({
+      where: { id: params.id },
+      select: { assignedAgentId: true },
+    });
+
+    if (!existingCase) {
+      throw new ApiError(ERROR_MESSAGES.NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    // Resource-level authorization: only ADMIN or the assigned agent can update status
+    if (req.user.role !== 'ADMIN') {
+      if (existingCase.assignedAgentId !== req.user.userId) {
+        throw new ApiError(ERROR_MESSAGES.FORBIDDEN, HttpStatus.FORBIDDEN);
+      }
     }
 
     const caseData = await prisma.case.update({
-        where: { id: params.id },
-        data: { status },
-        include: { client: true },
+      where: { id: params.id },
+      data: { status },
+      include: { client: true },
     });
 
     // Create status history
     await prisma.statusHistory.create({
-        data: {
-            caseId: params.id,
-            status,
-            changedBy: req.user.userId,
-            notes: note,
-        },
+      data: {
+        caseId: params.id,
+        status,
+        changedBy: req.user.userId,
+        notes: note,
+      },
     });
 
     // Send notifications
     try {
-        await Promise.all([
-            sendCaseStatusEmail(caseData.client.email, caseData.referenceNumber, status, `${caseData.client.firstName} ${caseData.client.lastName}`),
-            createRealtimeNotification(caseData.clientId, {
-                type: 'CASE_STATUS_UPDATE',
-                title: 'Case Status Updated',
-                message: `Your case ${caseData.referenceNumber} is now ${status.replace(/_/g, ' ').toLowerCase()}`,
-                actionUrl: `/dashboard/cases/${params.id}`,
-            }),
-        ]);
+      // Compute a safe display name for the client
+      const firstNamePart = (caseData.client.firstName || '').trim();
+      const lastNamePart = (caseData.client.lastName || '').trim();
+      const nameParts = [firstNamePart, lastNamePart].filter((part) => part.length > 0);
+      const clientDisplayName =
+        nameParts.length > 0 ? nameParts.join(' ') : caseData.client.email || 'Client';
+
+      await Promise.all([
+        sendCaseStatusEmail(
+          caseData.client.email,
+          caseData.referenceNumber,
+          status,
+          clientDisplayName
+        ),
+        createRealtimeNotification(caseData.clientId, {
+          type: 'CASE_STATUS_UPDATE',
+          title: 'Case Status Updated',
+          message: `Your case ${caseData.referenceNumber} is now ${status.replace(/_/g, ' ').toLowerCase()}`,
+          actionUrl: `/dashboard/cases/${params.id}`,
+        }),
+      ]);
     } catch (error) {
-        logger.warn('Notification failed but status updated', error);
+      logger.warn('Notification failed but status updated', error);
     }
 
     logger.info('Case status updated', { caseId: params.id, status, updatedBy: req.user.userId });
 
     return successResponse({ case: caseData }, 'Status updated successfully');
-});
+  }
+);
 
-export const PATCH = withCorsMiddleware(withRateLimit(authenticateToken(handler), RateLimitPresets.STANDARD));
+export const PATCH = withCorsMiddleware(
+  withRateLimit(authenticateToken(handler), RateLimitPresets.STANDARD)
+);

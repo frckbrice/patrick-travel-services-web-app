@@ -8,12 +8,10 @@
         ".validate": "newData.hasChildren(['senderId', 'senderName', 'recipientId', 'content', 'sentAt', 'isRead']) && newData.child('content').isString() && newData.child('content').val().length > 0 && newData.child('content').val().length <= 5000"
       }
     },
-    
+
     "chatRooms": {
       ".read": "auth != null",
-      ".indexOn": [
-        "lastMessageAt"
-      ],
+      ".indexOn": ["lastMessageAt"],
       "$roomId": {
         ".read": "auth != null && root.child('chatRooms/' + $roomId + '/participants/' + auth.uid).exists()",
         ".write": "auth != null && ((root.child('chatRooms/' + $roomId).exists() && root.child('chatRooms/' + $roomId + '/participants/' + auth.uid).exists()) || (!root.child('chatRooms/' + $roomId).exists() && newData.child('participants/' + auth.uid).exists()))",
@@ -25,7 +23,7 @@
         }
       }
     },
-    
+
     "presence": {
       ".read": true,
       "$userId": {
@@ -33,7 +31,7 @@
         ".validate": "newData.hasChildren(['userId', 'status', 'lastSeen']) && newData.child('status').val().matches(/^(online|offline|away)$/)"
       }
     },
-    
+
     "typing": {
       "$roomId": {
         ".read": "auth != null",
@@ -45,4 +43,3 @@
     }
   }
 }
-

@@ -13,42 +13,38 @@ import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
 
 // PUT /api/notifications/mark-all-read - Mark all notifications as read for the authenticated user
 const putHandler = asyncHandler(async (request: NextRequest) => {
-    const req = request as AuthenticatedRequest;
+  const req = request as AuthenticatedRequest;
 
-    if (!req.user) {
-        throw new ApiError(ERROR_MESSAGES.UNAUTHORIZED, HttpStatus.UNAUTHORIZED);
-    }
+  if (!req.user) {
+    throw new ApiError(ERROR_MESSAGES.UNAUTHORIZED, HttpStatus.UNAUTHORIZED);
+  }
 
-    // Update all unread notifications for this user
-    const result = await prisma.notification.updateMany({
-        where: {
-            userId: req.user.userId,
-            isRead: false,
-        },
-        data: {
-            isRead: true,
-        },
-    });
+  // Update all unread notifications for this user
+  const result = await prisma.notification.updateMany({
+    where: {
+      userId: req.user.userId,
+      isRead: false,
+    },
+    data: {
+      isRead: true,
+    },
+  });
 
-    logger.info('All notifications marked as read', {
-        userId: req.user.userId,
-        count: result.count
-    });
+  logger.info('All notifications marked as read', {
+    userId: req.user.userId,
+    count: result.count,
+  });
 
-    return successResponse(
-        {
-            count: result.count,
-            message: `${result.count} notification(s) marked as read`
-        },
-        SUCCESS_MESSAGES.UPDATED
-    );
+  return successResponse(
+    {
+      count: result.count,
+      message: `${result.count} notification(s) marked as read`,
+    },
+    SUCCESS_MESSAGES.UPDATED
+  );
 });
 
 // Apply middleware and authentication
 export const PUT = withCorsMiddleware(
-    withRateLimit(
-        authenticateToken(putHandler),
-        RateLimitPresets.STANDARD
-    )
+  withRateLimit(authenticateToken(putHandler), RateLimitPresets.STANDARD)
 );
-

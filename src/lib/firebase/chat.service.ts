@@ -2,317 +2,419 @@
 // Enhanced with presence tracking and typing indicators for mobile compatibility
 
 import {
-    ref,
-    push,
-    set,
-    get,
-    update,
-    query,
-    orderByChild,
-    equalTo,
-    onValue,
-    off,
-    onDisconnect,
-    serverTimestamp,
-    DataSnapshot,
+  ref,
+  push,
+  set,
+  get,
+  update,
+  query,
+  orderByChild,
+  equalTo,
+  onValue,
+  off,
+  onDisconnect,
+  serverTimestamp,
+  DataSnapshot,
 } from 'firebase/database';
-import { database } from './firebase-client';
+import { database, auth } from './firebase-client';
 import { logger } from '@/lib/utils/logger';
+import { MessageAttachment } from '@/lib/types';
 
 export interface ChatMessage {
-    id?: string;
-    senderId: string;
-    senderName: string;
-    senderEmail: string;
-    recipientId: string;
-    recipientName: string;
-    recipientEmail: string;
-    caseId?: string;
-    subject?: string;
-    content: string;
-    isRead: boolean;
-    readAt?: number;
-    sentAt: number;
-    attachments?: Array<{
-        id: string;
-        fileName: string;
-        fileUrl: string;
-        fileSize: number;
-        mimeType: string;
-    }>;
+  id?: string;
+  senderId: string;
+  senderName: string;
+  senderEmail: string;
+  recipientId: string;
+  recipientName: string;
+  recipientEmail: string;
+  caseId?: string;
+  subject?: string;
+  content: string;
+  isRead: boolean;
+  readAt?: number;
+  sentAt: number;
+  attachments?: MessageAttachment[];
 }
 
 export interface UserPresence {
-    userId: string;
-    status: 'online' | 'offline' | 'away';
-    lastSeen: number;
-    platform?: 'web' | 'mobile' | 'desktop';
+  userId: string;
+  status: 'online' | 'offline' | 'away';
+  lastSeen: number;
+  platform?: 'web' | 'mobile' | 'desktop';
 }
 
 export interface TypingIndicator {
-    userId: string;
-    userName: string;
-    chatRoomId: string;
-    isTyping: boolean;
-    timestamp: number;
+  userId: string;
+  userName: string;
+  chatRoomId: string;
+  isTyping: boolean;
+  timestamp: number;
 }
 
 export interface ChatRoom {
-    id?: string;
-    participants: Record<string, boolean>; // Map of user IDs to true (userId -> true)
-    caseId?: string;
-    lastMessage?: string;
-    lastMessageAt?: number;
-    unreadCount?: Record<string, number>; // userId -> count
-    createdAt: number;
-    updatedAt: number;
+  id?: string;
+  participants: Record<string, boolean>; // Map of user IDs to true (userId -> true)
+  caseId?: string;
+  lastMessage?: string;
+  lastMessageAt?: number;
+  unreadCount?: Record<string, number>; // userId -> count
+  createdAt: number;
+  updatedAt: number;
 }
 
 // Get messages for a case
 export async function getCaseMessages(caseId: string): Promise<ChatMessage[]> {
-    const messagesRef = ref(database, 'messages');
-    const caseMessagesQuery = query(messagesRef, orderByChild('caseId'), equalTo(caseId));
+  const messagesRef = ref(database, 'messages');
+  const caseMessagesQuery = query(messagesRef, orderByChild('caseId'), equalTo(caseId));
 
-    const snapshot = await get(caseMessagesQuery);
+  const snapshot = await get(caseMessagesQuery);
 
-    if (!snapshot.exists()) {
-        return [];
-    }
+  if (!snapshot.exists()) {
+    return [];
+  }
 
-    const messages: ChatMessage[] = [];
-    snapshot.forEach((childSnapshot) => {
-        messages.push({
-            id: childSnapshot.key!,
-            ...childSnapshot.val(),
-        });
+  const messages: ChatMessage[] = [];
+  snapshot.forEach((childSnapshot) => {
+    messages.push({
+      id: childSnapshot.key!,
+      ...childSnapshot.val(),
     });
+  });
 
-    return messages.sort((a, b) => a.sentAt - b.sentAt);
+  return messages.sort((a, b) => a.sentAt - b.sentAt);
 }
 
 // Get messages between two users
 export async function getDirectMessages(userId1: string, userId2: string): Promise<ChatMessage[]> {
-    const messagesRef = ref(database, 'messages');
-    const snapshot = await get(messagesRef);
+  const messagesRef = ref(database, 'messages');
+  const snapshot = await get(messagesRef);
 
-    if (!snapshot.exists()) {
-        return [];
+  if (!snapshot.exists()) {
+    return [];
+  }
+
+  const messages: ChatMessage[] = [];
+  snapshot.forEach((childSnapshot) => {
+    const message = childSnapshot.val();
+    if (
+      (message.senderId === userId1 && message.recipientId === userId2) ||
+      (message.senderId === userId2 && message.recipientId === userId1)
+    ) {
+      messages.push({
+        id: childSnapshot.key!,
+        ...message,
+      });
     }
+  });
 
-    const messages: ChatMessage[] = [];
-    snapshot.forEach((childSnapshot) => {
-        const message = childSnapshot.val();
-        if (
-            (message.senderId === userId1 && message.recipientId === userId2) ||
-            (message.senderId === userId2 && message.recipientId === userId1)
-        ) {
-            messages.push({
-                id: childSnapshot.key!,
-                ...message,
-            });
-        }
-    });
-
-    return messages.sort((a, b) => a.sentAt - b.sentAt);
+  return messages.sort((a, b) => a.sentAt - b.sentAt);
 }
 
 // Send a message
 // HYBRID APPROACH: Saves to Firebase (real-time) AND Neon (history)
-export async function sendMessage(message: Omit<ChatMessage, 'id' | 'sentAt' | 'isRead'>): Promise<string> {
-    const messagesRef = ref(database, 'messages');
-    const newMessageRef = push(messagesRef);
+export async function sendMessage(
+  message: Omit<ChatMessage, 'id' | 'sentAt' | 'isRead'>
+): Promise<string> {
+  const messagesRef = ref(database, 'messages');
+  const newMessageRef = push(messagesRef);
 
-    const messageData: ChatMessage = {
-        ...message,
-        sentAt: Date.now(),
-        isRead: false,
-    };
+  // Build message data, excluding undefined values (Firebase doesn't allow undefined)
+  const messageData: any = {
+    senderId: message.senderId,
+    senderName: message.senderName,
+    senderEmail: message.senderEmail,
+    recipientId: message.recipientId,
+    recipientName: message.recipientName,
+    recipientEmail: message.recipientEmail,
+    content: message.content,
+    sentAt: Date.now(),
+    isRead: false,
+  };
 
-    // 1. Save to Firebase first (real-time, instant)
-    await set(newMessageRef, messageData);
+  // Only add optional fields if they have values
+  if (message.caseId !== undefined && message.caseId !== null) {
+    messageData.caseId = message.caseId;
+  }
+  if (message.subject !== undefined && message.subject !== null) {
+    messageData.subject = message.subject;
+  }
+  if (message.attachments && message.attachments.length > 0) {
+    messageData.attachments = message.attachments;
+  }
+  if (message.readAt !== undefined && message.readAt !== null) {
+    messageData.readAt = message.readAt;
+  }
 
-    // 2. Update or create chat room
-    await updateChatRoom(message.senderId, message.recipientId, message.caseId, message.content);
+  // 1. Save to Firebase first (real-time, instant)
+  await set(newMessageRef, messageData);
 
-    // 3. Archive to Neon PostgreSQL (async, doesn't block)
-    // This allows SQL queries for chat history
-    archiveMessageToNeon(newMessageRef.key!, messageData).catch(error => {
-        logger.error('Failed to archive message to Neon', { error, messageId: newMessageRef.key });
-        // Don't throw - message is already in Firebase, this is just archival
-    });
+  // 2. Update or create chat room
+  await updateChatRoom(message.senderId, message.recipientId, message.caseId, message.content);
 
-    return newMessageRef.key!;
+  // 3. Archive to Neon PostgreSQL (async, doesn't block)
+  // This allows SQL queries for chat history
+  archiveMessageToNeon(newMessageRef.key!, messageData as ChatMessage).catch((error) => {
+    logger.error('Failed to archive message to Neon', { error, messageId: newMessageRef.key });
+    // Don't throw - message is already in Firebase, this is just archival
+  });
+
+  return newMessageRef.key!;
 }
 
 /**
  * Archive message to Neon PostgreSQL for history/search
  * Async - doesn't block real-time Firebase write
+ * Includes: timeout protection, auth header, retry with exponential backoff
  */
 async function archiveMessageToNeon(firebaseId: string, messageData: ChatMessage): Promise<void> {
+  const MAX_RETRIES = 3;
+  const TIMEOUT_MS = 10000; // 10 seconds
+  const BASE_DELAY_MS = 1000; // Start with 1 second
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    let timeoutId: NodeJS.Timeout | undefined;
+    const abortController = new AbortController();
+
     try {
-        // Call backend API to save to Neon
-        const response = await fetch('/api/chat/archive', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                firebaseId,
-                senderId: messageData.senderId,
-                senderName: messageData.senderName,
-                senderEmail: messageData.senderEmail,
-                recipientId: messageData.recipientId,
-                recipientName: messageData.recipientName,
-                recipientEmail: messageData.recipientEmail,
-                content: messageData.content,
-                caseId: messageData.caseId,
-                subject: messageData.subject,
-                isRead: messageData.isRead,
-                sentAt: new Date(messageData.sentAt),
-                attachments: messageData.attachments || [],
-            }),
-        });
+      // Setup timeout with AbortController
+      timeoutId = setTimeout(() => {
+        abortController.abort();
+      }, TIMEOUT_MS);
 
-        if (!response.ok) {
-            throw new Error(`Archive failed: ${response.statusText}`);
+      // Get Firebase auth token if available
+      let headers: HeadersInit = { 'Content-Type': 'application/json' };
+
+      if (typeof window !== 'undefined' && auth.currentUser) {
+        try {
+          const token = await auth.currentUser.getIdToken();
+          if (token) {
+            headers = {
+              ...headers,
+              Authorization: `Bearer ${token}`,
+            };
+          }
+        } catch (tokenError) {
+          logger.warn('Failed to get Firebase token for archive', { tokenError, attempt });
+          // Continue without token - API might accept session cookies
         }
+      }
 
-        logger.info('Message archived to Neon', { firebaseId });
+      // Call backend API to save to Neon
+      const response = await fetch('/api/chat/archive', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          firebaseId,
+          senderId: messageData.senderId,
+          senderName: messageData.senderName,
+          senderEmail: messageData.senderEmail,
+          recipientId: messageData.recipientId,
+          recipientName: messageData.recipientName,
+          recipientEmail: messageData.recipientEmail,
+          content: messageData.content,
+          caseId: messageData.caseId,
+          subject: messageData.subject,
+          isRead: messageData.isRead,
+          sentAt: new Date(messageData.sentAt),
+          attachments: messageData.attachments || [],
+        }),
+        signal: abortController.signal,
+      });
+
+      // Clear timeout on success
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
+      if (!response.ok) {
+        const isRetryable = response.status >= 500 || response.status === 429;
+        const errorMessage = `Archive failed: ${response.status} ${response.statusText}`;
+
+        if (isRetryable && attempt < MAX_RETRIES) {
+          // Exponential backoff for retryable errors
+          const delayMs = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+          logger.warn(
+            `Neon archival failed (attempt ${attempt}/${MAX_RETRIES}), retrying in ${delayMs}ms`,
+            {
+              firebaseId,
+              status: response.status,
+            }
+          );
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          continue; // Retry
+        } else {
+          throw new Error(errorMessage);
+        }
+      }
+
+      logger.info('Message archived to Neon', { firebaseId, attempt });
+      return; // Success - exit function
     } catch (error) {
+      // Clear timeout if still pending
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
+      const isAbortError = error instanceof Error && error.name === 'AbortError';
+      const isNetworkError = error instanceof TypeError;
+      const isRetryable = isAbortError || isNetworkError;
+
+      if (isRetryable && attempt < MAX_RETRIES) {
+        // Exponential backoff for timeout/network errors
+        const delayMs = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+        logger.warn(
+          `Neon archival ${isAbortError ? 'timeout' : 'network error'} (attempt ${attempt}/${MAX_RETRIES}), retrying in ${delayMs}ms`,
+          {
+            firebaseId,
+            error: error instanceof Error ? error.message : String(error),
+          }
+        );
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        continue; // Retry
+      } else {
         // Log but don't throw - archival failure shouldn't break chat
-        logger.error('Neon archival failed', { error, firebaseId });
-        throw error;
+        logger.error('Neon archival failed after all retries', {
+          error,
+          firebaseId,
+          attempts: attempt,
+        });
+        return; // Exit without throwing
+      }
     }
+  }
 }
 
 // Mark message as read
 export async function markMessageAsRead(messageId: string): Promise<void> {
-    const messageRef = ref(database, `messages/${messageId}`);
-    await update(messageRef, {
-        isRead: true,
-        readAt: Date.now(),
-    });
+  const messageRef = ref(database, `messages/${messageId}`);
+  await update(messageRef, {
+    isRead: true,
+    readAt: Date.now(),
+  });
 }
 
 // Update or create chat room
 async function updateChatRoom(
-    userId1: string,
-    userId2: string,
-    caseId?: string,
-    lastMessage?: string
+  userId1: string,
+  userId2: string,
+  caseId?: string,
+  lastMessage?: string
 ): Promise<void> {
-    const participantIds = [userId1, userId2].sort();
-    const roomId = caseId || participantIds.join('_');
+  const participantIds = [userId1, userId2].sort();
+  const roomId = caseId || participantIds.join('_');
 
-    const roomRef = ref(database, `chatRooms/${roomId}`);
-    const snapshot = await get(roomRef);
+  const roomRef = ref(database, `chatRooms/${roomId}`);
+  const snapshot = await get(roomRef);
 
-    const now = Date.now();
+  const now = Date.now();
 
-    if (!snapshot.exists()) {
-        // Create new room with participants as a map
-        const participants: Record<string, boolean> = {};
-        participantIds.forEach(id => {
-            participants[id] = true;
-        });
+  if (!snapshot.exists()) {
+    // Create new room with participants as a map
+    const participants: Record<string, boolean> = {};
+    participantIds.forEach((id) => {
+      participants[id] = true;
+    });
 
-        const room: ChatRoom = {
-            participants,
-            caseId,
-            lastMessage,
-            lastMessageAt: now,
-            unreadCount: {
-                [userId2]: 1,
-            },
-            createdAt: now,
-            updatedAt: now,
-        };
-        await set(roomRef, room);
-    } else {
-        // Update existing room
-        const currentUnread = snapshot.val().unreadCount || {};
-        await update(roomRef, {
-            lastMessage,
-            lastMessageAt: now,
-            updatedAt: now,
-            [`unreadCount/${userId2}`]: (currentUnread[userId2] || 0) + 1,
-        });
-    }
+    const room: ChatRoom = {
+      participants,
+      caseId,
+      lastMessage,
+      lastMessageAt: now,
+      unreadCount: {
+        [userId2]: 1,
+      },
+      createdAt: now,
+      updatedAt: now,
+    };
+    await set(roomRef, room);
+  } else {
+    // Update existing room
+    const currentUnread = snapshot.val().unreadCount || {};
+    await update(roomRef, {
+      lastMessage,
+      lastMessageAt: now,
+      updatedAt: now,
+      [`unreadCount/${userId2}`]: (currentUnread[userId2] || 0) + 1,
+    });
+  }
 }
 
 // Get user's chat rooms
 export async function getUserChatRooms(userId: string): Promise<ChatRoom[]> {
-    const roomsRef = ref(database, 'chatRooms');
-    const snapshot = await get(roomsRef);
+  const roomsRef = ref(database, 'chatRooms');
+  const snapshot = await get(roomsRef);
 
-    if (!snapshot.exists()) {
-        return [];
+  if (!snapshot.exists()) {
+    return [];
+  }
+
+  const rooms: ChatRoom[] = [];
+  snapshot.forEach((childSnapshot) => {
+    const room = childSnapshot.val();
+    if (room.participants && room.participants[userId] === true) {
+      rooms.push({
+        id: childSnapshot.key!,
+        ...room,
+      });
     }
+  });
 
-    const rooms: ChatRoom[] = [];
-    snapshot.forEach((childSnapshot) => {
-        const room = childSnapshot.val();
-        if (room.participants && room.participants[userId] === true) {
-            rooms.push({
-                id: childSnapshot.key!,
-                ...room,
-            });
-        }
-    });
-
-    return rooms.sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0));
+  return rooms.sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0));
 }
 
 // Subscribe to messages for a case (real-time)
 export function subscribeToCaseMessages(
-    caseId: string,
-    callback: (messages: ChatMessage[]) => void
+  caseId: string,
+  callback: (messages: ChatMessage[]) => void
 ): () => void {
-    const messagesRef = ref(database, 'messages');
-    const caseMessagesQuery = query(messagesRef, orderByChild('caseId'), equalTo(caseId));
+  const messagesRef = ref(database, 'messages');
+  const caseMessagesQuery = query(messagesRef, orderByChild('caseId'), equalTo(caseId));
 
-    onValue(caseMessagesQuery, (snapshot: DataSnapshot) => {
-        const messages: ChatMessage[] = [];
-        snapshot.forEach((childSnapshot) => {
-            messages.push({
-                id: childSnapshot.key!,
-                ...childSnapshot.val(),
-            });
-        });
-        callback(messages.sort((a, b) => a.sentAt - b.sentAt));
+  onValue(caseMessagesQuery, (snapshot: DataSnapshot) => {
+    const messages: ChatMessage[] = [];
+    snapshot.forEach((childSnapshot) => {
+      messages.push({
+        id: childSnapshot.key!,
+        ...childSnapshot.val(),
+      });
     });
+    callback(messages.sort((a, b) => a.sentAt - b.sentAt));
+  });
 
-    return () => off(caseMessagesQuery);
+  return () => off(caseMessagesQuery);
 }
 
 // Subscribe to user's chat rooms (real-time)
 export function subscribeToUserChatRooms(
-    userId: string,
-    callback: (rooms: ChatRoom[]) => void
+  userId: string,
+  callback: (rooms: ChatRoom[]) => void
 ): () => void {
-    const roomsRef = ref(database, 'chatRooms');
+  const roomsRef = ref(database, 'chatRooms');
 
-    onValue(roomsRef, (snapshot: DataSnapshot) => {
-        const rooms: ChatRoom[] = [];
-        snapshot.forEach((childSnapshot) => {
-            const room = childSnapshot.val();
-            if (room.participants && room.participants[userId] === true) {
-                rooms.push({
-                    id: childSnapshot.key!,
-                    ...room,
-                });
-            }
+  onValue(roomsRef, (snapshot: DataSnapshot) => {
+    const rooms: ChatRoom[] = [];
+    snapshot.forEach((childSnapshot) => {
+      const room = childSnapshot.val();
+      if (room.participants && room.participants[userId] === true) {
+        rooms.push({
+          id: childSnapshot.key!,
+          ...room,
         });
-        callback(rooms.sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0)));
+      }
     });
+    callback(rooms.sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0)));
+  });
 
-    return () => off(roomsRef);
+  return () => off(roomsRef);
 }
 
 // Reset unread count for a chat room
 export async function resetUnreadCount(roomId: string, userId: string): Promise<void> {
-    const roomRef = ref(database, `chatRooms/${roomId}`);
-    await update(roomRef, {
-        [`unreadCount/${userId}`]: 0,
-    });
+  const roomRef = ref(database, `chatRooms/${roomId}`);
+  await update(roomRef, {
+    [`unreadCount/${userId}`]: 0,
+  });
 }
 
 // ============================================
@@ -323,63 +425,66 @@ export async function resetUnreadCount(roomId: string, userId: string): Promise<
  * Set user online status and handle auto-disconnect
  * Compatible with mobile apps - automatically goes offline when connection lost
  */
-export async function setUserOnline(userId: string, platform: 'web' | 'mobile' | 'desktop' = 'web'): Promise<void> {
-    const presenceRef = ref(database, `presence/${userId}`);
-    const userStatusOnline: UserPresence = {
-        userId,
-        status: 'online',
-        lastSeen: Date.now(),
-        platform,
-    };
+export async function setUserOnline(
+  userId: string,
+  platform: 'web' | 'mobile' | 'desktop' = 'web'
+): Promise<void> {
+  const presenceRef = ref(database, `presence/${userId}`);
+  const userStatusOnline: UserPresence = {
+    userId,
+    status: 'online',
+    lastSeen: Date.now(),
+    platform,
+  };
 
-    const userStatusOffline: UserPresence = {
-        userId,
-        status: 'offline',
-        lastSeen: Date.now(),
-        platform,
-    };
+  const userStatusOffline: UserPresence = {
+    userId,
+    status: 'offline',
+    lastSeen: Date.now(),
+    platform,
+  };
 
-    // Set online status
-    await set(presenceRef, userStatusOnline);
+  // Set online status
+  await set(presenceRef, userStatusOnline);
 
-    // Set auto-disconnect to offline (for mobile & web)
-    onDisconnect(presenceRef).set(userStatusOffline);
+  // Set auto-disconnect to offline (for mobile & web)
+  onDisconnect(presenceRef).set(userStatusOffline);
 }
 
 /**
  * Set user offline status
  */
 export async function setUserOffline(userId: string): Promise<void> {
-    const presenceRef = ref(database, `presence/${userId}`);
-    await update(presenceRef, {
-        status: 'offline',
-        lastSeen: Date.now(),
-    });
+  const presenceRef = ref(database, `presence/${userId}`);
+  await update(presenceRef, {
+    status: 'offline',
+    lastSeen: Date.now(),
+  });
 }
 
 /**
  * Set user away status (idle for mobile apps)
  */
 export async function setUserAway(userId: string): Promise<void> {
-    const presenceRef = ref(database, `presence/${userId}`);
-    await update(presenceRef, {
-        status: 'away',
-        lastSeen: Date.now(),
-    });
+  const presenceRef = ref(database, `presence/${userId}`);
+  await update(presenceRef, {
+    status: 'away',
+    lastSeen: Date.now(),
+  });
 }
 
 /**
  * Get user presence status
  */
 export async function getUserPresence(userId: string): Promise<UserPresence | null> {
-    const presenceRef = ref(database, `presence/${userId}`);
-    const snapshot = await get(presenceRef);
+  const presenceRef = ref(database, `presence/${userId}`);
+  const snapshot = await get(presenceRef);
 
-    if (snapshot.exists()) {
-        return snapshot.val() as UserPresence;
-    }
+  if (snapshot.exists()) {
+    return snapshot.val() as UserPresence;
+  }
 
-    return null;
+  return null;
 }
 
 /**
@@ -387,20 +492,20 @@ export async function getUserPresence(userId: string): Promise<UserPresence | nu
  * Mobile and web clients both receive instant updates
  */
 export function subscribeToUserPresence(
-    userId: string,
-    callback: (presence: UserPresence | null) => void
+  userId: string,
+  callback: (presence: UserPresence | null) => void
 ): () => void {
-    const presenceRef = ref(database, `presence/${userId}`);
+  const presenceRef = ref(database, `presence/${userId}`);
 
-    onValue(presenceRef, (snapshot: DataSnapshot) => {
-        if (snapshot.exists()) {
-            callback(snapshot.val() as UserPresence);
-        } else {
-            callback(null);
-        }
-    });
+  onValue(presenceRef, (snapshot: DataSnapshot) => {
+    if (snapshot.exists()) {
+      callback(snapshot.val() as UserPresence);
+    } else {
+      callback(null);
+    }
+  });
 
-    return () => off(presenceRef);
+  return () => off(presenceRef);
 }
 
 /**
@@ -408,26 +513,26 @@ export function subscribeToUserPresence(
  * PERFORMANCE: Uses Set for O(1) lookups instead of array includes
  */
 export function subscribeToMultipleUserPresence(
-    userIds: string[],
-    callback: (presences: Record<string, UserPresence>) => void
+  userIds: string[],
+  callback: (presences: Record<string, UserPresence>) => void
 ): () => void {
-    const presenceRef = ref(database, 'presence');
-    const userIdSet = new Set(userIds); // PERFORMANCE: O(1) lookup vs O(n) for array
-    
-    onValue(presenceRef, (snapshot: DataSnapshot) => {
-        const presences: Record<string, UserPresence> = {};
-        
-        snapshot.forEach((childSnapshot) => {
-            const userId = childSnapshot.key;
-            if (userId && userIdSet.has(userId)) {
-                presences[userId] = childSnapshot.val() as UserPresence;
-            }
-        });
-        
-        callback(presences);
+  const presenceRef = ref(database, 'presence');
+  const userIdSet = new Set(userIds); // PERFORMANCE: O(1) lookup vs O(n) for array
+
+  onValue(presenceRef, (snapshot: DataSnapshot) => {
+    const presences: Record<string, UserPresence> = {};
+
+    snapshot.forEach((childSnapshot) => {
+      const userId = childSnapshot.key;
+      if (userId && userIdSet.has(userId)) {
+        presences[userId] = childSnapshot.val() as UserPresence;
+      }
     });
 
-    return () => off(presenceRef);
+    callback(presences);
+  });
+
+  return () => off(presenceRef);
 }
 
 // ============================================
@@ -438,24 +543,29 @@ export function subscribeToMultipleUserPresence(
  * Set typing indicator for current user in a chat room
  * Mobile apps can use this to show "Agent is typing..."
  */
-export async function setTyping(userId: string, userName: string, chatRoomId: string, isTyping: boolean): Promise<void> {
-    const typingRef = ref(database, `typing/${chatRoomId}/${userId}`);
+export async function setTyping(
+  userId: string,
+  userName: string,
+  chatRoomId: string,
+  isTyping: boolean
+): Promise<void> {
+  const typingRef = ref(database, `typing/${chatRoomId}/${userId}`);
 
-    if (isTyping) {
-        const typingData: TypingIndicator = {
-            userId,
-            userName,
-            chatRoomId,
-            isTyping: true,
-            timestamp: Date.now(),
-        };
-        await set(typingRef, typingData);
+  if (isTyping) {
+    const typingData: TypingIndicator = {
+      userId,
+      userName,
+      chatRoomId,
+      isTyping: true,
+      timestamp: Date.now(),
+    };
+    await set(typingRef, typingData);
 
-        // Auto-clear typing after 5 seconds
-        onDisconnect(typingRef).remove();
-    } else {
-        await set(typingRef, null);
-    }
+    // Auto-clear typing after 5 seconds
+    onDisconnect(typingRef).remove();
+  } else {
+    await set(typingRef, null);
+  }
 }
 
 /**
@@ -463,32 +573,34 @@ export async function setTyping(userId: string, userName: string, chatRoomId: st
  * PERFORMANCE: Filters out stale indicators (>5s old) client-side
  */
 export function subscribeToTyping(
-    chatRoomId: string,
-    currentUserId: string,
-    callback: (typingUsers: TypingIndicator[]) => void
+  chatRoomId: string,
+  currentUserId: string,
+  callback: (typingUsers: TypingIndicator[]) => void
 ): () => void {
-    const typingRef = ref(database, `typing/${chatRoomId}`);
+  const typingRef = ref(database, `typing/${chatRoomId}`);
 
-    onValue(typingRef, (snapshot: DataSnapshot) => {
-        const typingUsers: TypingIndicator[] = [];
-        const now = Date.now();
-        const STALE_THRESHOLD = 5000; // 5 seconds
-        
-        snapshot.forEach((childSnapshot) => {
-            const typing = childSnapshot.val() as TypingIndicator;
-            // PERFORMANCE: Only include active typing (not current user, recent timestamp)
-            if (typing && 
-                typing.userId !== currentUserId && 
-                typing.isTyping &&
-                (now - typing.timestamp) < STALE_THRESHOLD) {
-                typingUsers.push(typing);
-            }
-        });
-        
-        callback(typingUsers);
+  onValue(typingRef, (snapshot: DataSnapshot) => {
+    const typingUsers: TypingIndicator[] = [];
+    const now = Date.now();
+    const STALE_THRESHOLD = 5000; // 5 seconds
+
+    snapshot.forEach((childSnapshot) => {
+      const typing = childSnapshot.val() as TypingIndicator;
+      // PERFORMANCE: Only include active typing (not current user, recent timestamp)
+      if (
+        typing &&
+        typing.userId !== currentUserId &&
+        typing.isTyping &&
+        now - typing.timestamp < STALE_THRESHOLD
+      ) {
+        typingUsers.push(typing);
+      }
     });
 
-    return () => off(typingRef);
+    callback(typingUsers);
+  });
+
+  return () => off(typingRef);
 }
 
 // ============================================
@@ -500,24 +612,24 @@ export function subscribeToTyping(
  * Enhanced for mobile compatibility
  */
 export function subscribeToRoomMessages(
-    chatRoomId: string,
-    callback: (messages: ChatMessage[]) => void
+  chatRoomId: string,
+  callback: (messages: ChatMessage[]) => void
 ): () => void {
-    const messagesRef = ref(database, 'messages');
-    const roomMessagesQuery = query(messagesRef, orderByChild('chatRoomId'), equalTo(chatRoomId));
+  const messagesRef = ref(database, 'messages');
+  const roomMessagesQuery = query(messagesRef, orderByChild('chatRoomId'), equalTo(chatRoomId));
 
-    onValue(roomMessagesQuery, (snapshot: DataSnapshot) => {
-        const messages: ChatMessage[] = [];
-        snapshot.forEach((childSnapshot) => {
-            messages.push({
-                id: childSnapshot.key!,
-                ...childSnapshot.val(),
-            });
-        });
-        callback(messages.sort((a, b) => a.sentAt - b.sentAt));
+  onValue(roomMessagesQuery, (snapshot: DataSnapshot) => {
+    const messages: ChatMessage[] = [];
+    snapshot.forEach((childSnapshot) => {
+      messages.push({
+        id: childSnapshot.key!,
+        ...childSnapshot.val(),
+      });
     });
+    callback(messages.sort((a, b) => a.sentAt - b.sentAt));
+  });
 
-    return () => off(roomMessagesQuery);
+  return () => off(roomMessagesQuery);
 }
 
 /**
@@ -525,34 +637,33 @@ export function subscribeToRoomMessages(
  * For mobile 1-on-1 chats
  */
 export function subscribeToDirectMessages(
-    userId1: string,
-    userId2: string,
-    callback: (messages: ChatMessage[]) => void
+  userId1: string,
+  userId2: string,
+  callback: (messages: ChatMessage[]) => void
 ): () => void {
-    const messagesRef = ref(database, 'messages');
+  const messagesRef = ref(database, 'messages');
 
-    onValue(messagesRef, (snapshot: DataSnapshot) => {
-        const messages: ChatMessage[] = [];
-        snapshot.forEach((childSnapshot) => {
-            const message = childSnapshot.val() as ChatMessage;
-            if (
-                (message.senderId === userId1 && message.recipientId === userId2) ||
-                (message.senderId === userId2 && message.recipientId === userId1)
-            ) {
-                messages.push({
-                    id: childSnapshot.key!,
-                    ...message,
-                });
-            }
+  onValue(messagesRef, (snapshot: DataSnapshot) => {
+    const messages: ChatMessage[] = [];
+    snapshot.forEach((childSnapshot) => {
+      const message = childSnapshot.val() as ChatMessage;
+      if (
+        (message.senderId === userId1 && message.recipientId === userId2) ||
+        (message.senderId === userId2 && message.recipientId === userId1)
+      ) {
+        messages.push({
+          id: childSnapshot.key!,
+          ...message,
         });
-        callback(messages.sort((a, b) => a.sentAt - b.sentAt));
+      }
     });
+    callback(messages.sort((a, b) => a.sentAt - b.sentAt));
+  });
 
-    return () => off(messagesRef);
+  return () => off(messagesRef);
 }
 // Delete a message
 export async function deleteMessage(messageId: string): Promise<void> {
-    const messageRef = ref(database, `messages/${messageId}`);
-    await set(messageRef, null);
+  const messageRef = ref(database, `messages/${messageId}`);
+  await set(messageRef, null);
 }
-

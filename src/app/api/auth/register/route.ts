@@ -1,5 +1,6 @@
 // POST /api/auth/register - Register new user with Firebase Auth
-// This endpoint creates a user in both Firebase Auth and the database
+// This endpoint creates users server-side with proper validation order and rollback
+// Security: Never trusts client-created Firebase users, prevents orphaned accounts
 // Compatible with both web and mobile clients
 
 import { NextRequest } from 'next/server';
@@ -10,193 +11,329 @@ import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants';
 import { logger } from '@/lib/utils/logger';
 import type { ZodIssue } from 'zod';
 import {
-    successResponse,
-    errorResponse,
-    validationErrorResponse,
-    serverErrorResponse,
+  successResponse,
+  errorResponse,
+  validationErrorResponse,
+  serverErrorResponse,
 } from '@/lib/utils/api-response';
 import { asyncHandler, ApiError, HttpStatus } from '@/lib/utils/error-handler';
 import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 import { Prisma } from '@prisma/client';
 import { randomBytes } from 'crypto';
+import { validateInviteCodeRules } from '@/lib/utils/invite-code-validation';
+import { setCustomClaimsWithRetry, rollbackUserCreation } from '@/lib/utils/firebase-claims';
+import { hashPII, createSafeLogIdentifier } from '@/lib/utils/pii-hash';
 
 const handler = asyncHandler(async (request: NextRequest) => {
-    // Check if Firebase Admin is initialized
-    if (!adminAuth) {
-        logger.error('Firebase Admin not initialized');
-        throw new ApiError('Authentication service unavailable', HttpStatus.SERVICE_UNAVAILABLE);
+  // Check if Firebase Admin is initialized
+  if (!adminAuth) {
+    logger.error('Firebase Admin not initialized');
+    throw new ApiError('Authentication service unavailable', HttpStatus.SERVICE_UNAVAILABLE);
+  }
+
+  const body = await request.json();
+
+  // Validate input (includes password)
+  const validationResult = registerSchema.safeParse(body);
+
+  if (!validationResult.success) {
+    const errors = validationResult.error.issues.reduce(
+      (acc: Record<string, string[]>, err: ZodIssue) => {
+        const path = err.path.join('.');
+        if (!acc[path]) acc[path] = [];
+        acc[path].push(err.message);
+        return acc;
+      },
+      {} as Record<string, string[]>
+    );
+
+    return validationErrorResponse(errors, ERROR_MESSAGES.VALIDATION_ERROR);
+  }
+
+  const { email, password, firstName, lastName, phone, inviteCode } = validationResult.data;
+
+  // SECURITY: Check if email already exists in Firebase before any operations
+  try {
+    await adminAuth.getUserByEmail(email);
+    // If we get here, user exists - log with hashed email to prevent PII leakage
+    logger.warn('Registration attempt with existing email', { emailHash: hashPII(email) });
+    return errorResponse(ERROR_MESSAGES.USER_ALREADY_EXISTS, 409);
+  } catch (error: any) {
+    // Error code 'auth/user-not-found' means email is available (expected path)
+    if (error.code !== 'auth/user-not-found') {
+      // Log with hashed email to prevent PII leakage
+      logger.error('Error checking existing user', {
+        emailHash: hashPII(email),
+        error: error.message,
+      });
+      throw new ApiError('Failed to validate user', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+    // Email is available, continue registration
+  }
 
-    // Verify Firebase ID token from Authorization header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-        throw new ApiError('Unauthorized - Missing or invalid token', HttpStatus.UNAUTHORIZED);
-    }
+  // Determine role based on invite code
+  let userRole: 'CLIENT' | 'AGENT' | 'ADMIN' = 'CLIENT';
+  let validatedInvite: any = null;
 
-    const token = authHeader.split('Bearer ')[1];
-    let decodedToken;
-
-    try {
-        decodedToken = await adminAuth.verifyIdToken(token);
-        logger.info('Firebase token verified', { uid: decodedToken.uid });
-    } catch (error: any) {
-        logger.error('Firebase token verification failed', { error: error.message });
-        throw new ApiError('Invalid authentication token', HttpStatus.UNAUTHORIZED);
-    }
-
-    // Extract Firebase UID from verified token (this is secure)
-    const firebaseUid = decodedToken.uid;
-
-    const body = await request.json();
-
-    // Validate input
-    const validationResult = registerSchema.safeParse(body);
-
-    if (!validationResult.success) {
-        const errors = validationResult.error.issues.reduce(
-            (acc: Record<string, string[]>, err: ZodIssue) => {
-                const path = err.path.join('.');
-                if (!acc[path]) acc[path] = [];
-                acc[path].push(err.message);
-                return acc;
-            },
-            {} as Record<string, string[]>
-        );
-
-        return validationErrorResponse(errors, ERROR_MESSAGES.VALIDATION_ERROR);
-    }
-
-    const { email, firstName, lastName, phone, inviteCode } = validationResult.data;
-
-    // Determine role based on invite code
-    let userRole: 'CLIENT' | 'AGENT' | 'ADMIN' = 'CLIENT';
-    let validatedInvite: { id: string; role: 'CLIENT' | 'AGENT' | 'ADMIN' } | null = null;
-
-    if (inviteCode) {
-        // Validate invite code
-        const invite = await prisma.inviteCode.findUnique({
-            where: { code: inviteCode },
-        });
-
-        if (!invite) {
-            throw new ApiError('Invalid invite code', HttpStatus.BAD_REQUEST);
-        }
-
-        if (!invite.isActive) {
-            throw new ApiError('This invite code has been deactivated', HttpStatus.FORBIDDEN);
-        }
-
-        if (new Date() > invite.expiresAt) {
-            throw new ApiError('This invite code has expired', HttpStatus.FORBIDDEN);
-        }
-
-        if (invite.usedCount >= invite.maxUses) {
-            throw new ApiError('This invite code has reached its usage limit', HttpStatus.FORBIDDEN);
-        }
-
-        // Use the role from invite code
-        userRole = invite.role;
-        validatedInvite = { id: invite.id, role: invite.role };
-    }
-
-    // Create user in database first (Firebase user already created on client)
-    // This ensures the User exists before creating InviteUsage (for referential integrity)
-    // Attempt direct creation to avoid TOCTOU race; handle unique constraint violations
-    let user;
-    try {
-        user = await prisma.user.create({
-            data: {
-                id: firebaseUid, // Use Firebase UID as database ID
-                email,
-                password: randomBytes(32).toString('hex'), // Random value for Firebase-managed users
-                firstName,
-                lastName,
-                phone,
-                role: userRole,
-                isVerified: false,
-            },
-            select: {
-                id: true,
-                email: true,
-                firstName: true,
-                lastName: true,
-                phone: true,
-                role: true,
-                isActive: true,
-                isVerified: true,
-                createdAt: true,
-                updatedAt: true,
-                lastLogin: true,
-            },
-        });
-    } catch (error) {
-        // Handle Prisma unique constraint violation (P2002)
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-            logger.warn('User already exists during registration', { firebaseUid, email });
-            return errorResponse(ERROR_MESSAGES.USER_ALREADY_EXISTS, 409);
-        }
-        // Rethrow any other errors
-        throw error;
-    }
-
-    // Record invite code usage after user creation (maintains referential integrity)
-    if (validatedInvite) {
-        try {
-            await prisma.$transaction([
-                // Create usage record for complete history - now User exists for FK constraint
-                prisma.inviteUsage.create({
-                    data: {
-                        inviteCodeId: validatedInvite.id,
-                        userId: firebaseUid,
-                        usedAt: new Date(),
-                    },
-                }),
-                // Update invite code: increment count and track most recent user
-                prisma.inviteCode.update({
-                    where: { id: validatedInvite.id },
-                    data: {
-                        usedCount: { increment: 1 },
-                        lastUsedBy: firebaseUid,
-                        lastUsedAt: new Date(),
-                    },
-                }),
-            ]);
-
-            logger.info('Invite code used', { code: inviteCode, role: userRole, userId: firebaseUid });
-        } catch (error) {
-            logger.error('Failed to record invite code usage', { error, inviteCode, userId: firebaseUid });
-            // User is already created, so we don't fail registration
-            // Just log the error for manual investigation
-        }
-    }
-
-    // Set custom claims in Firebase (if admin is available)
-    if (adminAuth) {
-        try {
-            await adminAuth.setCustomUserClaims(firebaseUid, {
-                role: userRole,
-                userId: user.id,
-            });
-        } catch (error) {
-            logger.warn('Failed to set custom claims, but registration succeeded', error);
-        }
-    }
-
-    logger.info('User registered successfully', {
-        userId: user.id,
-        email: user.email,
-        role: userRole
+  // STEP 1: Validate invite code FIRST (before creating anything)
+  if (inviteCode) {
+    const invite = await prisma.inviteCode.findUnique({
+      where: { code: inviteCode },
     });
 
-    return successResponse(
-        { user },
-        SUCCESS_MESSAGES.REGISTRATION_SUCCESS,
-        201
+    // Validate the invite code - throws ApiError if invalid
+    validateInviteCodeRules(invite);
+    validatedInvite = invite!;
+    userRole = validatedInvite.role;
+
+    logger.info('Invite code validated', { code: inviteCode, role: userRole });
+  }
+
+  // STEP 2: Create Firebase user server-side (only after validation passes)
+  let firebaseUid: string;
+  try {
+    const firebaseUser = await adminAuth.createUser({
+      email,
+      password,
+      emailVerified: false,
+      disabled: false,
+      displayName: `${firstName} ${lastName}`,
+    });
+
+    firebaseUid = firebaseUser.uid;
+
+    // Log with hashed identifiers to prevent PII leakage
+    logger.info('Firebase user created server-side', {
+      firebaseUidHash: hashPII(firebaseUid),
+      emailHash: hashPII(email),
+      role: userRole,
+    });
+  } catch (error: any) {
+    // Log with hashed email to prevent PII leakage
+    logger.error('Failed to create Firebase user', {
+      emailHash: hashPII(email),
+      error: error.message,
+      code: error.code,
+    });
+
+    if (error.code === 'auth/email-already-exists') {
+      return errorResponse(ERROR_MESSAGES.USER_ALREADY_EXISTS, 409);
+    }
+    throw new ApiError('Failed to create authentication account', HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+
+  // STEP 3: Create DB user and consume invite code atomically in transaction
+  let user;
+  try {
+    if (inviteCode && validatedInvite) {
+      // Registration with invite code - atomic transaction
+      const result = await prisma.$transaction(async (tx) => {
+        // Create the database user
+        const newUser = await tx.user.create({
+          data: {
+            id: firebaseUid,
+            email,
+            password: randomBytes(32).toString('hex'), // Not used for Firebase auth
+            firstName,
+            lastName,
+            phone,
+            role: userRole,
+            isVerified: false,
+          },
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            role: true,
+            isActive: true,
+            isVerified: true,
+            createdAt: true,
+            updatedAt: true,
+            lastLogin: true,
+          },
+        });
+
+        // Atomically update invite code usage with conditional check
+        const updateResult = await tx.$executeRaw`
+                    UPDATE "InviteCode"
+                    SET
+                        "usedCount" = "usedCount" + 1,
+                        "lastUsedById" = ${firebaseUid},
+                        "lastUsedAt" = NOW()
+                    WHERE
+                        "id" = ${validatedInvite.id}
+                        AND "isActive" = true
+                        AND "expiresAt" > NOW()
+                        AND "usedCount" < "maxUses"
+                `;
+
+        // If no rows affected, invite was exhausted by concurrent request
+        if (updateResult === 0) {
+          throw new ApiError('This invite code has reached its usage limit', HttpStatus.CONFLICT);
+        }
+
+        // Record usage history for audit trail
+        await tx.inviteUsage.create({
+          data: {
+            inviteCodeId: validatedInvite.id,
+            userId: firebaseUid,
+            usedAt: new Date(),
+          },
+        });
+
+        return newUser;
+      });
+
+      user = result;
+      // Log with hashed UID to prevent PII leakage (invite code is not PII)
+      logger.info('User and invite code processed atomically', {
+        userIdHash: hashPII(firebaseUid),
+        code: inviteCode,
+        role: userRole,
+      });
+    } else {
+      // No invite code - create user with default CLIENT role
+      user = await prisma.user.create({
+        data: {
+          id: firebaseUid,
+          email,
+          password: randomBytes(32).toString('hex'), // Not used for Firebase auth
+          firstName,
+          lastName,
+          phone,
+          role: userRole,
+          isVerified: false,
+        },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          role: true,
+          isActive: true,
+          isVerified: true,
+          createdAt: true,
+          updatedAt: true,
+          lastLogin: true,
+        },
+      });
+
+      // Log with hashed UID to prevent PII leakage
+      logger.info('User created without invite code', {
+        userIdHash: hashPII(firebaseUid),
+        role: userRole,
+      });
+    }
+  } catch (error) {
+    // CRITICAL: Database operation failed - ROLLBACK Firebase user
+    // Log with hashed identifiers to prevent PII leakage
+    logger.error('Database user creation failed, rolling back Firebase user', {
+      firebaseUidHash: hashPII(firebaseUid),
+      emailHash: hashPII(email),
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    // Attempt to delete the Firebase user we just created
+    try {
+      await rollbackUserCreation(firebaseUid, {
+        deleteFirebase: true,
+        deletePrisma: false, // DB user was never created
+        context: 'registration-db-failure',
+      });
+    } catch (rollbackError) {
+      // Log with hashed identifiers to prevent PII leakage
+      logger.error('CRITICAL: Failed to rollback Firebase user after DB failure', {
+        firebaseUidHash: hashPII(firebaseUid),
+        emailHash: hashPII(email),
+        rollbackError:
+          rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
+      });
+    }
+
+    // Handle Prisma unique constraint violation (P2002)
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return errorResponse(ERROR_MESSAGES.USER_ALREADY_EXISTS, 409);
+    }
+
+    // Re-throw ApiErrors (validation failures, invite exhausted, etc.)
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    // Any other error
+    throw new ApiError('Registration failed. Please try again.', HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+
+  // STEP 4: Set custom claims with retry and automatic rollback on failure
+  try {
+    await setCustomClaimsWithRetry(firebaseUid, {
+      role: userRole,
+      userId: user.id,
+    });
+  } catch (error) {
+    // Claims setting failed even after retries
+    // The setCustomClaimsWithRetry already deleted the DB user
+    // We need to also delete the Firebase user
+    // Log with hashed identifiers to prevent PII leakage
+    logger.error('Claims setting failed, rolling back Firebase user', {
+      firebaseUidHash: hashPII(firebaseUid),
+      emailHash: hashPII(email),
+    });
+
+    try {
+      await rollbackUserCreation(firebaseUid, {
+        deleteFirebase: true,
+        deletePrisma: false, // Already deleted by setCustomClaimsWithRetry
+        context: 'registration-claims-failure',
+      });
+    } catch (rollbackError) {
+      // Log with hashed identifiers to prevent PII leakage
+      logger.error('CRITICAL: Failed to rollback Firebase user after claims failure', {
+        firebaseUidHash: hashPII(firebaseUid),
+        emailHash: hashPII(email),
+        rollbackError:
+          rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
+      });
+    }
+
+    throw error; // Re-throw the original error
+  }
+
+  // STEP 5: Generate custom token for client to sign in
+  let customToken: string;
+  try {
+    customToken = await adminAuth.createCustomToken(firebaseUid);
+  } catch (error: any) {
+    // Log with hashed UID to prevent PII leakage
+    logger.error('Failed to create custom token', {
+      firebaseUidHash: hashPII(firebaseUid),
+      error: error.message,
+    });
+    throw new ApiError(
+      'Registration succeeded but failed to create session token. Please try logging in.',
+      HttpStatus.INTERNAL_SERVER_ERROR
     );
+  }
+
+  // Log with hashed identifiers to prevent PII leakage
+  logger.info('User registered successfully', createSafeLogIdentifier(user.id, user.email));
+  logger.info('User registered successfully - additional context', {
+    role: userRole,
+  });
+
+  return successResponse(
+    {
+      user,
+      customToken, // Client will use this to sign in
+    },
+    SUCCESS_MESSAGES.REGISTRATION_SUCCESS,
+    201
+  );
 });
 
 // Apply middleware: CORS -> Rate Limit -> Handler
-export const POST = withCorsMiddleware(
-    withRateLimit(handler, RateLimitPresets.AUTH)
-);
+export const POST = withCorsMiddleware(withRateLimit(handler, RateLimitPresets.AUTH));

@@ -5,11 +5,11 @@ import { CasesList } from './CasesList';
 import { AgentCasesList } from './AgentCasesList';
 
 export function RoleCasesList() {
-    const { user } = useAuthStore();
-    
-    if (user?.role === 'AGENT' || user?.role === 'ADMIN') {
-        return <AgentCasesList />;
-    }
-    
-    return <CasesList />;
+  const { user } = useAuthStore();
+
+  if (user?.role === 'AGENT' || user?.role === 'ADMIN') {
+    return <AgentCasesList />;
+  }
+
+  return <CasesList />;
 }

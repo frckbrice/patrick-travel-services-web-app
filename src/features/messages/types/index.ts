@@ -1,48 +1,51 @@
 // Types for Messages feature
+import { MessageAttachment } from '@/lib/types';
 
 export interface Message {
-    id: string;
-    senderId: string;
-    senderName: string;
-    senderEmail: string;
-    recipientId: string;
-    recipientName: string;
-    recipientEmail: string;
-    caseId?: string;
-    subject?: string;
-    content: string;
-    isRead: boolean;
-    readAt?: number;
-    sentAt: number;
-    attachments?: MessageAttachment[];
-}
-
-export interface MessageAttachment {
-    id: string;
-    fileName: string;
-    fileUrl: string;
-    fileSize: number;
-    mimeType: string;
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderEmail: string;
+  recipientId: string;
+  recipientName: string;
+  recipientEmail: string;
+  caseId?: string;
+  subject?: string;
+  content: string;
+  isRead: boolean;
+  readAt?: number;
+  sentAt: number;
+  attachments?: MessageAttachment[];
 }
 
 export interface ChatRoom {
-    id: string;
-    participants: Record<string, boolean>; // Map of user IDs to true (userId -> true)
-    caseId?: string;
-    lastMessage?: string;
-    lastMessageAt?: number;
-    unreadCount?: Record<string, number>;
-    createdAt: number;
-    updatedAt: number;
+  id: string;
+  participants: Record<string, boolean>; // Map of user IDs to true (userId -> true)
+  caseId?: string;
+  lastMessage?: string;
+  lastMessageAt?: number;
+  unreadCount?: Record<string, number>;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface SendMessageInput {
-    recipientId: string;
-    recipientName: string;
-    recipientEmail: string;
-    content: string;
-    caseId?: string;
-    subject?: string;
-    attachments?: MessageAttachment[];
+  senderId?: string; // Optional - will be auto-filled from auth if not provided
+  senderName?: string; // Optional - will be auto-filled from auth if not provided
+  senderEmail?: string; // Optional - will be auto-filled from auth if not provided
+  recipientId: string;
+  recipientName: string;
+  recipientEmail: string;
+  content: string;
+  caseId?: string;
+  subject?: string;
+  attachments?: MessageAttachment[];
 }
 
+export interface SendEmailInput {
+  recipientId?: string; // Optional for clients (auto-determined from case)
+  caseId?: string; // Required for clients, optional for agents
+  subject: string;
+  content: string;
+  attachments?: MessageAttachment[];
+}

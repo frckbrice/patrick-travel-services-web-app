@@ -2,13 +2,15 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
-    signInWithPopup,
-    GoogleAuthProvider,
-    signOut,
-    User as FirebaseUser,
-    getAdditionalUserInfo,
+  signInWithEmailAndPassword,
+  signInWithCustomToken,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut,
+  User as FirebaseUser,
+  getAdditionalUserInfo,
+  setPersistence,
+  browserLocalPersistence,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase/firebase-client';
 import { apiClient } from '@/lib/utils/axios';
@@ -17,312 +19,324 @@ import { useRouter } from 'next/navigation';
 import { User } from '@/lib/types';
 import { LoginInput, RegisterInput } from '../schemas/auth.schema';
 import { toast } from 'sonner';
+import { logger } from '@/lib/utils/logger';
 
 // API Error Type
 interface ApiError {
-    response?: {
-        data?: {
-            error?: string;
-            message?: string;
-        };
+  response?: {
+    data?: {
+      error?: string;
+      message?: string;
     };
-    message?: string;
-    code?: string;
+  };
+  message?: string;
+  code?: string;
 }
 
-// Register mutation
+// Register mutation - SECURE: Firebase user created server-side
 export const useRegister = () => {
-    const { setAuth } = useAuthStore();
-    const router = useRouter();
+  const { setAuth } = useAuthStore();
+  const router = useRouter();
 
-    return useMutation({
-        mutationFn: async (data: RegisterInput): Promise<{ user: User; token: string }> => {
-            // Create user in Firebase
-            const userCredential = await createUserWithEmailAndPassword(
-                auth,
-                data.email,
-                data.password
-            );
+  return useMutation({
+    mutationFn: async (data: RegisterInput): Promise<{ user: User; token: string }> => {
+      // Ensure persistence is set before registration
+      await setPersistence(auth, browserLocalPersistence);
 
-            // Get Firebase ID token (will be sent in Authorization header)
-            const token = await userCredential.user.getIdToken();
+      // SECURITY: Send password to backend - server creates Firebase user
+      // This prevents client-created users and ensures validation happens first
+      const response = await apiClient.post('/api/auth/register', {
+        email: data.email,
+        password: data.password,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        inviteCode: data.inviteCode,
+      });
 
-            // Register user in backend database (firebaseUid is extracted from token on server)
-            const response = await apiClient.post(
-                '/api/auth/register',
-                {
-                    email: data.email,
-                    firstName: data.firstName,
-                    lastName: data.lastName,
-                    phone: data.phone,
-                    inviteCode: data.inviteCode,
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
+      const { user, customToken } = response.data.data;
 
-            return {
-                user: response.data.data.user,
-                token,
-            };
-        },
-        onSuccess: async (data) => {
-            setAuth({
-                user: data.user,
-                accessToken: data.token,
-                refreshToken: data.token, // Firebase uses the same token
-            });
-            toast.success('Registration successful! Welcome to Patrick Travel Services.');
-            router.push('/dashboard');
-        },
-        onError: (error: ApiError) => {
-            // Handle Firebase errors
-            const firebaseError = error.code;
-            let message = 'Registration failed. Please try again.';
+      // Sign in with custom token provided by backend
+      // Backend has already created the Firebase user and set custom claims
+      const userCredential = await signInWithCustomToken(auth, customToken);
 
-            if (firebaseError === 'auth/email-already-in-use') {
-                message = 'This email is already registered.';
-            } else if (firebaseError === 'auth/weak-password') {
-                message = 'Password is too weak. Please use a stronger password.';
-            } else if (firebaseError === 'auth/invalid-email') {
-                message = 'Invalid email address.';
-            } else if (error.response?.data?.error) {
-                message = error.response.data.error;
-            }
+      // Get Firebase ID token for subsequent requests
+      const token = await userCredential.user.getIdToken();
 
-            toast.error(message);
-        },
-    });
+      return {
+        user,
+        token,
+      };
+    },
+    onSuccess: async (data) => {
+      setAuth({
+        user: data.user,
+        accessToken: data.token,
+        refreshToken: data.token, // Firebase uses the same token
+      });
+      toast.success('Registration successful! Welcome to Patrick Travel Services.');
+      router.push('/dashboard');
+    },
+    onError: (error: ApiError) => {
+      // Handle errors from backend
+      let message = 'Registration failed. Please try again.';
+
+      // Backend validation errors
+      if (error.response?.data?.error) {
+        message = error.response.data.error;
+      } else if (error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error.message) {
+        message = error.message;
+      }
+
+      toast.error(message);
+    },
+  });
 };
 
 // Login mutation
 export const useLogin = () => {
-    const { setAuth } = useAuthStore();
-    const router = useRouter();
+  const { setAuth } = useAuthStore();
+  const router = useRouter();
 
-    return useMutation({
-        mutationFn: async (data: LoginInput): Promise<{ user: User; token: string }> => {
-            // Sign in with Firebase
-            const userCredential = await signInWithEmailAndPassword(
-                auth,
-                data.email,
-                data.password
-            );
+  return useMutation({
+    mutationFn: async (data: LoginInput): Promise<{ user: User; token: string }> => {
+      // Ensure persistence is set before signing in
+      await setPersistence(auth, browserLocalPersistence);
 
-            // Get Firebase ID token (will be sent in Authorization header)
-            const token = await userCredential.user.getIdToken();
+      // Sign in with Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
 
-            // Sync with backend (update last login, get user data)
-            // firebaseUid is extracted from token on server
-            const response = await apiClient.post(
-                '/api/auth/login',
-                {},
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
+      // Get Firebase ID token (will be sent in Authorization header)
+      const token = await userCredential.user.getIdToken();
 
-            return {
-                user: response.data.data.user,
-                token,
-            };
-        },
-        onSuccess: (data) => {
-            setAuth({
-                user: data.user,
-                accessToken: data.token,
-                refreshToken: data.token,
-            });
-            toast.success(`Welcome back, ${data.user.firstName}!`);
+      // Sync with backend (update last login, get user data)
+      // The backend will refresh custom claims on this call
+      // firebaseUid is extracted from token on server
+      const response = await apiClient.post(
+        '/api/auth/login',
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-            // Redirect based on role
-            if (data.user.role === 'CLIENT') {
-                router.push('/dashboard');
-            } else {
-                router.push('/dashboard');
-            }
-        },
-        onError: (error: ApiError) => {
-            // Handle Firebase errors
-            const firebaseError = error.code;
-            let message = 'Login failed. Please check your credentials.';
+      // CRITICAL: Force token refresh to pick up updated custom claims from backend
+      // Without this, the client will use the old token without the refreshed role claims
+      // forceRefresh=true bypasses cache and gets a new token with updated claims
+      const refreshedToken = await userCredential.user.getIdToken(true);
 
-            if (firebaseError === 'auth/user-not-found' || firebaseError === 'auth/wrong-password') {
-                message = 'Invalid email or password.';
-            } else if (firebaseError === 'auth/too-many-requests') {
-                message = 'Too many failed login attempts. Please try again later.';
-            } else if (firebaseError === 'auth/user-disabled') {
-                message = 'This account has been disabled.';
-            } else if (error.response?.data?.error) {
-                message = error.response.data.error;
-            }
+      logger.info('Token refreshed after custom claims update');
 
-            toast.error(message);
-        },
-    });
+      return {
+        user: response.data.data.user,
+        token: refreshedToken, // Use refreshed token with updated claims
+      };
+    },
+    onSuccess: (data) => {
+      setAuth({
+        user: data.user,
+        accessToken: data.token,
+        refreshToken: data.token,
+      });
+      toast.success(`Welcome back, ${data.user.firstName}!`);
+
+      // Redirect based on role
+      if (data.user.role === 'CLIENT') {
+        router.push('/dashboard');
+      } else {
+        router.push('/dashboard');
+      }
+    },
+    onError: (error: ApiError) => {
+      // Handle Firebase errors
+      const firebaseError = error.code;
+      let message = 'Login failed. Please check your credentials.';
+
+      if (firebaseError === 'auth/user-not-found' || firebaseError === 'auth/wrong-password') {
+        message = 'Invalid email or password.';
+      } else if (firebaseError === 'auth/too-many-requests') {
+        message = 'Too many failed login attempts. Please try again later.';
+      } else if (firebaseError === 'auth/user-disabled') {
+        message = 'This account has been disabled.';
+      } else if (error.response?.data?.error) {
+        message = error.response.data.error;
+      }
+
+      toast.error(message);
+    },
+  });
 };
 
 // Logout mutation
 export const useLogout = () => {
-    const { logout } = useAuthStore();
-    const router = useRouter();
-    const queryClient = useQueryClient();
+  const { logout } = useAuthStore();
+  const router = useRouter();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: async () => {
-            // Sign out from Firebase
-            await signOut(auth);
+  return useMutation({
+    mutationFn: async () => {
+      // Sign out from Firebase
+      await signOut(auth);
 
-            // Optionally call backend to revoke tokens
-            try {
-                await apiClient.post('/api/auth/logout');
-            } catch (error) {
-                // Ignore backend errors during logout
-                console.error('Backend logout error:', error);
-            }
-        },
-        onSuccess: () => {
-            logout();
-            queryClient.clear(); // Clear all queries
-            toast.success('Logged out successfully');
-            router.push('/');
-        },
-        onError: () => {
-            // Even if logout fails, clear local state
-            logout();
-            queryClient.clear();
-            router.push('/');
-        },
-    });
+      // Optionally call backend to revoke tokens
+      try {
+        await apiClient.post('/api/auth/logout');
+      } catch (error) {
+        // Ignore backend errors during logout
+        logger.error('Backend logout error:', error);
+      }
+    },
+    onSuccess: () => {
+      logout();
+      queryClient.clear(); // Clear all queries
+      toast.success('Logged out successfully');
+      router.push('/');
+    },
+    onError: () => {
+      // Even if logout fails, clear local state
+      logout();
+      queryClient.clear();
+      router.push('/');
+    },
+  });
 };
 
 // Get current user query
 export const useCurrentUser = () => {
-    const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
 
-    return useQuery({
-        queryKey: ['currentUser'],
-        queryFn: async (): Promise<User> => {
-            // Get current Firebase user
-            const firebaseUser = auth.currentUser;
+  return useQuery({
+    queryKey: ['currentUser'],
+    queryFn: async (): Promise<User> => {
+      // Get current Firebase user
+      const firebaseUser = auth.currentUser;
 
-            if (!firebaseUser) {
-                throw new Error('No authenticated user');
-            }
+      if (!firebaseUser) {
+        throw new Error('No authenticated user');
+      }
 
-            // Get fresh token
-            const token = await firebaseUser.getIdToken();
+      // Get fresh token
+      const token = await firebaseUser.getIdToken();
 
-            // Fetch user data from backend
-            const response = await apiClient.get('/api/auth/me', {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            return response.data.data;
+      // Fetch user data from backend
+      const response = await apiClient.get('/api/auth/me', {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-        enabled: isAuthenticated && !!user,
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        retry: 1,
-    });
+      });
+
+      return response.data.data;
+    },
+    enabled: isAuthenticated && !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1,
+  });
 };
 
 // Hook to get current Firebase user
 export const useFirebaseUser = (): FirebaseUser | null => {
-    return auth.currentUser;
+  return auth.currentUser;
 };
 
 // Hook to get Firebase ID token
 export const useFirebaseToken = async (): Promise<string | null> => {
-    const user = auth.currentUser;
-    if (!user) return null;
+  const user = auth.currentUser;
+  if (!user) return null;
 
-    try {
-        return await user.getIdToken();
-    } catch (error) {
-        console.error('Error getting Firebase token:', error);
-        return null;
-    }
+  try {
+    return await user.getIdToken();
+  } catch (error) {
+    logger.error('Error getting Firebase token:', error);
+    return null;
+  }
 };
 
 // Google Sign-In mutation
 export const useGoogleSignIn = () => {
-    const { setAuth } = useAuthStore();
-    const router = useRouter();
+  const { setAuth } = useAuthStore();
+  const router = useRouter();
 
-    return useMutation({
-        mutationFn: async (): Promise<{ user: User; token: string; isNewUser: boolean }> => {
-            const provider = new GoogleAuthProvider();
-            provider.setCustomParameters({
-                prompt: 'select_account',
-            });
+  return useMutation({
+    mutationFn: async (): Promise<{ user: User; token: string; isNewUser: boolean }> => {
+      // Ensure persistence is set before Google sign-in
+      await setPersistence(auth, browserLocalPersistence);
 
-            // Sign in with Google popup
-            const userCredential = await signInWithPopup(auth, provider);
-            const firebaseUser = userCredential.user;
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: 'select_account',
+      });
 
-            // Get Firebase ID token
-            const token = await firebaseUser.getIdToken();
+      // Sign in with Google popup
+      const userCredential = await signInWithPopup(auth, provider);
+      const firebaseUser = userCredential.user;
 
-            // Check if this is a new user
-            const additionalUserInfo = getAdditionalUserInfo(userCredential);
-            const isNewUser = additionalUserInfo?.isNewUser ?? false;
+      // Get Firebase ID token
+      const token = await firebaseUser.getIdToken();
 
-            // Sync with backend (firebaseUid is extracted from token on server)
-            const response = await apiClient.post(
-                '/api/auth/google',
-                {
-                    email: firebaseUser.email,
-                    displayName: firebaseUser.displayName,
-                    photoURL: firebaseUser.photoURL,
-                    isNewUser,
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
+      // Check if this is a new user
+      const additionalUserInfo = getAdditionalUserInfo(userCredential);
+      const isNewUser = additionalUserInfo?.isNewUser ?? false;
 
-            return {
-                user: response.data.data.user,
-                token,
-                isNewUser,
-            };
+      // Sync with backend (firebaseUid is extracted from token on server)
+      // The backend will set/refresh custom claims on this call
+      const response = await apiClient.post(
+        '/api/auth/google',
+        {
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
+          isNewUser,
         },
-        onSuccess: (data) => {
-            setAuth({
-                user: data.user,
-                accessToken: data.token,
-                refreshToken: data.token,
-            });
-            
-            if (data.isNewUser) {
-                toast.success('Welcome to Patrick Travel Services!');
-            } else {
-                toast.success(`Welcome back, ${data.user.firstName}!`);
-            }
-            
-            router.push('/dashboard');
-        },
-        onError: (error: ApiError) => {
-            let message = 'Google sign-in failed. Please try again.';
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-            if (error.code === 'auth/popup-closed-by-user') {
-                message = 'Sign-in cancelled.';
-            } else if (error.code === 'auth/popup-blocked') {
-                message = 'Popup was blocked. Please allow popups for this site.';
-            } else if (error.response?.data?.error) {
-                message = error.response.data.error;
-            }
+      // CRITICAL: Force token refresh to pick up custom claims set by backend
+      // forceRefresh=true bypasses cache and gets a new token with claims
+      const refreshedToken = await firebaseUser.getIdToken(true);
 
-            toast.error(message);
-        },
-    });
+      logger.info('Token refreshed after Google sign-in custom claims update');
+
+      return {
+        user: response.data.data.user,
+        token: refreshedToken, // Use refreshed token with updated claims
+        isNewUser,
+      };
+    },
+    onSuccess: (data) => {
+      setAuth({
+        user: data.user,
+        accessToken: data.token,
+        refreshToken: data.token,
+      });
+
+      if (data.isNewUser) {
+        toast.success('Welcome to Patrick Travel Services!');
+      } else {
+        toast.success(`Welcome back, ${data.user.firstName}!`);
+      }
+
+      router.push('/dashboard');
+    },
+    onError: (error: ApiError) => {
+      let message = 'Google sign-in failed. Please try again.';
+
+      if (error.code === 'auth/popup-closed-by-user') {
+        message = 'Sign-in cancelled.';
+      } else if (error.code === 'auth/popup-blocked') {
+        message = 'Popup was blocked. Please allow popups for this site.';
+      } else if (error.response?.data?.error) {
+        message = error.response.data.error;
+      }
+
+      toast.error(message);
+    },
+  });
 };
