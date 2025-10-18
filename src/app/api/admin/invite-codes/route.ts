@@ -197,7 +197,7 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
 
   // Post-filter for exhausted status (usedCount >= maxUses)
   if (needsPostFilterExhausted) {
-    inviteCodes = inviteCodes.filter(code => code.usedCount >= code.maxUses);
+    inviteCodes = inviteCodes.filter((code: typeof inviteCodes[number]) => code.usedCount >= code.maxUses);
     total = inviteCodes.length;
     // Apply pagination after filtering
     const start = skip;
@@ -209,7 +209,7 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
   // This is needed because we can't do column comparison in Prisma WHERE clause
   if (statusFilter === 'active') {
     const beforeFilterCount = inviteCodes.length;
-    inviteCodes = inviteCodes.filter(code => code.usedCount < code.maxUses);
+    inviteCodes = inviteCodes.filter((code: typeof inviteCodes[number]) => code.usedCount < code.maxUses);
     const filtered = beforeFilterCount - inviteCodes.length;
     total = Math.max(0, total - filtered);
   }
