@@ -86,7 +86,7 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
   ]);
 
   // Transform logs for response
-  const transformedLogs = logs.map((log) => ({
+  const transformedLogs = logs.map((log: typeof logs[number]) => ({
     id: log.id,
     userId: log.userId,
     userName: `${log.user.firstName} ${log.user.lastName}`,
