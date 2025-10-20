@@ -161,6 +161,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
             lastName,
             phone,
             role: userRole,
+            isActive: true, // Explicitly set account as active
             isVerified: false,
             ...gdprData, // Include GDPR consent fields
           },
@@ -235,6 +236,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
           lastName,
           phone,
           role: userRole,
+          isActive: true, // Explicitly set account as active
           isVerified: false,
           ...gdprData, // Include GDPR consent fields
         },

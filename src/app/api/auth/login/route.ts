@@ -22,13 +22,34 @@ const handler = asyncHandler(async (request: NextRequest) => {
     throw new ApiError('Authentication service unavailable', HttpStatus.SERVICE_UNAVAILABLE);
   }
 
-  // Verify Firebase ID token from Authorization header
+  // Verify Firebase ID token from Authorization header OR request body
+  // This supports both web (header) and mobile (body) clients
   const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    throw new ApiError('Unauthorized - Missing or invalid token', HttpStatus.UNAUTHORIZED);
+  let token: string | undefined;
+
+  // Try to get token from Authorization header first (preferred)
+  if (authHeader?.startsWith('Bearer ')) {
+    token = authHeader.split('Bearer ')[1];
+  } else {
+    // Fallback: Check request body for { idToken: "..." } (mobile compatibility)
+    try {
+      const body = await request.json();
+      if (body && typeof body.idToken === 'string' && body.idToken.trim().length > 0) {
+        token = body.idToken.trim();
+        logger.info('Login using idToken from request body (mobile client)');
+      }
+    } catch (error) {
+      // JSON parsing failed, will be handled by token check below
+    }
   }
 
-  const token = authHeader.split('Bearer ')[1];
+  if (!token) {
+    throw new ApiError(
+      'Unauthorized - Missing Firebase ID token. Send either Authorization header or { idToken: "..." } in body',
+      HttpStatus.UNAUTHORIZED
+    );
+  }
+
   let decodedToken;
 
   try {
