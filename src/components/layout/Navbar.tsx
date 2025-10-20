@@ -19,9 +19,9 @@ export const Navbar = memo(function Navbar() {
   // PERFORMANCE: Memoize navigation to prevent recalculation
   const navigation = useMemo(
     () => [
-      { name: t('landing.footer.services'), href: '#services' },
-      { name: t('landing.testimonials.title'), href: '#testimonials' },
-      { name: t('landing.contact.title'), href: '#contact' },
+      { name: t('landing.footer.services'), href: '/#services' },
+      { name: t('landing.testimonials.title'), href: '/#testimonials' },
+      { name: t('landing.contact.title'), href: '/#contact' },
       { name: t('landing.footer.about'), href: '/about' },
     ],
     [t]
