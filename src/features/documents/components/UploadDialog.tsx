@@ -117,9 +117,7 @@ export function UploadDialog({ open, onOpenChange, onUpload, isUploading }: Uplo
 
     // Validate MIME type
     if (!ALLOWED_TYPES.includes(file.type)) {
-      toast.error(
-        t('documents.invalidFileTypeDetailed', { type: file.type || 'unknown' })
-      );
+      toast.error(t('documents.invalidFileTypeDetailed', { type: file.type || 'unknown' }));
       event.target.value = ''; // Reset input
       setSelectedFile(null);
       return;
@@ -196,9 +194,7 @@ export function UploadDialog({ open, onOpenChange, onUpload, isUploading }: Uplo
               onChange={handleFileSelect}
               accept="application/pdf,image/jpeg,image/png,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.pdf,.jpg,.jpeg,.png,.doc,.docx"
             />
-            <p className="text-xs text-muted-foreground">
-              {t('documents.maxSize16MB')}
-            </p>
+            <p className="text-xs text-muted-foreground">{t('documents.maxSize16MB')}</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="case-select">{t('documents.selectCase') || 'Select Case'}</Label>
@@ -206,12 +202,15 @@ export function UploadDialog({ open, onOpenChange, onUpload, isUploading }: Uplo
               <SimpleSkeleton className="h-10 w-full rounded-md" />
             ) : userCases.length === 0 ? (
               <div className="text-sm text-muted-foreground p-3 bg-muted rounded-md">
-                {t('documents.noCasesAvailable') || 'No cases available. Please create a case first.'}
+                {t('documents.noCasesAvailable') ||
+                  'No cases available. Please create a case first.'}
               </div>
             ) : (
               <Select value={caseId} onValueChange={setCaseId}>
                 <SelectTrigger id="case-select">
-                  <SelectValue placeholder={t('documents.chooseCasePlaceholder') || 'Choose a case...'} />
+                  <SelectValue
+                    placeholder={t('documents.chooseCasePlaceholder') || 'Choose a case...'}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {userCases.map((caseItem: any) => (
@@ -219,7 +218,8 @@ export function UploadDialog({ open, onOpenChange, onUpload, isUploading }: Uplo
                       <div className="flex flex-col">
                         <span className="font-medium">{caseItem.referenceNumber}</span>
                         <span className="text-xs text-muted-foreground">
-                          {getServiceTypeLabel(caseItem.serviceType, t)} • {getCaseStatusLabel(caseItem.status, t)}
+                          {getServiceTypeLabel(caseItem.serviceType, t)} •{' '}
+                          {getCaseStatusLabel(caseItem.status, t)}
                         </span>
                       </div>
                     </SelectItem>

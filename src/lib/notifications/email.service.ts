@@ -149,7 +149,7 @@ export async function sendUserEmail(options: {
   caseRef?: string;
 }) {
   const { to, from, fromEmail, subject, content, threadId, caseRef } = options;
-  
+
   await sendEmail({
     to,
     subject: escapeHtml(subject),

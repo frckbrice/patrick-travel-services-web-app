@@ -130,10 +130,7 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
       whereClause.expiresAt = { gt: now };
     } else if (statusFilter === 'expired') {
       // Expired: past expiration date OR isActive = false
-      whereClause.OR = [
-        { expiresAt: { lte: now } },
-        { isActive: false }
-      ];
+      whereClause.OR = [{ expiresAt: { lte: now } }, { isActive: false }];
     }
   }
 
@@ -141,7 +138,7 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
   if (searchQuery) {
     whereClause.OR = [
       { code: { contains: searchQuery, mode: 'insensitive' } },
-      { purpose: { contains: searchQuery, mode: 'insensitive' } }
+      { purpose: { contains: searchQuery, mode: 'insensitive' } },
     ];
   }
 
@@ -197,7 +194,9 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
 
   // Post-filter for exhausted status (usedCount >= maxUses)
   if (needsPostFilterExhausted) {
-    inviteCodes = inviteCodes.filter((code: typeof inviteCodes[number]) => code.usedCount >= code.maxUses);
+    inviteCodes = inviteCodes.filter(
+      (code: (typeof inviteCodes)[number]) => code.usedCount >= code.maxUses
+    );
     total = inviteCodes.length;
     // Apply pagination after filtering
     const start = skip;
@@ -209,7 +208,9 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
   // This is needed because we can't do column comparison in Prisma WHERE clause
   if (statusFilter === 'active') {
     const beforeFilterCount = inviteCodes.length;
-    inviteCodes = inviteCodes.filter((code: typeof inviteCodes[number]) => code.usedCount < code.maxUses);
+    inviteCodes = inviteCodes.filter(
+      (code: (typeof inviteCodes)[number]) => code.usedCount < code.maxUses
+    );
     const filtered = beforeFilterCount - inviteCodes.length;
     total = Math.max(0, total - filtered);
   }

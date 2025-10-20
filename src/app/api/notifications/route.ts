@@ -64,7 +64,7 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
   if (searchQuery) {
     where.OR = [
       { title: { contains: searchQuery, mode: 'insensitive' } },
-      { message: { contains: searchQuery, mode: 'insensitive' } }
+      { message: { contains: searchQuery, mode: 'insensitive' } },
     ];
   }
 
@@ -89,9 +89,9 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
             id: true,
             referenceNumber: true,
             serviceType: true,
-          }
-        }
-      }
+          },
+        },
+      },
     }),
     prisma.notification.count({ where }),
     prisma.notification.count({

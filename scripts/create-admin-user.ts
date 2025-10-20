@@ -36,11 +36,11 @@ async function createAdminUser() {
     // Create admin user
     const user = await prisma.user.create({
       data: {
-        id: firebaseUid,
-        email: email,
-        firstName: 'Admin',
-        lastName: 'User',
-        phone: '+1234567890',
+        id: 'mcQCU7D2iSXS12RzWPi6KHwlWqp2',
+        email: 'admin@patricktravel.com',
+        firstName: 'Patrick',
+        lastName: 'Travel',
+        phone: '+237697000000',
         role: 'ADMIN',
         isActive: true,
         isVerified: true,
@@ -54,7 +54,7 @@ async function createAdminUser() {
     console.log(`   Role: ${user.role}`);
     console.log('\n🎉 You can now login with:');
     console.log(`   Email: ${email}`);
-    console.log(`   Password: [Your Firebase password]`);
+    console.log(`   Password: admin123`);
     console.log('\n   Go to: http://localhost:3000/login');
   } catch (error: any) {
     console.error('❌ Error creating user:', error.message);

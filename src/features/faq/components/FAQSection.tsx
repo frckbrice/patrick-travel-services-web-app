@@ -3,11 +3,10 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFAQs } from '@/features/faq/api';
-import { HelpCircle, ChevronDown, Search, MessageCircle } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { HelpCircle, Search, MessageCircle } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -165,17 +164,29 @@ export function FAQSection({
             onValueChange={setSelectedCategory}
             className="max-w-4xl mx-auto"
           >
-            <TabsList className="w-full justify-start overflow-x-auto flex-wrap h-auto mb-8">
-              <TabsTrigger value="all">{t('faq.section.allQuestions')}</TabsTrigger>
-              {categories.map((category) => (
-                <TabsTrigger key={category} value={category}>
-                  {category}
-                  <Badge variant="secondary" className="ml-2">
-                    {faqsByCategory[category]?.length || 0}
-                  </Badge>
+            {/* Mobile: Scrollable horizontal tabs | Desktop: Compact grid */}
+            <div className="mb-8 overflow-x-auto scrollbar-hide">
+              <TabsList className="w-full inline-flex md:flex md:flex-wrap md:justify-center gap-1 h-auto p-1.5 bg-muted/50 rounded-lg">
+                <TabsTrigger
+                  value="all"
+                  className="whitespace-nowrap px-3 py-2 text-xs md:text-sm rounded-md"
+                >
+                  {t('faq.section.allQuestions')}
                 </TabsTrigger>
-              ))}
-            </TabsList>
+                {categories.map((category) => (
+                  <TabsTrigger
+                    key={category}
+                    value={category}
+                    className="whitespace-nowrap px-2.5 py-2 text-xs md:text-sm flex items-center gap-1.5 rounded-md"
+                  >
+                    <span className="truncate">{category}</span>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 leading-none">
+                      {faqsByCategory[category]?.length || 0}
+                    </Badge>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
 
             <TabsContent value={selectedCategory} className="mt-0">
               <FAQAccordion faqs={filteredFAQs} searchQuery={searchQuery} />
@@ -230,9 +241,11 @@ export function FAQSection({
 
 /**
  * FAQ Accordion Component
- * Renders FAQs in an accessible accordion format
+ * Renders FAQs in an accessible accordion format with compact design
  */
 function FAQAccordion({ faqs, searchQuery }: { faqs: any[]; searchQuery: string }) {
+  const [expandedAnswers, setExpandedAnswers] = useState<{ [key: string]: boolean }>({});
+
   if (faqs.length === 0) return null;
 
   // Highlight search terms in text
@@ -251,23 +264,56 @@ function FAQAccordion({ faqs, searchQuery }: { faqs: any[]; searchQuery: string 
     );
   };
 
-  return (
-    <Accordion type="single" collapsible className="w-full space-y-4">
-      {faqs.map((faq, index) => (
-        <AccordionItem
-          key={faq.id}
-          value={faq.id}
-          className="border rounded-lg px-6 bg-card hover:bg-muted/50 transition-colors"
+  // Truncate long answers to improve readability
+  const getTruncatedAnswer = (answer: string, faqId: string) => {
+    const maxLength = 150;
+    const isExpanded = expandedAnswers[faqId];
+
+    if (answer.length <= maxLength || isExpanded || searchQuery) {
+      return highlightText(answer);
+    }
+
+    return (
+      <>
+        {answer.substring(0, maxLength)}...
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            setExpandedAnswers({ ...expandedAnswers, [faqId]: true });
+          }}
+          className="ml-2 text-primary hover:underline font-medium"
         >
-          <AccordionTrigger className="text-left hover:no-underline py-6">
-            <span className="font-semibold pr-4">{highlightText(faq.question)}</span>
-          </AccordionTrigger>
-          <AccordionContent className="text-muted-foreground pb-6 leading-relaxed">
-            {highlightText(faq.answer)}
-          </AccordionContent>
-        </AccordionItem>
+          Read more
+        </button>
+      </>
+    );
+  };
+
+  return (
+    <div className="grid md:grid-cols-2 gap-3 md:gap-4">
+      {faqs.map((faq) => (
+        <Accordion type="single" collapsible key={faq.id} className="w-full">
+          <AccordionItem
+            value={faq.id}
+            className="border rounded-lg px-4 md:px-5 bg-card hover:bg-muted/30 transition-colors shadow-sm"
+          >
+            <AccordionTrigger className="text-left hover:no-underline py-4 gap-3">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
+                  <HelpCircle className="h-3.5 w-3.5 text-primary" />
+                </div>
+                <span className="font-semibold text-sm md:text-base pr-2 leading-snug">
+                  {highlightText(faq.question)}
+                </span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="text-muted-foreground pb-4 pl-9 text-sm leading-relaxed">
+              {getTruncatedAnswer(faq.answer, faq.id)}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       ))}
-    </Accordion>
+    </div>
   );
 }
 
@@ -285,9 +331,9 @@ function FAQSectionSkeleton() {
         <div className="max-w-2xl mx-auto mb-8">
           <Skeleton className="h-12 w-full" />
         </div>
-        <div className="max-w-4xl mx-auto space-y-4">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Skeleton key={i} className="h-20 w-full" />
+        <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-3 md:gap-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <Skeleton key={i} className="h-24 w-full rounded-lg" />
           ))}
         </div>
       </div>

@@ -10,9 +10,8 @@ export const metadata = {
     'Complete immigration services management platform for streamlined case management, document processing, and client communications',
 };
 
-// PERFORMANCE: Enable static generation for landing page
-export const dynamic = 'force-static';
-export const revalidate = 3600; // Revalidate every hour
+// PERFORMANCE: Use auto for better client-side interactivity
+export const dynamic = 'auto';
 
 export default function HomePage() {
   return (

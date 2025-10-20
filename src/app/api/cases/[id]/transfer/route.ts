@@ -211,14 +211,14 @@ const handler = asyncHandler(
                     </div>
 
                     ${
-            safeHandoverNotes
-              ? `
+                      safeHandoverNotes
+                        ? `
                     <div style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0;">
                         <p><strong>Handover Notes:</strong></p>
                         <p style="white-space: pre-wrap;">${safeHandoverNotes}</p>
                     </div>
                     `
-            : ''
+                        : ''
                     }
 
                     <p>Please review the case details and reach out to the client within 24 hours.</p>

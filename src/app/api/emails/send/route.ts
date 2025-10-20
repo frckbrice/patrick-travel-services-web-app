@@ -224,4 +224,3 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
 export const POST = withCorsMiddleware(
   withRateLimit(authenticateToken(postHandler), RateLimitPresets.STANDARD)
 );
-

@@ -505,7 +505,7 @@ type(scope): subject
 Types: feat, fix, docs, style, refactor, test, chore
 
 Examples:
-feat(auth): add password reset functionality
+feat(auth): add  reset functionality
 fix(cases): resolve status update bug
 docs(readme): update installation instructions
 refactor(api): improve error handling

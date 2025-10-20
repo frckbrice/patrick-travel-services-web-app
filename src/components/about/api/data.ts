@@ -20,25 +20,25 @@ export const values: ValueItem[] = [
     icon: Award,
     titleKey: 'about.values.excellence.title',
     descriptionKey: 'about.values.excellence.description',
-    gradient: 'from-blue-500 to-cyan-500',
+    gradient: 'from-slate-600 to-slate-700 dark:from-slate-500 dark:to-slate-600',
   },
   {
     icon: Heart,
     titleKey: 'about.values.compassion.title',
     descriptionKey: 'about.values.compassion.description',
-    gradient: 'from-red-500 to-pink-500',
+    gradient: 'from-rose-600 to-red-600 dark:from-rose-500 dark:to-red-500',
   },
   {
     icon: Target,
     titleKey: 'about.values.results.title',
     descriptionKey: 'about.values.results.description',
-    gradient: 'from-green-500 to-emerald-500',
+    gradient: 'from-teal-600 to-cyan-600 dark:from-teal-500 dark:to-cyan-500',
   },
   {
     icon: Users,
     titleKey: 'about.values.partnership.title',
     descriptionKey: 'about.values.partnership.description',
-    gradient: 'from-purple-500 to-pink-500',
+    gradient: 'from-indigo-600 to-blue-600 dark:from-indigo-500 dark:to-blue-500',
   },
 ];
 

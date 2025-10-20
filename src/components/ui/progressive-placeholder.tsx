@@ -113,7 +113,10 @@ export const ListItemPlaceholder = memo(function ListItemPlaceholder({
   style,
 }: ListItemPlaceholderProps) {
   return (
-    <div className={cn('flex items-center justify-between p-4 border rounded-lg', className)} style={style}>
+    <div
+      className={cn('flex items-center justify-between p-4 border rounded-lg', className)}
+      style={style}
+    >
       <div className="flex items-center gap-3 flex-1">
         {showAvatar && <div className="h-10 w-10 rounded-full bg-muted/30 animate-pulse" />}
         <div className="flex-1 space-y-2">

@@ -244,9 +244,7 @@ export function DocumentsList() {
                   value={caseId}
                   onChange={(e) => setCaseId(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {t('documents.caseIdHelper')}
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">{t('documents.caseIdHelper')}</p>
               </div>
               <div>
                 <Label>{t('documents.file')}</Label>
@@ -256,12 +254,13 @@ export function DocumentsList() {
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                   disabled={loading}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {t('documents.maxSize10MB')}
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">{t('documents.maxSize10MB')}</p>
                 {selectedFile && !error && (
                   <p className="text-xs text-green-600 mt-1">
-                    {t('documents.fileSelected', { name: selectedFile.name, size: formatFileSize(selectedFile.size) })}
+                    {t('documents.fileSelected', {
+                      name: selectedFile.name,
+                      size: formatFileSize(selectedFile.size),
+                    })}
                   </p>
                 )}
               </div>
@@ -317,7 +316,9 @@ export function DocumentsList() {
             <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">{t('documents.noDocuments')}</h3>
             <p className="text-muted-foreground mb-4">
-              {statusFilter !== 'all' ? t('documents.noDocumentsMatch') : t('documents.uploadFirst')}
+              {statusFilter !== 'all'
+                ? t('documents.noDocumentsMatch')
+                : t('documents.uploadFirst')}
             </p>
             <Button onClick={() => setUploadOpen(true)}>{t('documents.uploadBtn')}</Button>
           </CardContent>

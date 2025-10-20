@@ -192,9 +192,7 @@ export function InviteCodeManagerEnhanced() {
                     }
                   }}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Between 1 and 100 uses
-                </p>
+                <p className="text-xs text-muted-foreground">Between 1 and 100 uses</p>
               </div>
             </div>
             <Button

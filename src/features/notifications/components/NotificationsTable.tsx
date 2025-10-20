@@ -115,8 +115,8 @@ export function NotificationsTable({ onMarkAsRead, onMarkAllAsRead }: Notificati
   // Table state
   const [page, setPage] = useState(1);
   const [sorting, setSorting] = useState<SortingState>([{ id: 'createdAt', desc: true }]);
-  const [typeFilter, setTypeFilter] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
@@ -138,8 +138,8 @@ export function NotificationsTable({ onMarkAsRead, onMarkAllAsRead }: Notificati
       limit,
     };
 
-    if (typeFilter) params.type = typeFilter;
-    if (statusFilter) params.status = statusFilter;
+    if (typeFilter && typeFilter !== 'all') params.type = typeFilter;
+    if (statusFilter && statusFilter !== 'all') params.status = statusFilter;
     if (debouncedSearch) params.search = debouncedSearch;
 
     // Sorting
@@ -192,36 +192,42 @@ export function NotificationsTable({ onMarkAsRead, onMarkAllAsRead }: Notificati
   });
 
   // Format time helper
-  const formatTime = useCallback((date: string) => {
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return t('notifications.invalidDate');
-    const now = new Date();
-    const diffMs = now.getTime() - d.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const formatTime = useCallback(
+    (date: string) => {
+      const d = new Date(date);
+      if (isNaN(d.getTime())) return t('notifications.invalidDate');
+      const now = new Date();
+      const diffMs = now.getTime() - d.getTime();
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffMins < 1) return t('notifications.justNow');
-    if (diffMins < 60) return t('notifications.minsAgo', { mins: diffMins });
-    if (diffHours < 24) return t('notifications.hoursAgo', { hours: diffHours });
-    if (diffDays === 1) return t('notifications.yesterday');
-    if (diffDays < 7) return t('notifications.daysAgo', { days: diffDays });
-    return d.toLocaleDateString();
-  }, [t]);
+      if (diffMins < 1) return t('notifications.justNow');
+      if (diffMins < 60) return t('notifications.minsAgo', { mins: diffMins });
+      if (diffHours < 24) return t('notifications.hoursAgo', { hours: diffHours });
+      if (diffDays === 1) return t('notifications.yesterday');
+      if (diffDays < 7) return t('notifications.daysAgo', { days: diffDays });
+      return d.toLocaleDateString();
+    },
+    [t]
+  );
 
   // Handle notification click
-  const handleNotificationClick = useCallback((notification: Notification) => {
-    // Mark as read if unread
-    if (!notification.isRead) {
-      markAsReadMutation.mutate(notification.id);
-      onMarkAsRead?.(notification.id);
-    }
+  const handleNotificationClick = useCallback(
+    (notification: Notification) => {
+      // Mark as read if unread
+      if (!notification.isRead) {
+        markAsReadMutation.mutate(notification.id);
+        onMarkAsRead?.(notification.id);
+      }
 
-    // Navigate if actionUrl exists
-    if (notification.actionUrl) {
-      router.push(notification.actionUrl);
-    }
-  }, [markAsReadMutation, router, onMarkAsRead]);
+      // Navigate if actionUrl exists
+      if (notification.actionUrl) {
+        router.push(notification.actionUrl);
+      }
+    },
+    [markAsReadMutation, router, onMarkAsRead]
+  );
 
   // Handle mark all as read
   const handleMarkAllAsRead = useCallback(() => {
@@ -230,106 +236,110 @@ export function NotificationsTable({ onMarkAsRead, onMarkAllAsRead }: Notificati
   }, [markAllAsReadMutation, onMarkAllAsRead]);
 
   // Table columns
-  const columns = useMemo<ColumnDef<Notification>[]>(() => [
-    {
-      id: 'type',
-      header: t('notifications.table.type'),
-      cell: ({ row }) => {
-        const Icon = notifConfig[row.original.type]?.icon || Bell;
-        return (
-          <div className={cn('p-2 rounded-lg inline-flex', notifConfig[row.original.type]?.className)}>
-            <Icon className="h-4 w-4" />
-          </div>
-        );
+  const columns = useMemo<ColumnDef<Notification>[]>(
+    () => [
+      {
+        id: 'type',
+        header: t('notifications.table.type'),
+        cell: ({ row }) => {
+          const Icon = notifConfig[row.original.type]?.icon || Bell;
+          return (
+            <div
+              className={cn(
+                'p-2 rounded-lg inline-flex',
+                notifConfig[row.original.type]?.className
+              )}
+            >
+              <Icon className="h-4 w-4" />
+            </div>
+          );
+        },
       },
-    },
-    {
-      accessorKey: 'title',
-      header: t('notifications.table.notification'),
-      cell: ({ row }) => (
-        <div className="space-y-1">
-          <div className="font-medium flex items-center gap-2">
-            {row.original.title}
-            {!row.original.isRead && (
-              <span className="h-2 w-2 bg-primary rounded-full" />
+      {
+        accessorKey: 'title',
+        header: t('notifications.table.notification'),
+        cell: ({ row }) => (
+          <div className="space-y-1">
+            <div className="font-medium flex items-center gap-2">
+              {row.original.title}
+              {!row.original.isRead && <span className="h-2 w-2 bg-primary rounded-full" />}
+            </div>
+            <p className="text-sm text-muted-foreground line-clamp-2">{row.original.message}</p>
+            {row.original.case && (
+              <p className="text-xs text-muted-foreground">
+                {t('notifications.table.case')}: {row.original.case.referenceNumber}
+              </p>
             )}
           </div>
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {row.original.message}
-          </p>
-          {row.original.case && (
-            <p className="text-xs text-muted-foreground">
-              {t('notifications.table.case')}: {row.original.case.referenceNumber}
-            </p>
-          )}
-        </div>
-      ),
-    },
-    {
-      id: 'status',
-      header: t('notifications.table.status'),
-      cell: ({ row }) => (
-        <Badge variant={row.original.isRead ? 'secondary' : 'default'}>
-          {row.original.isRead ? t('notifications.table.read') : t('notifications.table.unread')}
-        </Badge>
-      ),
-    },
-    {
-      accessorKey: 'createdAt',
-      header: ({ column }) => {
-        const isSorted = column.getIsSorted();
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="hover:bg-transparent p-0 h-auto font-medium"
-          >
-            {t('notifications.table.created')}
-            {isSorted === 'asc' ? (
-              <ArrowUp className="ml-2 h-4 w-4" />
-            ) : isSorted === 'desc' ? (
-              <ArrowDown className="ml-2 h-4 w-4" />
-            ) : (
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            )}
-          </Button>
-        );
+        ),
       },
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Clock className="h-3 w-3" />
-          {formatTime(row.original.createdAt)}
-        </div>
-      ),
-    },
-    {
-      accessorKey: 'readAt',
-      header: ({ column }) => {
-        const isSorted = column.getIsSorted();
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="hover:bg-transparent p-0 h-auto font-medium"
-          >
-            {t('notifications.table.readAt')}
-            {isSorted === 'asc' ? (
-              <ArrowUp className="ml-2 h-4 w-4" />
-            ) : isSorted === 'desc' ? (
-              <ArrowDown className="ml-2 h-4 w-4" />
-            ) : (
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            )}
-          </Button>
-        );
+      {
+        id: 'status',
+        header: t('notifications.table.status'),
+        cell: ({ row }) => (
+          <Badge variant={row.original.isRead ? 'secondary' : 'default'}>
+            {row.original.isRead ? t('notifications.table.read') : t('notifications.table.unread')}
+          </Badge>
+        ),
       },
-      cell: ({ row }) => (
-        <div className="text-sm text-muted-foreground">
-          {row.original.readAt ? formatTime(row.original.readAt) : '—'}
-        </div>
-      ),
-    },
-  ], [t, formatTime]);
+      {
+        accessorKey: 'createdAt',
+        header: ({ column }) => {
+          const isSorted = column.getIsSorted();
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              className="hover:bg-transparent p-0 h-auto font-medium"
+            >
+              {t('notifications.table.created')}
+              {isSorted === 'asc' ? (
+                <ArrowUp className="ml-2 h-4 w-4" />
+              ) : isSorted === 'desc' ? (
+                <ArrowDown className="ml-2 h-4 w-4" />
+              ) : (
+                <ArrowUpDown className="ml-2 h-4 w-4" />
+              )}
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Clock className="h-3 w-3" />
+            {formatTime(row.original.createdAt)}
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'readAt',
+        header: ({ column }) => {
+          const isSorted = column.getIsSorted();
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              className="hover:bg-transparent p-0 h-auto font-medium"
+            >
+              {t('notifications.table.readAt')}
+              {isSorted === 'asc' ? (
+                <ArrowUp className="ml-2 h-4 w-4" />
+              ) : isSorted === 'desc' ? (
+                <ArrowDown className="ml-2 h-4 w-4" />
+              ) : (
+                <ArrowUpDown className="ml-2 h-4 w-4" />
+              )}
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div className="text-sm text-muted-foreground">
+            {row.original.readAt ? formatTime(row.original.readAt) : '—'}
+          </div>
+        ),
+      },
+    ],
+    [t, formatTime]
+  );
 
   // Initialize table
   const table = useReactTable({
@@ -412,14 +422,26 @@ export function NotificationsTable({ onMarkAsRead, onMarkAllAsRead }: Notificati
                 <SelectValue placeholder={t('notifications.table.filterType')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t('notifications.table.allTypes')}</SelectItem>
-                <SelectItem value="CASE_STATUS_UPDATE">{t('notifications.filters.caseUpdates')}</SelectItem>
-                <SelectItem value="CASE_ASSIGNED">{t('notifications.filters.caseAssigned')}</SelectItem>
+                <SelectItem value="all">{t('notifications.table.allTypes')}</SelectItem>
+                <SelectItem value="CASE_STATUS_UPDATE">
+                  {t('notifications.filters.caseUpdates')}
+                </SelectItem>
+                <SelectItem value="CASE_ASSIGNED">
+                  {t('notifications.filters.caseAssigned')}
+                </SelectItem>
                 <SelectItem value="NEW_MESSAGE">{t('notifications.filters.messages')}</SelectItem>
-                <SelectItem value="DOCUMENT_UPLOADED">{t('notifications.filters.documentUploaded')}</SelectItem>
-                <SelectItem value="DOCUMENT_VERIFIED">{t('notifications.filters.documentVerified')}</SelectItem>
-                <SelectItem value="DOCUMENT_REJECTED">{t('notifications.filters.documentRejected')}</SelectItem>
-                <SelectItem value="SYSTEM_ANNOUNCEMENT">{t('notifications.filters.announcements')}</SelectItem>
+                <SelectItem value="DOCUMENT_UPLOADED">
+                  {t('notifications.filters.documentUploaded')}
+                </SelectItem>
+                <SelectItem value="DOCUMENT_VERIFIED">
+                  {t('notifications.filters.documentVerified')}
+                </SelectItem>
+                <SelectItem value="DOCUMENT_REJECTED">
+                  {t('notifications.filters.documentRejected')}
+                </SelectItem>
+                <SelectItem value="SYSTEM_ANNOUNCEMENT">
+                  {t('notifications.filters.announcements')}
+                </SelectItem>
               </SelectContent>
             </Select>
 
@@ -429,7 +451,7 @@ export function NotificationsTable({ onMarkAsRead, onMarkAllAsRead }: Notificati
                 <SelectValue placeholder={t('notifications.table.filterStatus')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t('notifications.table.allStatuses')}</SelectItem>
+                <SelectItem value="all">{t('notifications.table.allStatuses')}</SelectItem>
                 <SelectItem value="unread">{t('notifications.table.unread')}</SelectItem>
                 <SelectItem value="read">{t('notifications.table.read')}</SelectItem>
               </SelectContent>
@@ -448,7 +470,7 @@ export function NotificationsTable({ onMarkAsRead, onMarkAllAsRead }: Notificati
               <Bell className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">{t('notifications.noNotifications')}</h3>
               <p className="text-muted-foreground">
-                {statusFilter || typeFilter || debouncedSearch
+                {statusFilter !== 'all' || typeFilter !== 'all' || debouncedSearch
                   ? t('notifications.noMatchingFilters')
                   : t('notifications.allCaughtUp')}
               </p>

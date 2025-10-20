@@ -20,10 +20,10 @@ const translations = {
   },
   fr: {
     title: 'Erreur Critique',
-    description: 'Une erreur critique s\'est produite. Veuillez essayer de rafraîchir la page.',
+    description: "Une erreur critique s'est produite. Veuillez essayer de rafraîchir la page.",
     tryAgain: 'Réessayer',
-    goHome: 'Retour à l\'Accueil',
-    errorId: 'ID de l\'Erreur',
+    goHome: "Retour à l'Accueil",
+    errorId: "ID de l'Erreur",
   },
 };
 

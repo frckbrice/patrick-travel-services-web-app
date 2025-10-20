@@ -77,7 +77,7 @@ export function useSendEmail() {
       logger.info('Sending email', {
         recipientId: data.recipientId,
         caseId: data.caseId,
-        subject: data.subject
+        subject: data.subject,
       });
 
       const response = await apiClient.post('/api/emails/send', {

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect, memo, useMemo } from 'react';
+import { useState, memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Menu, X, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,14 +13,8 @@ import { useAuthStore } from '@/features/auth/store';
 // PERFORMANCE: Memoized Navbar component
 export const Navbar = memo(function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const { t } = useTranslation();
-  const { isAuthenticated, user } = useAuthStore();
-
-  // Prevent hydration mismatch by only rendering translations after mount
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const { isAuthenticated } = useAuthStore();
 
   // PERFORMANCE: Memoize navigation to prevent recalculation
   const navigation = useMemo(
@@ -37,33 +31,34 @@ export const Navbar = memo(function Navbar() {
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center space-x-2">
+        <Link href="/" className="flex items-center gap-3">
           {/* PERFORMANCE: Priority loading for logo (above the fold) */}
-          <Image
-            src="/images/app-logo.png"
-            alt="Patrick Travel Services"
-            width={32}
-            height={32}
-            className="object-contain"
-            priority
-          />
-          <span className="font-bold text-primary hidden sm:inline-block">
+          <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0">
+            <Image
+              src="/images/app-logo.png"
+              alt="Patrick Travel Services"
+              fill
+              sizes="(max-width: 640px) 48px, 56px"
+              className="object-contain"
+              priority
+            />
+          </div>
+          <span className="font-bold text-primary text-xl hidden sm:inline-block">
             Patrick Travel Services
           </span>
         </Link>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-6">
-          {mounted &&
-            navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-              >
-                {item.name}
-              </Link>
-            ))}
+          {navigation.map((item) => (
+            <Link
+              key={item.name}
+              href={item.href}
+              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            >
+              {item.name}
+            </Link>
+          ))}
         </div>
 
         {/* Right Side Actions */}
@@ -75,7 +70,7 @@ export const Navbar = memo(function Navbar() {
 
           {/* SESSION AWARE: Show different buttons based on auth status */}
           <div className="hidden md:flex items-center space-x-2">
-            {mounted && isAuthenticated ? (
+            {isAuthenticated ? (
               <Button asChild>
                 <Link href="/dashboard">
                   <LayoutDashboard className="mr-2 h-4 w-4" />
@@ -85,10 +80,10 @@ export const Navbar = memo(function Navbar() {
             ) : (
               <>
                 <Button variant="ghost" asChild>
-                  <Link href="/login">{mounted ? t('auth.login') : 'Login'}</Link>
+                  <Link href="/login">{t('auth.login')}</Link>
                 </Button>
                 <Button asChild>
-                  <Link href="/register">{mounted ? t('auth.signUp') : 'Sign Up'}</Link>
+                  <Link href="/register">{t('auth.signUp')}</Link>
                 </Button>
               </>
             )}
@@ -107,7 +102,7 @@ export const Navbar = memo(function Navbar() {
       </div>
 
       {/* Mobile Menu */}
-      {isMenuOpen && mounted && (
+      {isMenuOpen && (
         <div className="md:hidden border-t">
           <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-3">
             {navigation.map((item) => (

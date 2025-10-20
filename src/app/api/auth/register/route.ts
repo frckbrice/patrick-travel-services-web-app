@@ -51,7 +51,17 @@ const handler = asyncHandler(async (request: NextRequest) => {
     return validationErrorResponse(errors, ERROR_MESSAGES.VALIDATION_ERROR);
   }
 
-  const { email, password, firstName, lastName, phone, inviteCode } = validationResult.data;
+  const {
+    email,
+    password,
+    firstName,
+    lastName,
+    phone,
+    inviteCode,
+    consentedAt,
+    acceptedTerms,
+    acceptedPrivacy,
+  } = validationResult.data;
 
   // SECURITY: Check if email already exists in Firebase before any operations
   try {
@@ -126,6 +136,18 @@ const handler = asyncHandler(async (request: NextRequest) => {
   // STEP 3: Create DB user and consume invite code atomically in transaction
   let user;
   try {
+    // Prepare GDPR consent data
+    const consentTimestamp = consentedAt ? new Date(consentedAt) : undefined;
+    const gdprData = consentedAt
+      ? {
+          consentedAt: consentTimestamp,
+          acceptedTerms: acceptedTerms ?? false,
+          acceptedPrivacy: acceptedPrivacy ?? false,
+          termsAcceptedAt: acceptedTerms ? consentTimestamp : undefined,
+          privacyAcceptedAt: acceptedPrivacy ? consentTimestamp : undefined,
+        }
+      : {};
+
     if (inviteCode && validatedInvite) {
       // Registration with invite code - atomic transaction
       const result = await prisma.$transaction(async (tx) => {
@@ -140,6 +162,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
             phone,
             role: userRole,
             isVerified: false,
+            ...gdprData, // Include GDPR consent fields
           },
           select: {
             id: true,
@@ -153,6 +176,13 @@ const handler = asyncHandler(async (request: NextRequest) => {
             createdAt: true,
             updatedAt: true,
             lastLogin: true,
+            consentedAt: true,
+            acceptedTerms: true,
+            acceptedPrivacy: true,
+            termsAcceptedAt: true,
+            privacyAcceptedAt: true,
+            dataExportRequests: true,
+            lastDataExport: true,
           },
         });
 
@@ -206,6 +236,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
           phone,
           role: userRole,
           isVerified: false,
+          ...gdprData, // Include GDPR consent fields
         },
         select: {
           id: true,
@@ -219,6 +250,13 @@ const handler = asyncHandler(async (request: NextRequest) => {
           createdAt: true,
           updatedAt: true,
           lastLogin: true,
+          consentedAt: true,
+          acceptedTerms: true,
+          acceptedPrivacy: true,
+          termsAcceptedAt: true,
+          privacyAcceptedAt: true,
+          dataExportRequests: true,
+          lastDataExport: true,
         },
       });
 

@@ -174,3 +174,75 @@ export function useTransferCase() {
     },
   });
 }
+
+// Bulk operations on cases (ADMIN only)
+export function useBulkCaseOperation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      operation: 'ASSIGN' | 'UPDATE_STATUS' | 'UPDATE_PRIORITY';
+      caseIds: string[];
+      data: {
+        assignedAgentId?: string;
+        status?: string;
+        priority?: string;
+      };
+    }) => {
+      const response = await apiClient.post('/api/cases/bulk', data);
+      return response.data.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [CASES_KEY] });
+      toast.success(data.message || 'Bulk operation completed successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to perform bulk operation');
+    },
+  });
+}
+
+// Export cases to CSV/XLSX
+export function useExportCases() {
+  return useMutation({
+    mutationFn: async (filters: {
+      format: 'csv' | 'xlsx';
+      status?: string;
+      serviceType?: string;
+      assignedAgentId?: string;
+      startDate?: string;
+      endDate?: string;
+      search?: string;
+    }) => {
+      const params = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, value);
+      });
+
+      const response = await apiClient.get(`/api/cases/export?${params}`, {
+        responseType: 'blob',
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute(
+        'download',
+        `cases-export-${new Date().toISOString().split('T')[0]}.${filters.format}`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Cases exported successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to export cases');
+    },
+  });
+}

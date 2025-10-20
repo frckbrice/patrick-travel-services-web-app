@@ -28,6 +28,19 @@ model User {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
+  // GDPR Consent Fields (for mobile and web compliance)
+  consentedAt        DateTime? // Initial consent timestamp
+  acceptedTerms      Boolean?  // User accepted terms and conditions
+  acceptedPrivacy    Boolean?  // User accepted privacy policy
+  termsAcceptedAt    DateTime? // When terms were accepted
+  privacyAcceptedAt  DateTime? // When privacy policy was accepted
+  dataExportRequests Int       @default(0) // Counter for data export requests
+  lastDataExport     DateTime? // Last time user exported data
+
+  // Account Deletion Fields (GDPR Right to Erasure)
+  deletionScheduledFor DateTime? // When permanent deletion is scheduled (30 days after request)
+  deletionReason       String?   // Optional reason for deletion
+
   // Relations
   cases                Case[]              @relation("ClientCases")
   assignedCases        Case[]              @relation("AgentCases")

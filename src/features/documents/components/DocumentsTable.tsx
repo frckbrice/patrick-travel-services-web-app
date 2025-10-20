@@ -337,7 +337,10 @@ export function DocumentsTable() {
                         <Badge variant="secondary">
                           {t('documents.documentsUploaded', {
                             count: group.documentCount,
-                            type: group.documentCount === 1 ? t('documents.document') : t('documents.documents_plural')
+                            type:
+                              group.documentCount === 1
+                                ? t('documents.document')
+                                : t('documents.documents_plural'),
                           })}
                         </Badge>
                       </TableCell>
@@ -347,7 +350,9 @@ export function DocumentsTable() {
                             {t('documents.pendingCount', { count: group.pendingCount })}
                           </Badge>
                         ) : (
-                          <span className="text-sm text-muted-foreground">{t('documents.none')}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {t('documents.none')}
+                          </span>
                         )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
@@ -393,7 +398,7 @@ export function DocumentsTable() {
             {t('documents.showing', {
               from: (currentPage - 1) * itemsPerPage + 1,
               to: Math.min(currentPage * itemsPerPage, filteredGroups.length),
-              total: filteredGroups.length
+              total: filteredGroups.length,
             })}
           </p>
           <div className="flex gap-2">
@@ -433,7 +438,10 @@ export function DocumentsTable() {
             <DialogDescription>
               {t('documents.documentsUploaded', {
                 count: selectedClient?.documentCount || 0,
-                type: selectedClient?.documentCount === 1 ? t('documents.document') : t('documents.documents_plural')
+                type:
+                  selectedClient?.documentCount === 1
+                    ? t('documents.document')
+                    : t('documents.documents_plural'),
               })}
               {selectedClient && selectedClient.pendingCount > 0 && (
                 <span className="text-yellow-600">
@@ -442,9 +450,7 @@ export function DocumentsTable() {
                 </span>
               )}
               <br />
-              <span className="text-xs">
-                {t('documents.approveRejectHint')}
-              </span>
+              <span className="text-xs">{t('documents.approveRejectHint')}</span>
             </DialogDescription>
           </DialogHeader>
 

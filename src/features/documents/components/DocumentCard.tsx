@@ -144,7 +144,9 @@ export function DocumentCard({
                 {new Date(document.uploadDate).toLocaleDateString()}
               </p>
               {document.status === 'APPROVED' && document.verifiedBy && (
-                <p className="text-xs text-green-600 mt-1">✓ {t('documents.verifiedBy')} {document.verifiedBy}</p>
+                <p className="text-xs text-green-600 mt-1">
+                  ✓ {t('documents.verifiedBy')} {document.verifiedBy}
+                </p>
               )}
               {document.status === 'REJECTED' && document.rejectionReason && (
                 <div className="flex gap-2 mt-2 p-2 bg-red-50 dark:bg-red-950/20 rounded">

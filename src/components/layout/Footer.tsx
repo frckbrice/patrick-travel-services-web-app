@@ -19,9 +19,9 @@ export function Footer() {
 
   const company = [
     { name: t('landing.footer.about'), href: '/about' },
-    { name: t('landing.footer.team'), href: '/team' },
-    { name: t('landing.footer.careers'), href: '/careers' },
-    { name: t('landing.footer.press'), href: '/press' },
+    // { name: t('landing.footer.team'), href: '/team' },
+    // { name: t('landing.footer.careers'), href: '/careers' },
+    // { name: t('landing.footer.press'), href: '/press' },
   ];
 
   const legal = [

@@ -80,4 +80,3 @@ const handler = asyncHandler(async (req: NextRequest) => {
 export const GET = withCorsMiddleware(
   withRateLimit(authenticateToken(handler), RateLimitPresets.STANDARD)
 );
-

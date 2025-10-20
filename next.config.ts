@@ -89,7 +89,6 @@ const nextConfig: NextConfig = {
   },
 
   // PERFORMANCE: Production optimizations
-  swcMinify: true,
   reactStrictMode: true,
 
   // PERFORMANCE: Reduce memory usage

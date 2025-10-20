@@ -91,9 +91,7 @@ function ResetPasswordForm() {
           <CardContent className="p-8 text-center">
             <div className="mb-4 text-red-600 dark:text-red-400 text-5xl">⚠️</div>
             <h2 className="text-2xl font-bold mb-4">{t('auth.invalidResetLink')}</h2>
-            <p className="text-muted-foreground mb-6">
-              {t('auth.invalidResetLinkDescription')}
-            </p>
+            <p className="text-muted-foreground mb-6">{t('auth.invalidResetLinkDescription')}</p>
             <Button asChild>
               <Link href="/forgot-password">{t('auth.requestNewResetLink')}</Link>
             </Button>

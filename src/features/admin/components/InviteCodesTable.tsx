@@ -98,9 +98,7 @@ export function InviteCodesTable({ onRefresh }: InviteCodesTableProps) {
     pageIndex: 0,
     pageSize: 10,
   });
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: 'createdAt', desc: true },
-  ]);
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'createdAt', desc: true }]);
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -269,9 +267,7 @@ export function InviteCodesTable({ onRefresh }: InviteCodesTableProps) {
         accessorKey: 'purpose',
         header: t('inviteCodes.table.purpose'),
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">
-            {row.original.purpose || '-'}
-          </span>
+          <span className="text-sm text-muted-foreground">{row.original.purpose || '-'}</span>
         ),
       },
       {
@@ -296,9 +292,7 @@ export function InviteCodesTable({ onRefresh }: InviteCodesTableProps) {
               <div
                 className={cn(
                   'h-2 rounded-full transition-all',
-                  row.original.usedCount >= row.original.maxUses
-                    ? 'bg-red-500'
-                    : 'bg-green-500'
+                  row.original.usedCount >= row.original.maxUses ? 'bg-red-500' : 'bg-green-500'
                 )}
                 style={{
                   width: `${(row.original.usedCount / row.original.maxUses) * 100}%`,
@@ -328,9 +322,7 @@ export function InviteCodesTable({ onRefresh }: InviteCodesTableProps) {
         ),
         cell: ({ row }) => (
           <div className="flex flex-col gap-1">
-            <span className="text-sm">
-              {new Date(row.original.createdAt).toLocaleDateString()}
-            </span>
+            <span className="text-sm">{new Date(row.original.createdAt).toLocaleDateString()}</span>
             {row.original.createdByUser && (
               <span className="text-xs text-muted-foreground">
                 by {row.original.createdByUser.firstName} {row.original.createdByUser.lastName}
@@ -386,8 +378,7 @@ export function InviteCodesTable({ onRefresh }: InviteCodesTableProps) {
               </span>
               {row.original.lastUsedByUser && (
                 <span className="text-xs text-muted-foreground">
-                  by {row.original.lastUsedByUser.firstName}{' '}
-                  {row.original.lastUsedByUser.lastName}
+                  by {row.original.lastUsedByUser.firstName} {row.original.lastUsedByUser.lastName}
                 </span>
               )}
             </div>
@@ -538,10 +529,7 @@ export function InviteCodesTable({ onRefresh }: InviteCodesTableProps) {
           <div className="text-sm text-muted-foreground">
             {t('inviteCodes.table.showing', {
               from: pagination.pageIndex * pagination.pageSize + 1,
-              to: Math.min(
-                (pagination.pageIndex + 1) * pagination.pageSize,
-                paginationMeta.total
-              ),
+              to: Math.min((pagination.pageIndex + 1) * pagination.pageSize, paginationMeta.total),
               total: paginationMeta.total,
             })}
           </div>

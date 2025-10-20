@@ -18,6 +18,15 @@ export const registerSchema = z.object({
     .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number')
     .optional(),
   inviteCode: z.string().optional(), // Optional invite code for AGENT/ADMIN registration
+
+  // GDPR Consent Fields (mobile and web compliance)
+  consentedAt: z.string().datetime().optional(), // ISO timestamp when user consented
+  acceptedTerms: z.boolean().refine((val) => val === true, {
+    message: 'You must accept the Terms & Conditions to create an account',
+  }),
+  acceptedPrivacy: z.boolean().refine((val) => val === true, {
+    message: 'You must accept the Privacy Policy to create an account',
+  }),
 });
 
 export const loginSchema = z.object({

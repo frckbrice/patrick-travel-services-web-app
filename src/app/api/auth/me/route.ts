@@ -35,6 +35,14 @@ async function handler(request: AuthenticatedRequest) {
         lastLogin: true,
         createdAt: true,
         updatedAt: true,
+        // GDPR Consent Fields
+        consentedAt: true,
+        acceptedTerms: true,
+        acceptedPrivacy: true,
+        termsAcceptedAt: true,
+        privacyAcceptedAt: true,
+        dataExportRequests: true,
+        lastDataExport: true,
       },
     });
 

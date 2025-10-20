@@ -281,8 +281,12 @@ export function handleApiError(error: unknown): NextResponse<ApiResponse> {
  * Wraps async route handlers to catch errors automatically
  * Supports both routes with and without context (for dynamic vs static routes)
  */
-export function asyncHandler<T>(handler: (req: NextRequest, context: T) => Promise<NextResponse>): (req: NextRequest, context: T) => Promise<NextResponse>;
-export function asyncHandler(handler: (req: NextRequest) => Promise<NextResponse>): (req: NextRequest) => Promise<NextResponse>;
+export function asyncHandler<T>(
+  handler: (req: NextRequest, context: T) => Promise<NextResponse>
+): (req: NextRequest, context: T) => Promise<NextResponse>;
+export function asyncHandler(
+  handler: (req: NextRequest) => Promise<NextResponse>
+): (req: NextRequest) => Promise<NextResponse>;
 export function asyncHandler<T>(handler: (req: NextRequest, context?: T) => Promise<NextResponse>) {
   return async (req: NextRequest, context?: T): Promise<NextResponse> => {
     try {

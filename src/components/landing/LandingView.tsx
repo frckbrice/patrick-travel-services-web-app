@@ -21,7 +21,7 @@ export function LandingView() {
         <Testimonials />
       </section>
       {/* FAQ Section - Managed from Admin Dashboard */}
-      <FAQSection />
+      <FAQSection limit={8} />
       <section id="contact">
         <Contact />
       </section>

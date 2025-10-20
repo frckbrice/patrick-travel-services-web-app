@@ -571,23 +571,28 @@
       "subtitle": "Expert immigration services to help you achieve your dreams of studying, working, or living abroad.",
       "cta": "Get Started",
       "login": "Sign In",
+      "badge": "Trusted Immigration Services",
+      "imageText": "Immigration Services",
       "feature1": "Expert guidance throughout your immigration journey",
       "feature2": "Track your case status in real-time",
       "feature3": "94% success rate with visa applications",
+      "features": {
+        "expertGuidance": "Expert guidance throughout your immigration journey",
+        "realTimeTracking": "Track your case status in real-time",
+        "successRate": "94% success rate with visa applications"
+      },
       "clients": "Happy Clients",
       "success": "Success Rate",
+      "successRate": "Success Rate",
+      "successRateValue": "94%",
       "years": "Years Experience",
-      "imageText": "Your Global Journey",
-      "badge": "Trusted Immigration Partner Since 2014",
+      "trustedBy": "Trusted by {{count}}+ Clients",
       "expertConsultants": "Expert Consultants",
       "licensedProfessionals": "Licensed professionals",
       "support247": "24/7 Support",
       "alwaysHere": "Always here for you",
       "fastProcessing": "Fast Processing",
-      "quickTurnaround": "Quick turnaround times",
-      "trustedBy": "Trusted by {{count}}+",
-      "successRate": "Success Rate",
-      "successRateValue": "94%"
+      "quickTurnaround": "Quick turnaround times"
     },
     "whyChooseUs": {
       "title": "Why Choose Us",
@@ -830,5 +835,278 @@
     "manualStep3": "Click \"Clear storage\" in the left sidebar",
     "manualStep4": "Check \"Unregister service workers\" and \"Cache storage\"",
     "manualStep5": "Click \"Clear site data\""
+  },
+  "legal": {
+    "lastUpdated": "Last Updated",
+    "disclaimer": "Important Note",
+    "disclaimerText": "This is a template. Please consult with a legal professional to customize this content to meet your specific business needs and comply with applicable laws in your jurisdiction.",
+    "contactEmail": "privacy@patricktravel.com",
+    "supportEmail": "support@patricktravel.com",
+    "address": "123 Main Street, Anytown, Yaounde, Cameroon",
+    "responseTime": "Within 30 days",
+    "privacy": {
+      "title": "Privacy Policy",
+      "description": "Learn how we collect, use, and protect your personal information",
+      "intro": "Patrick Travel Services (\"we\", \"our\", or \"us\") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our immigration services platform.",
+      "informationWeCollect": {
+        "title": "Information We Collect",
+        "personalInfo": "Personal Information",
+        "personalDesc": "We collect the following personal information when you register and use our services:",
+        "accountInfo": "Account Information: Name, email address, phone number, password",
+        "immigrationDocs": "Immigration Documents: Passport, ID cards, birth certificates, diplomas, employment letters",
+        "caseInfo": "Case Information: Visa applications, service type, submission dates",
+        "communicationData": "Communication Data: Messages exchanged with agents, case updates",
+        "deviceInfo": "Device Information: IP address, device type, browser type for security purposes",
+        "autoCollected": "Automatically Collected Information",
+        "usageData": "Usage data (pages visited, features used)",
+        "logData": "Log data (access times, error logs)",
+        "deviceIdentifiers": "Device identifiers for push notifications"
+      },
+      "howWeUse": {
+        "title": "How We Use Your Information",
+        "desc": "We use your information for the following purposes:",
+        "serviceProvision": "Service Provision: Process visa applications and immigration services",
+        "communication": "Communication: Send case updates, notifications, and respond to inquiries",
+        "accountMgmt": "Account Management: Maintain your account and provide customer support",
+        "security": "Security: Protect against fraud, unauthorized access, and security incidents",
+        "legalCompliance": "Legal Compliance: Comply with legal obligations and protect our rights",
+        "serviceImprovement": "Service Improvement: Analyze usage to improve our platform and services"
+      },
+      "legalBasis": {
+        "title": "Legal Basis for Processing (GDPR)",
+        "desc": "Under GDPR, we process your data based on:",
+        "consent": "Consent: You have given explicit consent for processing your personal data",
+        "contract": "Contract: Processing is necessary to provide the services you requested",
+        "legalObligation": "Legal Obligation: We must process data to comply with legal requirements",
+        "legitimateInterest": "Legitimate Interest: Processing is necessary for our legitimate business interests"
+      },
+      "dataSharing": {
+        "title": "How We Share Your Information",
+        "desc": "We may share your information with:",
+        "immigrationAuth": "Immigration Authorities: As required for visa processing",
+        "serviceProviders": "Service Providers: Third-party services that help us operate (Firebase, UploadThing, Expo)",
+        "legalAuth": "Legal Authorities: When required by law or to protect our rights",
+        "businessTransfers": "Business Transfers: In connection with a merger, acquisition, or sale of assets",
+        "noSelling": "We do not sell your personal information to third parties for marketing purposes."
+      },
+      "yourRights": {
+        "title": "Your GDPR Rights",
+        "desc": "Under GDPR, you have the following rights:",
+        "access": "Right to Access: Request a copy of your personal data",
+        "rectification": "Right to Rectification: Correct inaccurate or incomplete data",
+        "erasure": "Right to Erasure: Request deletion of your data (\"right to be forgotten\")",
+        "portability": "Right to Data Portability: Receive your data in a machine-readable format",
+        "restrict": "Right to Restrict Processing: Limit how we use your data",
+        "object": "Right to Object: Object to certain types of processing",
+        "withdraw": "Right to Withdraw Consent: Withdraw consent at any time",
+        "howToExercise": "How to Exercise Your Rights",
+        "exerciseDesc": "You can exercise these rights through:",
+        "accountSettings": "Account Settings: Update profile, export data, or delete account",
+        "email": "Email: Contact",
+        "mobileApp": "Mobile App: Use GDPR features in your profile",
+        "responseTime": "We will respond to your request within 30 days."
+      },
+      "dataSecurity": {
+        "title": "Data Security",
+        "desc": "We implement industry-standard security measures to protect your data:",
+        "encryption": "Encryption: Data encrypted in transit (HTTPS/TLS) and at rest",
+        "authentication": "Authentication: Secure password policies and optional biometric authentication",
+        "accessControl": "Access Control: Role-based access to ensure data is only accessible to authorized users",
+        "regularAudits": "Regular Audits: Security assessments and vulnerability testing",
+        "secureStorage": "Secure Storage: Credentials stored in device keychain (mobile)"
+      },
+      "dataRetention": {
+        "title": "Data Retention",
+        "desc": "We retain your data for the following periods:",
+        "activeAccounts": "Active Accounts: Data retained while your account is active",
+        "deletedAccounts": "Deleted Accounts: 30-day grace period before permanent deletion",
+        "legalRequirements": "Legal Requirements: Some data may be retained longer for legal/compliance purposes",
+        "caseRecords": "Case Records: Immigration case files retained as required by law"
+      },
+      "contact": {
+        "title": "Contact Us",
+        "desc": "If you have questions about this Privacy Policy or our data practices, please contact:",
+        "dpo": "Data Protection Officer"
+      },
+      "supervisory": {
+        "title": "Supervisory Authority",
+        "desc": "If you are located in the EU/EEA, you have the right to lodge a complaint with your local data protection authority if you believe we have not adequately addressed your concerns."
+      }
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "description": "Terms and conditions for using our services",
+      "acceptance": {
+        "title": "Acceptance of Terms",
+        "desc": "By accessing and using the Patrick Travel Services platform (\"Service\"), you accept and agree to be bound by the terms and provisions of this agreement. If you do not agree to abide by these terms, please do not use this service.",
+        "important": "Your continued use of the Service constitutes acceptance of these Terms and any future modifications."
+      },
+      "license": {
+        "title": "Use License",
+        "desc": "Permission is granted to temporarily access the Service for personal, non-commercial transitory use only. This is the grant of a license, not a transfer of title, and under this license you may not:",
+        "modifyCopy": "Modify or copy the materials",
+        "commercialUse": "Use the materials for any commercial purpose or for any public display",
+        "reverseEngineer": "Attempt to reverse engineer any software contained in the Service",
+        "removeCopyright": "Remove any copyright or other proprietary notations from the materials",
+        "transfer": "Transfer the materials to another person or \"mirror\" the materials on any other server"
+      },
+      "account": {
+        "title": "User Account",
+        "desc": "To access certain features of the Service, you must register for an account. You agree to:",
+        "accurateInfo": "Provide accurate, current, and complete information during registration",
+        "updateInfo": "Maintain and promptly update your account information",
+        "security": "Maintain the security of your password and accept all risks of unauthorized access",
+        "notify": "Notify us immediately of any unauthorized use of your account",
+        "noSharing": "Not share your account credentials with third parties",
+        "securityNotice": "You are responsible for all activities that occur under your account. Never share your password with anyone."
+      },
+      "services": {
+        "title": "Immigration Services",
+        "desc": "Patrick Travel Services provides immigration consultation and document processing services. We strive to provide the highest quality service, but please understand:",
+        "noGuarantee": "We do not guarantee approval of any visa or immigration application",
+        "subjectToReview": "All applications are subject to review and approval by the relevant immigration authorities",
+        "processingTimes": "Processing times may vary depending on government agencies",
+        "additionalDocs": "Additional documentation may be requested by immigration authorities at any time during the process",
+        "ourRole": "Our role is to guide you through the application process, prepare your documentation, and represent your case to the best of our ability. Final decisions rest with immigration authorities."
+      },
+      "privacy": {
+        "title": "Privacy and Data Protection",
+        "desc": "Your use of the Service is also governed by our Privacy Policy. By using the Service, you consent to the collection, use, and sharing of your information as described in our Privacy Policy.",
+        "commitment": "We are committed to protecting your personal data in accordance with GDPR and other applicable data protection laws."
+      },
+      "fees": {
+        "title": "Fees and Payment",
+        "desc": "Certain features of the Service may require payment of fees. You agree to:",
+        "payFees": "Pay all applicable fees as described on the Service",
+        "accurateBilling": "Provide accurate billing information",
+        "authorizeCharges": "Authorize charges to your payment method",
+        "payRegardless": "Pay for services rendered even if visa applications are denied",
+        "refundPolicy": "Refund Policy",
+        "refundDesc": "All fees are non-refundable unless otherwise stated. In cases of service errors or dissatisfaction, please contact us to discuss resolution options."
+      },
+      "termination": {
+        "title": "Account Termination",
+        "userTermination": "You may terminate your account at any time through your account settings.",
+        "weReserve": "We reserve the right to suspend or terminate your account if you violate these Terms or engage in fraudulent or illegal activities, including but not limited to:",
+        "falseInfo": "Providing false information",
+        "illegalPurposes": "Using the Service for illegal purposes",
+        "violateIP": "Violating intellectual property rights",
+        "harassing": "Harassing other users or staff",
+        "compromiseSecurity": "Attempting to compromise system security",
+        "dataRetention": "Upon termination, your data will be scheduled for deletion within 30 days in accordance with GDPR regulations. You may request immediate deletion by contacting support."
+      },
+      "liability": {
+        "title": "Limitation of Liability",
+        "desc": "In no event shall Patrick Travel Services or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the Service, even if we have been advised of the possibility of such damages.",
+        "jurisdiction": "Some jurisdictions do not allow the exclusion or limitation of liability for consequential or incidental damages, so the above limitation may not apply to you."
+      },
+      "changes": {
+        "title": "Changes to Terms",
+        "desc": "We reserve the right to modify these Terms at any time. We will notify users of any material changes via email or through the Service. Your continued use of the Service after such modifications constitutes your acceptance of the updated Terms.",
+        "encourage": "We encourage you to review these Terms periodically to stay informed of any changes."
+      },
+      "governing": {
+        "title": "Governing Law",
+        "desc": "These Terms shall be governed and construed in accordance with applicable laws, without regard to conflict of law provisions.",
+        "disputes": "Any disputes arising from these Terms or your use of the Service shall be subject to the exclusive jurisdiction of the courts in the applicable jurisdiction."
+      },
+      "contact": {
+        "title": "Contact Information",
+        "desc": "If you have any questions about these Terms, please contact us at:"
+      },
+      "acknowledgment": {
+        "title": "Agreement Acknowledgment",
+        "desc": "By using Patrick Travel Services, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. If you do not agree to these terms, please discontinue use of our services immediately."
+      }
+    },
+    "cookies": {
+      "title": "Cookie Policy",
+      "description": "How we use cookies and similar technologies",
+      "whatAre": {
+        "title": "What Are Cookies?",
+        "desc1": "Cookies are small text files that are placed on your computer or mobile device when you visit a website. They are widely used to make websites work more efficiently, provide a better user experience, and provide information to website owners.",
+        "desc2": "Cookies can be \"persistent\" or \"session\" cookies. Persistent cookies remain on your device after you close your browser, while session cookies are deleted when you close your browser."
+      },
+      "howWeUse": {
+        "title": "How We Use Cookies",
+        "desc": "Patrick Travel Services uses cookies for the following purposes:",
+        "authentication": "Authentication: To keep you logged in as you navigate through our platform",
+        "security": "Security: To protect your account and detect fraudulent activity",
+        "preferences": "Preferences: To remember your settings (language, theme, notification preferences)",
+        "analytics": "Analytics: To understand how users interact with our platform and improve our services",
+        "performance": "Performance: To optimize load times and overall platform performance"
+      },
+      "types": {
+        "title": "Types of Cookies We Use",
+        "essential": {
+          "title": "Essential Cookies",
+          "desc": "These cookies are necessary for the website to function properly. They enable core functionality such as security, authentication, and accessibility features. These cookies cannot be disabled.",
+          "examples": "session_token, csrf_token, auth_state"
+        },
+        "functional": {
+          "title": "Functional Cookies",
+          "desc": "These cookies enable enhanced functionality and personalization, such as language selection, theme preferences, and user settings. The website will still function if you disable these cookies, but some features may not work as intended.",
+          "examples": "language_preference, theme_mode, sidebar_collapsed"
+        },
+        "analytics": {
+          "title": "Analytics Cookies",
+          "desc": "These cookies help us understand how visitors interact with our website by collecting and reporting information anonymously. This helps us improve our platform and user experience.",
+          "examples": "_ga (Google Analytics), _gid, analytics_consent"
+        },
+        "performance": {
+          "title": "Performance Cookies",
+          "desc": "These cookies collect information about how you use our website, such as which pages you visit most often. This data is used to optimize our platform and improve load times.",
+          "examples": "performance_timing, resource_cache"
+        }
+      },
+      "thirdParty": {
+        "title": "Third-Party Cookies",
+        "desc": "We use the following third-party services that may set cookies:",
+        "firebase": {
+          "title": "Google Firebase",
+          "desc": "Used for authentication and real-time database services. Firebase sets cookies to maintain user sessions and provide secure authentication.",
+          "link": "View Google Privacy Policy"
+        },
+        "uploadthing": {
+          "title": "UploadThing",
+          "desc": "Used for secure file storage and document uploads. UploadThing may set cookies for authentication and tracking upload progress.",
+          "link": "View UploadThing Privacy Policy"
+        },
+        "expo": {
+          "title": "Expo Push Notifications",
+          "desc": "Used for mobile push notifications. Expo may set device tokens to identify and send notifications to your device.",
+          "link": "View Expo Privacy Policy"
+        }
+      },
+      "manage": {
+        "title": "How to Manage Cookies",
+        "browserSettings": "Browser Settings",
+        "browserDesc": "Most web browsers allow you to control cookies through their settings preferences. You can:",
+        "viewDelete": "View what cookies are stored and delete them individually",
+        "blockThirdParty": "Block third-party cookies",
+        "blockSpecific": "Block cookies from specific sites",
+        "blockAll": "Block all cookies from being set",
+        "deleteOnClose": "Delete all cookies when you close your browser",
+        "browserSpecific": "Browser-Specific Instructions",
+        "chrome": "Manage cookies in Chrome",
+        "firefox": "Manage cookies in Firefox",
+        "safari": "Manage cookies in Safari",
+        "edge": "Manage cookies in Edge",
+        "important": "If you disable or delete essential cookies, some features of our platform may not function properly, and you may not be able to access certain areas of the website."
+      },
+      "updates": {
+        "title": "Updates to This Cookie Policy",
+        "desc1": "We may update this Cookie Policy from time to time to reflect changes in technology, legislation, or our business operations. We will post the updated policy on this page with a new \"Last Updated\" date.",
+        "desc2": "We encourage you to review this Cookie Policy periodically to stay informed about how we use cookies and similar technologies."
+      },
+      "contact": {
+        "title": "Contact Us",
+        "desc": "If you have questions about this Cookie Policy or our use of cookies, please contact:"
+      },
+      "privacyMatters": {
+        "title": "Your Privacy Matters",
+        "desc": "We are committed to transparency about how we collect and use data. By using our services, you consent to our use of cookies as described in this policy. You can manage your cookie preferences at any time through your browser settings or by contacting us directly."
+      }
+    }
   }
 }

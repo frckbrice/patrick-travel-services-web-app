@@ -103,7 +103,7 @@ export function MessagesList() {
     return apiConversations
       .filter((room: FirebaseChatRoom): room is FirebaseChatRoom & { id: string } => !!room.id)
       .map((room) => {
-    // Get the other participant (not current user)
+        // Get the other participant (not current user)
         const otherParticipantId = Object.keys(room.participants || {}).find(
           (id) => id !== user?.id
         );
@@ -334,11 +334,7 @@ export function MessagesList() {
           <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
           <p className="text-muted-foreground mt-2">Communicate with your immigration advisor</p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => setEmailComposerOpen(true)}
-          className="gap-2"
-        >
+        <Button variant="outline" onClick={() => setEmailComposerOpen(true)} className="gap-2">
           <Mail className="h-4 w-4" />
           Send Email
         </Button>
@@ -489,17 +485,17 @@ export function MessagesList() {
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
-                      <p className="text-sm text-muted-foreground">
-                        No messages yet. Start a conversation!
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      {messages.map((msg) => {
-                        const isOwn = user ? msg.senderId === user.id : false;
-                        const hasAttachments = msg.attachments && msg.attachments.length > 0;
+                    <p className="text-sm text-muted-foreground">
+                      No messages yet. Start a conversation!
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {messages.map((msg) => {
+                      const isOwn = user ? msg.senderId === user.id : false;
+                      const hasAttachments = msg.attachments && msg.attachments.length > 0;
 
-                        return (
+                      return (
                         <div
                           key={msg.id}
                           className={cn(
@@ -642,38 +638,38 @@ export function MessagesList() {
                                 {formatTime(msg.sentAt)}
                               </p>
                             )}
-                            </div>
                           </div>
-                        );
-                      })}
-                        <div ref={endRef} />
+                        </div>
+                      );
+                    })}
+                    <div ref={endRef} />
 
-                        {/* Typing indicator */}
-                        {typingUsers.length > 0 && (
-                          <div className="flex gap-2 items-center">
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className="text-xs">
-                                {getInitials(typingUsers[0].userName)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="bg-muted rounded-lg p-3">
-                              <div className="flex gap-1">
-                                <Circle
-                                  className="h-2 w-2 fill-current animate-bounce"
-                                  style={{ animationDelay: '0ms' }}
-                                />
-                                <Circle
-                                  className="h-2 w-2 fill-current animate-bounce"
-                                  style={{ animationDelay: '150ms' }}
-                                />
-                                <Circle
-                                  className="h-2 w-2 fill-current animate-bounce"
-                                  style={{ animationDelay: '300ms' }}
-                                />
-                              </div>
-                            </div>
+                    {/* Typing indicator */}
+                    {typingUsers.length > 0 && (
+                      <div className="flex gap-2 items-center">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="text-xs">
+                            {getInitials(typingUsers[0].userName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="bg-muted rounded-lg p-3">
+                          <div className="flex gap-1">
+                            <Circle
+                              className="h-2 w-2 fill-current animate-bounce"
+                              style={{ animationDelay: '0ms' }}
+                            />
+                            <Circle
+                              className="h-2 w-2 fill-current animate-bounce"
+                              style={{ animationDelay: '150ms' }}
+                            />
+                            <Circle
+                              className="h-2 w-2 fill-current animate-bounce"
+                              style={{ animationDelay: '300ms' }}
+                            />
                           </div>
-                        )}
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
               </CardContent>
@@ -757,31 +753,31 @@ export function MessagesList() {
               </div>
             </>
           ) : (
-              /* PROGRESSIVE UI: Show skeleton for chat panel on first load */
-              <CardContent className="flex-1 flex items-center justify-center">
-                {isFirstLoad ? (
-                  <div className="w-full max-w-md space-y-4">
-                    <div className="flex gap-3 items-center pb-4 border-b">
-                      <SimpleSkeleton className="h-10 w-10 rounded-full flex-shrink-0" />
-                      <div className="flex-1 space-y-2">
-                        <SkeletonText size="md" className="w-32" />
-                        <SkeletonText size="sm" className="w-24" />
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <SkeletonText size="md" className="w-3/4" />
-                      <SkeletonText size="md" className="w-2/3" />
+            /* PROGRESSIVE UI: Show skeleton for chat panel on first load */
+            <CardContent className="flex-1 flex items-center justify-center">
+              {isFirstLoad ? (
+                <div className="w-full max-w-md space-y-4">
+                  <div className="flex gap-3 items-center pb-4 border-b">
+                    <SimpleSkeleton className="h-10 w-10 rounded-full flex-shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <SkeletonText size="md" className="w-32" />
+                      <SkeletonText size="sm" className="w-24" />
                     </div>
                   </div>
-                ) : (
-                    <div className="text-center">
-                      <MessageSquare className="mx-auto h-16 w-16 text-muted-foreground mb-4 opacity-50" />
-                      <h3 className="text-lg font-semibold">Select a Conversation</h3>
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Choose a conversation to start messaging
-                      </p>
-                    </div>
-                )}
+                  <div className="space-y-3">
+                    <SkeletonText size="md" className="w-3/4" />
+                    <SkeletonText size="md" className="w-2/3" />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <MessageSquare className="mx-auto h-16 w-16 text-muted-foreground mb-4 opacity-50" />
+                  <h3 className="text-lg font-semibold">Select a Conversation</h3>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Choose a conversation to start messaging
+                  </p>
+                </div>
+              )}
             </CardContent>
           )}
         </Card>

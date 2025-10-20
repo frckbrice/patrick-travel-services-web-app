@@ -89,7 +89,7 @@ const FAQS = [
   {
     question: 'Can I use the mobile app?',
     answer:
-      'Yes! Our Progressive Web App (PWA) works on all devices. Simply visit our website on your mobile browser and add it to your home screen for a native app-like experience. Get push notifications and offline access.',
+      'Absolutely! Download our native mobile app from the Google Play Store for the best experience. Prefer using your browser? No problem! Our website is a Progressive Web App (PWA) - just visit us on your mobile browser and tap "Add to Home Screen" for an app-like experience with push notifications, offline access, and lightning-fast performance. Choose what works best for you!',
     category: 'Account',
     order: 2,
   },
@@ -124,20 +124,20 @@ const FAQS = [
     order: 3,
   },
 
-  // Technical Support
+  // Technical Support (merged into General)
   {
     question: 'The website is not loading properly. What should I do?',
     answer:
       'Try clearing your browser cache and cookies, or use an incognito/private window. Ensure you are using an updated browser (Chrome, Firefox, Safari, or Edge). If issues persist, contact our technical support team.',
-    category: 'Technical Support',
-    order: 1,
+    category: 'General',
+    order: 4,
   },
   {
     question: 'I cannot upload my documents. Help!',
     answer:
       'Ensure your file is in an accepted format (PDF, JPG, PNG, DOC) and under 10MB. Check your internet connection. Try using a different browser or device. If the problem continues, contact support with details about the error message.',
-    category: 'Technical Support',
-    order: 2,
+    category: 'General',
+    order: 5,
   },
 ];
 

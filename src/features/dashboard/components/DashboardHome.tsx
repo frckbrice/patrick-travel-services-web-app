@@ -54,11 +54,11 @@ export const DashboardHome = memo(function DashboardHome() {
     // Calculate unread messages from chat rooms
     const unreadMessages = user?.id
       ? chatRooms.reduce((total, room) => {
-        if (room.unreadCount) {
+          if (room.unreadCount) {
             return total + (room.unreadCount[user.id] || 0);
-        }
-        return total;
-      }, 0)
+          }
+          return total;
+        }, 0)
       : 0;
 
     return {
@@ -88,61 +88,61 @@ export const DashboardHome = memo(function DashboardHome() {
         {isLoadingCases ? (
           <StatCardPlaceholder title="Total Cases" icon={Briefcase} />
         ) : (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Cases</CardTitle>
-                <Briefcase className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalCases}</div>
-                <p className="text-xs text-muted-foreground">{stats.activeCases} active</p>
-              </CardContent>
-            </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Cases</CardTitle>
+              <Briefcase className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalCases}</div>
+              <p className="text-xs text-muted-foreground">{stats.activeCases} active</p>
+            </CardContent>
+          </Card>
         )}
 
         {isLoadingDocuments ? (
           <StatCardPlaceholder title="Pending Documents" icon={FileText} />
         ) : (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending Documents</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.pendingDocuments}</div>
-                <p className="text-xs text-muted-foreground">Documents to upload</p>
-              </CardContent>
-            </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pending Documents</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.pendingDocuments}</div>
+              <p className="text-xs text-muted-foreground">Documents to upload</p>
+            </CardContent>
+          </Card>
         )}
 
         {isLoadingConversations ? (
           <StatCardPlaceholder title="Unread Messages" icon={MessageSquare} />
         ) : (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Unread Messages</CardTitle>
-                <MessageSquare className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.unreadMessages}</div>
-                <p className="text-xs text-muted-foreground">From your advisor</p>
-              </CardContent>
-            </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Unread Messages</CardTitle>
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.unreadMessages}</div>
+              <p className="text-xs text-muted-foreground">From your advisor</p>
+            </CardContent>
+          </Card>
         )}
 
         {isLoadingCases ? (
           <StatCardPlaceholder title="Completed" icon={CheckCircle2} />
         ) : (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Completed</CardTitle>
-                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.completedCases}</div>
-                <p className="text-xs text-muted-foreground">Successful cases</p>
-              </CardContent>
-            </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Completed</CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.completedCases}</div>
+              <p className="text-xs text-muted-foreground">Successful cases</p>
+            </CardContent>
+          </Card>
         )}
       </div>
 
