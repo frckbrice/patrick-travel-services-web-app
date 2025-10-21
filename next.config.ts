@@ -49,12 +49,12 @@ const nextConfig: NextConfig = {
   /* config options here */
   output: 'standalone',
 
-  // ESLint: Ignore during production builds (warnings don't block deployment)
+  //TODO: Uncomment this when we have a way to fix the ESLint errors
   eslint: {
     ignoreDuringBuilds: true,
   },
 
-  // TypeScript: Show errors but don't block builds
+  //TODO: Uncomment this when we have a way to fix the TypeScript errors
   typescript: {
     ignoreBuildErrors: false,
   },

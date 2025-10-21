@@ -41,44 +41,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Find user by verification token in database
+    const user = await prisma.user.findFirst({
+      where: {
+        verificationToken: token,
+        isVerified: false,
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid or expired verification token',
+        },
+        { status: 400 }
+      );
+    }
+
     try {
-      // Apply the email verification code
-      const info = await adminAuth.checkActionCode(token);
+      // Update user verification status in database
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          isVerified: true,
+          verificationToken: null,
+        },
+      });
 
-      if (info.operation !== 'VERIFY_EMAIL') {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'Invalid verification code',
-          },
-          { status: 400 }
-        );
-      }
-
-      // Apply the code to verify email
-      await adminAuth.applyActionCode(token);
-
-      // Get user email from the action code info
-      const email = info.data.email;
-
-      // Update Firebase user email verified status
-      if (email) {
-        const user = await adminAuth.getUserByEmail(email);
-        await adminAuth.updateUser(user.uid, {
-          emailVerified: true,
-        });
-
-        // Update in database if you're tracking email verification there
-        await prisma.user.updateMany({
-          where: { email },
-          data: {
+      // Update Firebase Auth email verified status if admin SDK is available
+      if (adminAuth) {
+        try {
+          await adminAuth.updateUser(user.id, {
             emailVerified: true,
-            updatedAt: new Date(),
-          },
-        });
-
-        logger.info('Email verified successfully', { email, userId: user.uid });
+          });
+        } catch (firebaseError) {
+          // Log but don't fail - database is already updated
+          logger.warn('Failed to update Firebase email verification', firebaseError);
+        }
       }
+
+      logger.info('Email verified successfully', { email: user.email, userId: user.id });
 
       return NextResponse.json({
         success: true,
