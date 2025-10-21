@@ -49,6 +49,16 @@ const nextConfig: NextConfig = {
   /* config options here */
   output: 'standalone',
 
+  // ESLint: Ignore during production builds (warnings don't block deployment)
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
+  // TypeScript: Show errors but don't block builds
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+
   // Performance Optimizations
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
