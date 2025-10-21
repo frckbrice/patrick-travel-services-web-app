@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase/firebase-admin';
+import { prisma } from '@/lib/db/prisma';
 import { logger } from '@/lib/utils/logger';
 import { z } from 'zod';
+import bcrypt from 'bcryptjs';
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Token is required'),
@@ -35,57 +37,60 @@ export async function POST(request: NextRequest) {
 
     const { token, password } = validation.data;
 
-    if (!adminAuth) {
-      logger.error('Firebase Admin not initialized');
+    // Find user by reset token
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: token,
+        resetTokenExpiry: {
+          gt: new Date(), // Token must not be expired
+        },
+      },
+    });
+
+    if (!user) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Authentication service unavailable',
+          error: 'Invalid or expired reset token',
         },
-        { status: 500 }
+        { status: 400 }
       );
     }
 
-    try {
-      // Verify the password reset code/token
-      const email = await adminAuth.verifyPasswordResetCode(token);
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Confirm password reset
-      await adminAuth.confirmPasswordReset(token, password);
+    // Update user password in database
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetToken: null,
+        resetTokenExpiry: null,
+      },
+    });
 
-      logger.info('Password reset successful', { email });
-
-      return NextResponse.json({
-        success: true,
-        message: 'Password reset successfully',
-        data: {
-          email,
-        },
-      });
-    } catch (error: any) {
-      // Handle Firebase errors
-      if (error.code === 'auth/invalid-action-code') {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'Invalid or expired reset token',
-          },
-          { status: 400 }
-        );
+    // Update Firebase Auth password if admin SDK is available
+    if (adminAuth) {
+      try {
+        await adminAuth.updateUser(user.id, {
+          password: password,
+        });
+      } catch (firebaseError) {
+        // Log but don't fail - database password is updated
+        logger.warn('Failed to update Firebase password', firebaseError);
       }
-
-      if (error.code === 'auth/expired-action-code') {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'Reset token has expired. Please request a new one',
-          },
-          { status: 400 }
-        );
-      }
-
-      throw error;
     }
+
+    logger.info('Password reset successful', { email: user.email });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Password reset successfully',
+      data: {
+        email: user.email,
+      },
+    });
   } catch (error: any) {
     logger.error('Reset password error', { error: error.message });
     return NextResponse.json(
