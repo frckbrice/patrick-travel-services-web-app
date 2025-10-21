@@ -250,6 +250,10 @@ export interface ChatMessage {
   id?: string;
   senderId: string;
   senderName: string;
+  senderEmail?: string;
+  recipientId?: string;
+  recipientName?: string;
+  recipientEmail?: string;
   content: string;
   sentAt: number;
   attachments?: any[];
