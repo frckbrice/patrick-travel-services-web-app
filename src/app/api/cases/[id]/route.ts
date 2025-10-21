@@ -38,6 +38,7 @@ const getHandler = asyncHandler(async (request: NextRequest, context: RouteConte
           email: true,
           firstName: true,
           lastName: true,
+          phone: true,
         },
       },
       assignedAgent: {
@@ -52,6 +53,7 @@ const getHandler = asyncHandler(async (request: NextRequest, context: RouteConte
         select: {
           id: true,
           fileName: true,
+          originalName: true,
           filePath: true,
           mimeType: true,
           fileSize: true,
@@ -60,6 +62,7 @@ const getHandler = asyncHandler(async (request: NextRequest, context: RouteConte
           uploadDate: true,
         },
       },
+      formData: true,
     },
   });
 
@@ -72,9 +75,16 @@ const getHandler = asyncHandler(async (request: NextRequest, context: RouteConte
     throw new ApiError(ERROR_MESSAGES.FORBIDDEN, HttpStatus.FORBIDDEN);
   }
 
-  logger.info('Case retrieved', { caseId: id, userId: req.user.userId });
+  // Agents can only view their assigned cases
+  if (req.user.role === 'AGENT' && caseData.assignedAgentId !== req.user.userId) {
+    throw new ApiError(ERROR_MESSAGES.FORBIDDEN, HttpStatus.FORBIDDEN);
+  }
 
-  return successResponse({ case: caseData }, 'Case retrieved successfully');
+  // Admins can view all cases - no additional check needed
+
+  logger.info('Case retrieved', { caseId: id, userId: req.user.userId, role: req.user.role });
+
+  return successResponse(caseData, 'Case retrieved successfully');
 });
 
 // PUT /api/cases/[id] - Update case
@@ -107,6 +117,7 @@ const putHandler = asyncHandler(async (request: NextRequest, context: RouteConte
     where: { id },
     data: {
       ...(body.serviceType && { serviceType: body.serviceType }),
+      ...(body.destinationId && { destinationId: body.destinationId }),
       ...(body.status && { status: body.status }),
       ...(body.priority && { priority: body.priority }),
       ...(body.internalNotes && { internalNotes: body.internalNotes }),
@@ -118,6 +129,7 @@ const putHandler = asyncHandler(async (request: NextRequest, context: RouteConte
           email: true,
           firstName: true,
           lastName: true,
+          phone: true,
         },
       },
       assignedAgent: {
@@ -128,12 +140,26 @@ const putHandler = asyncHandler(async (request: NextRequest, context: RouteConte
           lastName: true,
         },
       },
+      documents: {
+        select: {
+          id: true,
+          fileName: true,
+          originalName: true,
+          filePath: true,
+          mimeType: true,
+          fileSize: true,
+          documentType: true,
+          status: true,
+          uploadDate: true,
+        },
+      },
+      formData: true,
     },
   });
 
   logger.info('Case updated', { caseId: id, userId: req.user.userId });
 
-  return successResponse({ case: updatedCase }, SUCCESS_MESSAGES.CASE_UPDATED);
+  return successResponse(updatedCase, SUCCESS_MESSAGES.CASE_UPDATED);
 });
 
 // DELETE /api/cases/[id] - Delete case

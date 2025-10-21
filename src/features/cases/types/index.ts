@@ -16,7 +16,7 @@ const ClientSchema = z.object({
   email: z.string(),
   firstName: z.string(),
   lastName: z.string(),
-  phone: z.string().optional(),
+  phone: z.string().optional().nullable(),
 });
 
 const AssignedAgentSchema = z.object({
@@ -26,24 +26,28 @@ const AssignedAgentSchema = z.object({
   lastName: z.string(),
 });
 
-export const CaseSchema = z.object({
-  id: z.string(),
-  referenceNumber: z.string(),
-  clientId: z.string(),
-  assignedAgentId: z.string().optional(),
-  serviceType: z.string(),
-  status: z.string(),
-  priority: z.string(),
-  submissionDate: z.string(),
-  lastUpdated: z.string(),
-  internalNotes: z.string().optional(),
-  estimatedCompletion: z.string().optional(),
-  completedAt: z.string().optional(),
-  approvedAt: z.string().optional(),
-  documents: z.array(DocumentSchema).optional(),
-  client: ClientSchema.optional(),
-  assignedAgent: AssignedAgentSchema.optional(),
-});
+export const CaseSchema = z
+  .object({
+    id: z.string(),
+    referenceNumber: z.string(),
+    clientId: z.string(),
+    assignedAgentId: z.string().optional().nullable(),
+    destinationId: z.string().optional().nullable(),
+    serviceType: z.string(),
+    status: z.string(),
+    priority: z.string(),
+    submissionDate: z.string(),
+    lastUpdated: z.string(),
+    internalNotes: z.string().optional().nullable(),
+    estimatedCompletion: z.string().optional().nullable(),
+    completedAt: z.string().optional().nullable(),
+    approvedAt: z.string().optional().nullable(),
+    documents: z.array(DocumentSchema).optional(),
+    client: ClientSchema.optional(),
+    assignedAgent: AssignedAgentSchema.optional().nullable(),
+    formData: z.any().optional().nullable(),
+  })
+  .passthrough();
 
 export interface Document {
   id: string;

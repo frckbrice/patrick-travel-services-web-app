@@ -41,7 +41,7 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
   }
 
   // Execute all queries in parallel for performance
-  const [cases, documents, notifications, recentCases] = await Promise.all([
+  const [cases, documents, notifications, recentCases, recentDocuments] = await Promise.all([
     // Get all cases for stats
     prisma.case.findMany({
       where: casesWhere,
@@ -50,7 +50,7 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
         status: true,
         priority: true,
         serviceType: true,
-        createdAt: true,
+        submissionDate: true,
       },
     }),
 
@@ -67,7 +67,7 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
             id: true,
             status: true,
             documentType: true,
-            createdAt: true,
+            uploadDate: true,
           },
         })
       : // For clients/admins: direct filter
@@ -77,7 +77,7 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
             id: true,
             status: true,
             documentType: true,
-            createdAt: true,
+            uploadDate: true,
           },
         }),
 
@@ -93,15 +93,15 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
     prisma.case.findMany({
       where: casesWhere,
       take: 5,
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { lastUpdated: 'desc' },
       select: {
         id: true,
-        caseNumber: true,
+        referenceNumber: true,
         serviceType: true,
         status: true,
         priority: true,
-        createdAt: true,
-        updatedAt: true,
+        submissionDate: true,
+        lastUpdated: true,
         client: {
           select: {
             firstName: true,
@@ -118,6 +118,51 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
         },
       },
     }),
+
+    // Get 5 most recent documents (moved into parallel queries for performance)
+    userRole === 'AGENT'
+      ? prisma.document.findMany({
+          where: {
+            case: {
+              assignedAgentId: userId,
+            },
+          },
+          take: 5,
+          orderBy: { uploadDate: 'desc' },
+          select: {
+            id: true,
+            fileName: true,
+            documentType: true,
+            status: true,
+            fileSize: true,
+            uploadDate: true,
+            case: {
+              select: {
+                referenceNumber: true,
+                serviceType: true,
+              },
+            },
+          },
+        })
+      : prisma.document.findMany({
+          where: documentsWhere,
+          take: 5,
+          orderBy: { uploadDate: 'desc' },
+          select: {
+            id: true,
+            fileName: true,
+            documentType: true,
+            status: true,
+            fileSize: true,
+            uploadDate: true,
+            case: {
+              select: {
+                referenceNumber: true,
+                serviceType: true,
+              },
+            },
+          },
+        }),
   ]);
 
   // Calculate case statistics
@@ -164,27 +209,6 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
     ),
   };
 
-  // Get recent documents (5 most recent)
-  const recentDocuments = await prisma.document.findMany({
-    where: documentsWhere,
-    take: 5,
-    orderBy: { createdAt: 'desc' },
-    select: {
-      id: true,
-      fileName: true,
-      documentType: true,
-      status: true,
-      fileSize: true,
-      createdAt: true,
-      case: {
-        select: {
-          caseNumber: true,
-          serviceType: true,
-        },
-      },
-    },
-  });
-
   logger.info('Dashboard stats retrieved', {
     userId,
     role: userRole,
@@ -214,5 +238,6 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
 
 // Apply middleware and authentication
 const authenticatedHandler = authenticateToken(getHandler);
-export const GET = withCorsMiddleware(withRateLimit(authenticatedHandler, RateLimitPresets.GENERAL));
-
+export const GET = withCorsMiddleware(
+  withRateLimit(authenticatedHandler, RateLimitPresets.STANDARD)
+);

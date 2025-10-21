@@ -32,6 +32,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Plus, Trash2, Download, FileText, Loader2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -175,276 +176,293 @@ export function AdminTemplateManager() {
   const templates = data || [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold">Template Management</h1>
-          <p className="text-muted-foreground mt-2">
-            Manage downloadable forms and guides for clients
-          </p>
+    <TooltipProvider>
+      <div className="space-y-6">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold">Template Management</h1>
+            <p className="text-muted-foreground mt-2">
+              Manage downloadable forms and guides for clients
+            </p>
+          </div>
+          <Button onClick={() => setUploadDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Template
+          </Button>
         </div>
-        <Button onClick={() => setUploadDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Template
-        </Button>
-      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Document Templates ({templates.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-            </div>
-          ) : templates.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Templates Yet</h3>
-              <Button onClick={() => setUploadDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Upload First Template
-              </Button>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Service Type</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>File</TableHead>
-                  <TableHead>Downloads</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {templates.map((template) => (
-                  <TableRow key={template.id}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{template.name}</p>
-                        {template.isRequired && (
-                          <Badge variant="destructive" className="mt-1">
-                            Required
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {template.serviceType ? (
-                        <Badge variant="outline">{template.serviceType.replace('_', ' ')}</Badge>
-                      ) : (
-                        <span className="text-muted-foreground">General</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{template.category}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <p>{template.fileName}</p>
-                        <p className="text-muted-foreground">
-                          {(template.fileSize / 1024).toFixed(0)} KB
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>{template.downloadCount}</TableCell>
-                    <TableCell>
-                      {template.isActive ? (
-                        <Badge variant="default">Active</Badge>
-                      ) : (
-                        <Badge variant="secondary">Inactive</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            window.open(
-                              template.fileUrl || `/templates/${template.fileName}`,
-                              '_blank'
-                            )
-                          }
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteTemplate.mutate(template.id)}
-                          disabled={deleteTemplate.isPending}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
+        <Card>
+          <CardHeader>
+            <CardTitle>Document Templates ({templates.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="text-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+              </div>
+            ) : templates.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Templates Yet</h3>
+                <Button onClick={() => setUploadDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Upload First Template
+                </Button>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Service Type</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>File</TableHead>
+                    <TableHead>Downloads</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {templates.map((template) => (
+                    <TableRow key={template.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{template.name}</p>
+                          {template.isRequired && (
+                            <Badge variant="destructive" className="mt-1">
+                              Required
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {template.serviceType ? (
+                          <Badge variant="outline">{template.serviceType.replace('_', ' ')}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">General</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{template.category}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <p>{template.fileName}</p>
+                          <p className="text-muted-foreground">
+                            {(template.fileSize / 1024).toFixed(0)} KB
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>{template.downloadCount}</TableCell>
+                      <TableCell>
+                        {template.isActive ? (
+                          <Badge variant="default">Active</Badge>
+                        ) : (
+                          <Badge variant="secondary">Inactive</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() =>
+                                  window.open(
+                                    template.fileUrl || `/templates/${template.fileName}`,
+                                    '_blank'
+                                  )
+                                }
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Download Template</p>
+                            </TooltipContent>
+                          </Tooltip>
 
-      {/* Upload Dialog */}
-      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add New Template</DialogTitle>
-            <DialogDescription>
-              Upload a form, guide, or checklist for clients to download
-            </DialogDescription>
-          </DialogHeader>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => deleteTemplate.mutate(template.id)}
+                                disabled={deleteTemplate.isPending}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Delete Template</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
 
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="template-name">Template Name *</Label>
-              <Input
-                id="template-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Student Visa Application Form"
-              />
-            </div>
+        {/* Upload Dialog */}
+        <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add New Template</DialogTitle>
+              <DialogDescription>
+                Upload a form, guide, or checklist for clients to download
+              </DialogDescription>
+            </DialogHeader>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Brief description of this template..."
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="service-type">Service Type</Label>
-                <Select value={serviceType} onValueChange={setServiceType}>
-                  <SelectTrigger id="service-type">
-                    <SelectValue placeholder="Select service (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">General (All Services)</SelectItem>
-                    <SelectItem value="STUDENT_VISA">Student Visa</SelectItem>
-                    <SelectItem value="WORK_PERMIT">Work Permit</SelectItem>
-                    <SelectItem value="FAMILY_REUNIFICATION">Family Reunification</SelectItem>
-                    <SelectItem value="TOURIST_VISA">Tourist Visa</SelectItem>
-                    <SelectItem value="BUSINESS_VISA">Business Visa</SelectItem>
-                    <SelectItem value="PERMANENT_RESIDENCY">Permanent Residency</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="category">Category *</Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger id="category">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="FORM">Form</SelectItem>
-                    <SelectItem value="GUIDE">Guide</SelectItem>
-                    <SelectItem value="SAMPLE">Sample</SelectItem>
-                    <SelectItem value="CHECKLIST">Checklist</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="version">Version (optional)</Label>
+                <Label htmlFor="template-name">Template Name *</Label>
                 <Input
-                  id="version"
-                  value={version}
-                  onChange={(e) => setVersion(e.target.value)}
-                  placeholder="e.g., 2.1"
+                  id="template-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g., Student Visa Application Form"
                 />
               </div>
 
-              <div className="flex items-center space-x-2 pt-8">
-                <input
-                  type="checkbox"
-                  id="is-required"
-                  checked={isRequired}
-                  onChange={(e) => setIsRequired(e.target.checked)}
-                  className="h-4 w-4"
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Brief description of this template..."
+                  rows={3}
                 />
-                <Label htmlFor="is-required" className="cursor-pointer">
-                  Required document
-                </Label>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label>Upload File *</Label>
-              {uploadedFile ? (
-                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                  <FileText className="h-5 w-5 text-primary" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{uploadedFile.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(uploadedFile.size / 1024).toFixed(0)} KB
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="service-type">Service Type</Label>
+                  <Select value={serviceType} onValueChange={setServiceType}>
+                    <SelectTrigger id="service-type">
+                      <SelectValue placeholder="Select service (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">General (All Services)</SelectItem>
+                      <SelectItem value="STUDENT_VISA">Student Visa</SelectItem>
+                      <SelectItem value="WORK_PERMIT">Work Permit</SelectItem>
+                      <SelectItem value="FAMILY_REUNIFICATION">Family Reunification</SelectItem>
+                      <SelectItem value="TOURIST_VISA">Tourist Visa</SelectItem>
+                      <SelectItem value="BUSINESS_VISA">Business Visa</SelectItem>
+                      <SelectItem value="PERMANENT_RESIDENCY">Permanent Residency</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category *</Label>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger id="category">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="FORM">Form</SelectItem>
+                      <SelectItem value="GUIDE">Guide</SelectItem>
+                      <SelectItem value="SAMPLE">Sample</SelectItem>
+                      <SelectItem value="CHECKLIST">Checklist</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="version">Version (optional)</Label>
+                  <Input
+                    id="version"
+                    value={version}
+                    onChange={(e) => setVersion(e.target.value)}
+                    placeholder="e.g., 2.1"
+                  />
+                </div>
+
+                <div className="flex items-center space-x-2 pt-8">
+                  <input
+                    type="checkbox"
+                    id="is-required"
+                    checked={isRequired}
+                    onChange={(e) => setIsRequired(e.target.checked)}
+                    className="h-4 w-4"
+                  />
+                  <Label htmlFor="is-required" className="cursor-pointer">
+                    Required document
+                  </Label>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Upload File *</Label>
+                {uploadedFile ? (
+                  <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{uploadedFile.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(uploadedFile.size / 1024).toFixed(0)} KB
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => setUploadedFile(null)}>
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <Input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xlsx"
+                      onChange={handleFileUpload}
+                      className="max-w-xs mx-auto"
+                      disabled={isUploading}
+                    />
+                    <p className="text-xs text-muted-foreground mt-2">
+                      PDF, DOC, DOCX, XLSX • Max 16MB
                     </p>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => setUploadedFile(null)}>
-                    Remove
-                  </Button>
-                </div>
-              ) : (
-                <div className="border-2 border-dashed rounded-lg p-6 text-center">
-                  <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                  <Input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.xlsx"
-                    onChange={handleFileUpload}
-                    className="max-w-xs mx-auto"
-                    disabled={isUploading}
-                  />
-                  <p className="text-xs text-muted-foreground mt-2">
-                    PDF, DOC, DOCX, XLSX • Max 16MB
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                handleReset();
-                setUploadDialogOpen(false);
-              }}
-              disabled={createTemplate.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={
-                !name || !uploadedFile || !category || createTemplate.isPending || isUploading
-              }
-            >
-              {createTemplate.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                'Create Template'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  handleReset();
+                  setUploadDialogOpen(false);
+                }}
+                disabled={createTemplate.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={
+                  !name || !uploadedFile || !category || createTemplate.isPending || isUploading
+                }
+              >
+                {createTemplate.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Template'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </TooltipProvider>
   );
 }

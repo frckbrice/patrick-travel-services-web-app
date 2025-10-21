@@ -37,6 +37,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   FileText,
   Search,
@@ -359,28 +360,35 @@ export function DocumentsTable() {
                         {latestDoc ? new Date(latestDoc.uploadDate).toLocaleDateString() : 'N/A'}
                       </TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openClientDocuments(group)}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              {t('documents.viewDocuments')}
-                            </DropdownMenuItem>
-                            {/* Link to most recent case */}
-                            {group.documents[0]?.case && (
-                              <DropdownMenuItem asChild>
-                                <Link href={`/dashboard/cases/${group.documents[0].caseId}`}>
-                                  <Briefcase className="mr-2 h-4 w-4" />
-                                  {t('documents.viewLatestCase')}
-                                </Link>
+                        <Tooltip>
+                          <DropdownMenu>
+                            <TooltipTrigger asChild>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                            </TooltipTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openClientDocuments(group)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                {t('documents.viewDocuments')}
                               </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              {/* Link to most recent case */}
+                              {group.documents[0]?.case && (
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/dashboard/cases/${group.documents[0].caseId}`}>
+                                    <Briefcase className="mr-2 h-4 w-4" />
+                                    {t('documents.viewLatestCase')}
+                                  </Link>
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          <TooltipContent>
+                            <p>View Client Documents & Case</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </TableCell>
                     </TableRow>
                   );
@@ -505,14 +513,29 @@ export function DocumentsTable() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleView(doc)}>
-                          <Eye className="h-4 w-4 mr-1" />
-                          {t('documents.view')}
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDownload(doc)}>
-                          <Download className="h-4 w-4 mr-1" />
-                          {t('documents.download')}
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="outline" size="sm" onClick={() => handleView(doc)}>
+                              <Eye className="h-4 w-4 mr-1" />
+                              {t('documents.view')}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Open document in new tab</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="outline" size="sm" onClick={() => handleDownload(doc)}>
+                              <Download className="h-4 w-4 mr-1" />
+                              {t('documents.download')}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Download document to your device</p>
+                          </TooltipContent>
+                        </Tooltip>
                         {/* Go to case to approve/reject - single source of truth */}
                         {doc.case && (
                           <Button variant="default" size="sm" asChild>

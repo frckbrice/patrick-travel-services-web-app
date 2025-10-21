@@ -10,6 +10,9 @@ import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
 import { createRealtimeNotification } from '@/lib/firebase/notifications.service';
+import { sendPushNotificationToUser } from '@/lib/notifications/expo-push.service';
+import { sendEmail } from '@/lib/notifications/email.service';
+import { initializeFirebaseChat, sendWelcomeMessage } from '@/lib/firebase/chat.service';
 
 const handler = asyncHandler(
   async (request: NextRequest, context: { params: Promise<{ id: string }> }) => {
@@ -62,6 +65,7 @@ const handler = asyncHandler(
             email: true,
             firstName: true,
             lastName: true,
+            phone: true,
           },
         },
         assignedAgent: {
@@ -72,19 +76,119 @@ const handler = asyncHandler(
             lastName: true,
           },
         },
+        documents: {
+          select: {
+            id: true,
+            fileName: true,
+            originalName: true,
+            filePath: true,
+            mimeType: true,
+            fileSize: true,
+            documentType: true,
+            status: true,
+            uploadDate: true,
+          },
+        },
       },
     });
 
-    // Notify the assigned agent
+    // Send notifications to BOTH agent and client
     try {
-      await createRealtimeNotification(agentId, {
-        type: 'CASE_ASSIGNED',
-        title: 'New Case Assigned',
-        message: `Case ${caseData.referenceNumber} has been assigned to you`,
-        actionUrl: `/dashboard/cases/${params.id}`,
+      const agentFullName = `${agent.firstName} ${agent.lastName}`;
+      const clientFullName = `${caseData.client.firstName} ${caseData.client.lastName}`;
+
+      await Promise.all([
+        // 1. Notify the AGENT (web dashboard)
+        createRealtimeNotification(agentId, {
+          type: 'CASE_ASSIGNED',
+          title: 'New Case Assigned',
+          message: `Case ${caseData.referenceNumber} has been assigned to you`,
+          actionUrl: `/dashboard/cases/${params.id}`,
+        }),
+
+        // 2. Notify the CLIENT (web dashboard)
+        createRealtimeNotification(caseData.clientId, {
+          type: 'CASE_ASSIGNED',
+          title: 'Case Assigned!',
+          message: `Your case ${caseData.referenceNumber} has been assigned to ${agentFullName}`,
+          actionUrl: `/case/${params.id}`,
+        }),
+
+        // 3. Send mobile push notification to CLIENT
+        sendPushNotificationToUser(caseData.clientId, {
+          title: '👤 Case Assigned!',
+          body: `Your case ${caseData.referenceNumber} has been assigned to ${agentFullName}. They will contact you soon.`,
+          data: {
+            type: 'CASE_ASSIGNED',
+            caseId: params.id,
+            caseRef: caseData.referenceNumber,
+            agentId: agentId,
+            agentName: agentFullName,
+          },
+        }),
+
+        // 4. Send email to CLIENT
+        sendEmail({
+          to: caseData.client.email,
+          subject: `Case ${caseData.referenceNumber} - Advisor Assigned`,
+          html: `
+            <h2>Your Case Has Been Assigned!</h2>
+            <p>Dear ${clientFullName},</p>
+            <p>Great news! Your immigration case <strong>${caseData.referenceNumber}</strong> has been assigned to one of our experienced advisors.</p>
+            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0;">Your Advisor</h3>
+              <p style="margin: 5px 0;"><strong>Name:</strong> ${agentFullName}</p>
+              <p style="margin: 5px 0;"><strong>Case Reference:</strong> ${caseData.referenceNumber}</p>
+            </div>
+            <p>Your advisor will review your case and contact you shortly to discuss the next steps.</p>
+            <p>You can also reach out to them directly through the chat feature in your mobile app or web dashboard.</p>
+            <p style="margin-top: 30px;">
+              <a href="${process.env.NEXT_PUBLIC_APP_URL}/case/${params.id}" 
+                 style="background: #0066CC; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                View Case Details
+              </a>
+            </p>
+            <p style="color: #666; font-size: 14px; margin-top: 30px;">
+              Best regards,<br/>
+              Patrick Travel Services Team
+            </p>
+          `,
+        }),
+
+        // 5. Initialize Firebase chat conversation
+        initializeFirebaseChat(
+          params.id,
+          caseData.referenceNumber,
+          caseData.clientId,
+          clientFullName,
+          agentId,
+          agentFullName
+        ),
+
+        // 6. Optional: Send automatic welcome message from agent
+        sendWelcomeMessage(
+          params.id,
+          agentId,
+          agentFullName,
+          clientFullName,
+          caseData.referenceNumber
+        ),
+      ]);
+
+      logger.info('All assignment notifications sent successfully', {
+        caseId: params.id,
+        clientId: caseData.clientId,
+        agentId,
+        clientEmail: caseData.client.email,
       });
     } catch (error) {
-      logger.warn('Failed to notify agent', error);
+      logger.error('Failed to send assignment notifications', error, {
+        caseId: params.id,
+        clientId: caseData.clientId,
+        agentId,
+      });
+      // Don't fail the assignment if notifications fail
+      // The assignment is complete, notifications are best-effort
     }
 
     // Comprehensive logging for ADMIN action

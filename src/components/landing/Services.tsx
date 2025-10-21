@@ -54,10 +54,10 @@ export function Services() {
         {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4">
-            {t('landing.services.title')}
+            <span suppressHydrationWarning>{t('landing.services.title')}</span>
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-            {t('landing.services.subtitle')}
+            <span suppressHydrationWarning>{t('landing.services.subtitle')}</span>
           </p>
         </div>
 
@@ -68,30 +68,32 @@ export function Services() {
             return (
               <Card
                 key={index}
-                className={`group relative overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 ${service.borderColor} border-2`}
+                className={`group relative overflow-hidden hover:shadow-2xl transition-all duration-200 hover:-translate-y-1 ${service.borderColor} border-2 will-change-transform`}
               >
                 {service.badge && (
                   <div className="absolute top-4 right-4">
                     <Badge variant={service.badgeVariant} className="text-xs">
-                      {service.badge}
+                      <span suppressHydrationWarning>{service.badge}</span>
                     </Badge>
                   </div>
                 )}
 
                 <CardHeader className="pb-4">
                   <div
-                    className={`w-16 h-16 rounded-2xl ${service.bgColor} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}
+                    className={`w-16 h-16 rounded-2xl ${service.bgColor} flex items-center justify-center mb-4 group-hover:scale-105 transition-transform duration-200 will-change-transform`}
                   >
                     <Icon className={`h-8 w-8 ${service.color}`} />
                   </div>
-                  <CardTitle className="text-xl">{service.title}</CardTitle>
+                  <CardTitle className="text-xl">
+                    <span suppressHydrationWarning>{service.title}</span>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CardDescription className="text-base leading-relaxed">
-                    {service.description}
+                    <span suppressHydrationWarning>{service.description}</span>
                   </CardDescription>
                   <Button variant="ghost" className="mt-4 px-0 group-hover:gap-2 transition-all">
-                    {t('landing.services.learnMore')}
+                    <span suppressHydrationWarning>{t('landing.services.learnMore')}</span>
                     <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </CardContent>
@@ -103,7 +105,7 @@ export function Services() {
         {/* CTA */}
         <div className="text-center">
           <Button size="lg" variant="outline" className="text-lg px-8 h-12">
-            {t('landing.services.viewAll')}
+            <span suppressHydrationWarning>{t('landing.services.viewAll')}</span>
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>

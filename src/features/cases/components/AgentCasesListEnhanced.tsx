@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/features/auth/store';
 import { useCases } from '../api';
 import { useUsers } from '@/features/users/api/queries';
@@ -28,6 +29,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Briefcase,
   Search,
@@ -104,6 +106,7 @@ const serviceLabels: Record<string, string> = {
 };
 
 export function AgentCasesListEnhanced() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -130,6 +133,50 @@ export function AgentCasesListEnhanced() {
 
   const bulkOperation = useBulkCaseOperation();
   const exportCases = useExportCases();
+
+  // Translated labels
+  const getServiceLabels = (): Record<string, string> => ({
+    STUDENT_VISA: t('cases.serviceLabels.STUDENT_VISA'),
+    WORK_PERMIT: t('cases.serviceLabels.WORK_PERMIT'),
+    FAMILY_REUNIFICATION: t('cases.serviceLabels.FAMILY_REUNIFICATION'),
+    TOURIST_VISA: t('cases.serviceLabels.TOURIST_VISA'),
+    BUSINESS_VISA: t('cases.serviceLabels.BUSINESS_VISA'),
+    PERMANENT_RESIDENCY: t('cases.serviceLabels.PERMANENT_RESIDENCY'),
+  });
+
+  const getStatusConfigTranslated = (): Record<string, { label: string; color: string }> => ({
+    SUBMITTED: {
+      label: t('cases.statusLabels.SUBMITTED'),
+      color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+    },
+    UNDER_REVIEW: {
+      label: t('cases.statusLabels.UNDER_REVIEW'),
+      color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+    },
+    DOCUMENTS_REQUIRED: {
+      label: t('cases.statusLabels.DOCUMENTS_REQUIRED'),
+      color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
+    },
+    PROCESSING: {
+      label: t('cases.statusLabels.PROCESSING'),
+      color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+    },
+    APPROVED: {
+      label: t('cases.statusLabels.APPROVED'),
+      color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+    },
+    REJECTED: {
+      label: t('cases.statusLabels.REJECTED'),
+      color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+    },
+    CLOSED: {
+      label: t('cases.statusLabels.CLOSED'),
+      color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
+    },
+  });
+
+  const translatedServiceLabels = getServiceLabels();
+  const translatedStatusConfig = getStatusConfigTranslated();
 
   // Debounce search input
   useEffect(() => {
@@ -307,434 +354,497 @@ export function AgentCasesListEnhanced() {
   const agents = usersData?.users || [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">{user.role === 'ADMIN' ? 'All Cases' : 'My Cases'}</h1>
-          <p className="text-muted-foreground mt-2">
-            {user.role === 'ADMIN'
-              ? 'Manage all immigration cases and assignments'
-              : 'Manage your assigned immigration cases'}
-          </p>
+    <TooltipProvider>
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">
+              {user.role === 'ADMIN' ? t('cases.allCases') : t('cases.myCases')}
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              {user.role === 'ADMIN'
+                ? t('cases.management.manageAll')
+                : t('cases.management.manageAssigned')}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Tooltip>
+              <DropdownMenu>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Download className="mr-2 h-4 w-4" />
+                      {t('cases.management.export')}
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuLabel>{t('cases.management.exportFormat')}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleExport('csv')}>
+                    {t('cases.management.exportCSV')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('xlsx')}>
+                    {t('cases.management.exportXLSX')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <TooltipContent>
+                <p>{t('cases.management.exportTooltip')}</p>
+              </TooltipContent>
+            </Tooltip>
+            <Badge variant="secondary" className="text-base px-4 py-2">
+              {filteredCases.length}{' '}
+              {filteredCases.length === 1
+                ? t('cases.management.case')
+                : t('cases.management.cases')}
+            </Badge>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuLabel>Export Format</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => handleExport('csv')}>Export as CSV</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('xlsx')}>
-                Export as XLSX
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Badge variant="secondary" className="text-base px-4 py-2">
-            {filteredCases.length} {filteredCases.length === 1 ? 'Case' : 'Cases'}
-          </Badge>
-        </div>
-      </div>
 
-      {/* Filters Card */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {/* Search */}
-            <div className="relative lg:col-span-2">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by reference or customer name..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  handleFilterChange();
-                }}
-                className="pl-10"
-              />
-            </div>
+        {/* Filters Card */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {/* Search */}
+              <div className="relative lg:col-span-2">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t('cases.management.searchPlaceholder')}
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    handleFilterChange();
+                  }}
+                  className="pl-10"
+                />
+              </div>
 
-            {/* Service Type */}
-            <Select
-              value={serviceTypeFilter}
-              onValueChange={(value) => {
-                setServiceTypeFilter(value);
-                handleFilterChange();
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Service Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Services</SelectItem>
-                {Object.entries(serviceLabels).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Status */}
-            <Select
-              value={statusFilter}
-              onValueChange={(value) => {
-                setStatusFilter(value);
-                handleFilterChange();
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active Cases</SelectItem>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="SUBMITTED">New Submissions</SelectItem>
-                <SelectItem value="UNDER_REVIEW">Under Review</SelectItem>
-                <SelectItem value="DOCUMENTS_REQUIRED">Awaiting Documents</SelectItem>
-                <SelectItem value="PROCESSING">Processing</SelectItem>
-                <SelectItem value="APPROVED">Approved</SelectItem>
-                <SelectItem value="REJECTED">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Assigned Agent (ADMIN only) */}
-            {user.role === 'ADMIN' && (
+              {/* Service Type */}
               <Select
-                value={assignedAgentFilter}
+                value={serviceTypeFilter}
                 onValueChange={(value) => {
-                  setAssignedAgentFilter(value);
+                  setServiceTypeFilter(value);
                   handleFilterChange();
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Assigned Agent" />
+                  <SelectValue placeholder={t('cases.management.serviceType')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Agents</SelectItem>
-                  <SelectItem value="unassigned">⚠️ Unassigned</SelectItem>
-                  {agents.map((agent: any) => (
-                    <SelectItem key={agent.id} value={agent.id}>
-                      {agent.firstName} {agent.lastName}
+                  <SelectItem value="all">{t('cases.management.allServices')}</SelectItem>
+                  {Object.entries(translatedServiceLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            )}
 
-            {/* Priority */}
-            <Select
-              value={priorityFilter}
-              onValueChange={(value) => {
-                setPriorityFilter(value);
-                handleFilterChange();
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priority</SelectItem>
-                <SelectItem value="URGENT">Urgent</SelectItem>
-                <SelectItem value="HIGH">High</SelectItem>
-                <SelectItem value="NORMAL">Normal</SelectItem>
-                <SelectItem value="LOW">Low</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Date Range */}
-            <div className="flex gap-2 lg:col-span-2">
-              <Input
-                type="date"
-                placeholder="Start Date"
-                value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
+              {/* Status */}
+              <Select
+                value={statusFilter}
+                onValueChange={(value) => {
+                  setStatusFilter(value);
                   handleFilterChange();
                 }}
-                className="flex-1"
-              />
-              <Input
-                type="date"
-                placeholder="End Date"
-                value={endDate}
-                onChange={(e) => {
-                  setEndDate(e.target.value);
-                  handleFilterChange();
-                }}
-                className="flex-1"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('cases.status')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">{t('cases.management.activeCases')}</SelectItem>
+                  <SelectItem value="all">{t('cases.management.allStatus')}</SelectItem>
+                  <SelectItem value="SUBMITTED">{t('cases.statusLabels.SUBMITTED')}</SelectItem>
+                  <SelectItem value="UNDER_REVIEW">
+                    {t('cases.statusLabels.UNDER_REVIEW')}
+                  </SelectItem>
+                  <SelectItem value="DOCUMENTS_REQUIRED">
+                    {t('cases.statusLabels.DOCUMENTS_REQUIRED')}
+                  </SelectItem>
+                  <SelectItem value="PROCESSING">{t('cases.statusLabels.PROCESSING')}</SelectItem>
+                  <SelectItem value="APPROVED">{t('cases.statusLabels.APPROVED')}</SelectItem>
+                  <SelectItem value="REJECTED">{t('cases.statusLabels.REJECTED')}</SelectItem>
+                </SelectContent>
+              </Select>
 
-      {/* Bulk Actions Bar (ADMIN only) */}
-      {user.role === 'ADMIN' && selectedCases.size > 0 && (
-        <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-          <CardContent className="py-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <CheckSquare className="h-5 w-5 text-blue-600" />
-                <span className="font-medium">
-                  {selectedCases.size} case{selectedCases.size !== 1 ? 's' : ''} selected
-                </span>
-                <Button variant="ghost" size="sm" onClick={() => setSelectedCases(new Set())}>
-                  <XSquare className="mr-2 h-4 w-4" />
-                  Clear
-                </Button>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <UserPlus className="mr-2 h-4 w-4" />
-                      Bulk Assign
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuLabel>Assign to Agent</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
+              {/* Assigned Agent (ADMIN only) */}
+              {user.role === 'ADMIN' && (
+                <Select
+                  value={assignedAgentFilter}
+                  onValueChange={(value) => {
+                    setAssignedAgentFilter(value);
+                    handleFilterChange();
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('cases.management.assignedAgent')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('cases.management.allAgents')}</SelectItem>
+                    <SelectItem value="unassigned">{t('cases.management.unassigned')}</SelectItem>
                     {agents.map((agent: any) => (
-                      <DropdownMenuItem key={agent.id} onClick={() => handleBulkAssign(agent.id)}>
+                      <SelectItem key={agent.id} value={agent.id}>
                         {agent.firstName} {agent.lastName}
-                      </DropdownMenuItem>
+                      </SelectItem>
                     ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Filter className="mr-2 h-4 w-4" />
-                      Bulk Status
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuLabel>Update Status</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {Object.entries(statusConfig).map(([key, config]) => (
-                      <DropdownMenuItem key={key} onClick={() => handleBulkStatusUpdate(key)}>
-                        {config.label}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </SelectContent>
+                </Select>
+              )}
+
+              {/* Priority */}
+              <Select
+                value={priorityFilter}
+                onValueChange={(value) => {
+                  setPriorityFilter(value);
+                  handleFilterChange();
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('cases.priority')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('cases.management.allPriority')}</SelectItem>
+                  <SelectItem value="URGENT">{t('cases.priorityLabels.URGENT')}</SelectItem>
+                  <SelectItem value="HIGH">{t('cases.priorityLabels.HIGH')}</SelectItem>
+                  <SelectItem value="NORMAL">{t('cases.priorityLabels.NORMAL')}</SelectItem>
+                  <SelectItem value="LOW">{t('cases.priorityLabels.LOW')}</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Date Range */}
+              <div className="flex gap-2 lg:col-span-2">
+                <Input
+                  type="date"
+                  placeholder={t('cases.management.startDate')}
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    handleFilterChange();
+                  }}
+                  className="flex-1"
+                />
+                <Input
+                  type="date"
+                  placeholder={t('cases.management.endDate')}
+                  value={endDate}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    handleFilterChange();
+                  }}
+                  className="flex-1"
+                />
               </div>
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {filteredCases.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Briefcase className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Cases Found</h3>
-            <p className="text-muted-foreground">No cases match your current filters</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          {/* Cases Table - Mobile Responsive with Horizontal Scroll */}
-          <div className="overflow-x-auto -mx-4 sm:mx-0">
-            <div className="inline-block min-w-full align-middle">
-              <div className="overflow-hidden shadow-sm ring-1 ring-black ring-opacity-5 sm:rounded-lg">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-800">
-                    <tr>
-                      {user.role === 'ADMIN' && (
-                        <th className="px-3 py-3 text-left">
-                          <Checkbox
-                            checked={
-                              selectedCases.size === paginatedCases.length &&
-                              paginatedCases.length > 0
-                            }
-                            onCheckedChange={handleSelectAll}
-                          />
-                        </th>
-                      )}
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Reference
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Customer
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Service Type
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Assigned Agent
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                    {paginatedCases.map((c) => (
-                      <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                        {user.role === 'ADMIN' && (
-                          <td className="px-3 py-4">
-                            <Checkbox
-                              checked={selectedCases.has(c.id)}
-                              onCheckedChange={() => handleSelectCase(c.id)}
-                            />
-                          </td>
-                        )}
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <Briefcase className="h-4 w-4 text-primary mr-2" />
-                            <span className="text-sm font-medium">{c.referenceNumber}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm">
-                            <div className="font-medium">
-                              {c.client?.firstName} {c.client?.lastName}
-                            </div>
-                            <div className="text-gray-500 dark:text-gray-400 text-xs">
-                              {c.client?.email}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm">
-                            {serviceLabels[c.serviceType] || c.serviceType}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge className={cn(statusConfig[c.status]?.color || '')}>
-                            {statusConfig[c.status]?.label || c.status}
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {new Date(c.submissionDate).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {c.assignedAgent ? (
-                            <div className="text-sm">
-                              {c.assignedAgent.firstName} {c.assignedAgent.lastName}
-                            </div>
-                          ) : (
-                            <span className="text-xs text-gray-400 dark:text-gray-500">
-                              Unassigned
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex justify-end gap-2">
-                            <Button asChild variant="ghost" size="sm">
-                              <Link href={`/dashboard/cases/${c.id}`}>
-                                <Edit className="h-4 w-4" />
-                              </Link>
-                            </Button>
-                            {user.role === 'ADMIN' && !c.assignedAgentId && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedCaseForAssignment(c);
-                                  setAssignDialogOpen(true);
-                                }}
-                              >
-                                <UserPlus className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <Card>
-              <CardContent className="py-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="text-sm text-muted-foreground">
-                    Showing {startIndex + 1}-{Math.min(endIndex, filteredCases.length)} of{' '}
-                    {filteredCases.length}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      <span className="hidden sm:inline ml-1">Previous</span>
-                    </Button>
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1)
-                        .filter((page) => {
-                          return (
-                            page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1
-                          );
-                        })
-                        .map((page, index, array) => (
-                          <div key={page} className="flex items-center">
-                            {index > 0 && array[index - 1] !== page - 1 && (
-                              <span className="px-2 text-muted-foreground">...</span>
-                            )}
-                            <Button
-                              variant={currentPage === page ? 'default' : 'ghost'}
-                              size="sm"
-                              onClick={() => setCurrentPage(page)}
-                              className="h-8 w-8 p-0"
-                            >
-                              {page}
-                            </Button>
-                          </div>
-                        ))}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                    >
-                      <span className="hidden sm:inline mr-1">Next</span>
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
+        {/* Bulk Actions Bar (ADMIN only) */}
+        {user.role === 'ADMIN' && selectedCases.size > 0 && (
+          <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+            <CardContent className="py-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <CheckSquare className="h-5 w-5 text-blue-600" />
+                  <span className="font-medium">
+                    {selectedCases.size}{' '}
+                    {selectedCases.size !== 1
+                      ? t('cases.management.casesSelected')
+                      : t('cases.management.caseSelected')}
+                  </span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedCases(new Set())}>
+                        <XSquare className="mr-2 h-4 w-4" />
+                        {t('cases.management.clear')}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{t('cases.management.clearSelection')}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-        </>
-      )}
+                <div className="flex gap-2 flex-wrap">
+                  <Tooltip>
+                    <DropdownMenu>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            {t('cases.management.bulkAssign')}
+                          </Button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuLabel>{t('cases.management.assignToAgent')}</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {agents.map((agent: any) => (
+                          <DropdownMenuItem
+                            key={agent.id}
+                            onClick={() => handleBulkAssign(agent.id)}
+                          >
+                            {agent.firstName} {agent.lastName}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <TooltipContent>
+                      <p>{t('cases.management.assignSelectedCases')}</p>
+                    </TooltipContent>
+                  </Tooltip>
 
-      {/* Assign Case Dialog */}
-      {selectedCaseForAssignment && (
-        <AssignCaseDialog
-          caseData={selectedCaseForAssignment}
-          open={assignDialogOpen}
-          onOpenChange={(open) => {
-            setAssignDialogOpen(open);
-            if (!open) setSelectedCaseForAssignment(null);
-          }}
-          onSuccess={() => {
-            refetch();
-            setSelectedCaseForAssignment(null);
-          }}
-        />
-      )}
-    </div>
+                  <Tooltip>
+                    <DropdownMenu>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Filter className="mr-2 h-4 w-4" />
+                            {t('cases.management.bulkStatus')}
+                          </Button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuLabel>{t('cases.management.updateStatus')}</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {Object.entries(translatedStatusConfig).map(([key, config]) => (
+                          <DropdownMenuItem key={key} onClick={() => handleBulkStatusUpdate(key)}>
+                            {config.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <TooltipContent>
+                      <p>{t('cases.management.updateStatusSelected')}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {filteredCases.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Briefcase className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">{t('cases.management.noCasesFound')}</h3>
+              <p className="text-muted-foreground">{t('cases.management.noMatchingFilters')}</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {/* Cases Table - Mobile Responsive with Horizontal Scroll */}
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full align-middle">
+                <div className="overflow-hidden shadow-sm ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-800">
+                      <tr>
+                        {user.role === 'ADMIN' && (
+                          <th className="px-3 py-3 text-left">
+                            <Checkbox
+                              checked={
+                                selectedCases.size === paginatedCases.length &&
+                                paginatedCases.length > 0
+                              }
+                              onCheckedChange={handleSelectAll}
+                            />
+                          </th>
+                        )}
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          {t('cases.table.reference')}
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          {t('cases.table.customer')}
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          {t('cases.table.serviceType')}
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          {t('cases.table.status')}
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          {t('cases.table.date')}
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          {t('cases.table.assignedAgent')}
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          {t('cases.table.actions')}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                      {paginatedCases.map((c) => (
+                        <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                          {user.role === 'ADMIN' && (
+                            <td className="px-3 py-4">
+                              <Checkbox
+                                checked={selectedCases.has(c.id)}
+                                onCheckedChange={() => handleSelectCase(c.id)}
+                              />
+                            </td>
+                          )}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <Briefcase className="h-4 w-4 text-primary mr-2" />
+                              <span className="text-sm font-medium">{c.referenceNumber}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm">
+                              <div className="font-medium">
+                                {c.client?.firstName} {c.client?.lastName}
+                              </div>
+                              <div className="text-gray-500 dark:text-gray-400 text-xs">
+                                {c.client?.email}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="text-sm">
+                              {translatedServiceLabels[c.serviceType] || c.serviceType}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <Badge className={cn(translatedStatusConfig[c.status]?.color || '')}>
+                              {translatedStatusConfig[c.status]?.label || c.status}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {new Date(c.submissionDate).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {c.assignedAgent ? (
+                              <div className="text-sm">
+                                {c.assignedAgent.firstName} {c.assignedAgent.lastName}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-400 dark:text-gray-500">
+                                Unassigned
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex justify-end gap-2">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button asChild variant="ghost" size="sm">
+                                    <Link href={`/dashboard/cases/${c.id}`}>
+                                      <Edit className="h-4 w-4" />
+                                    </Link>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>View & Edit Case Details</p>
+                                </TooltipContent>
+                              </Tooltip>
+
+                              {user.role === 'ADMIN' && !c.assignedAgentId && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedCaseForAssignment(c);
+                                        setAssignDialogOpen(true);
+                                      }}
+                                    >
+                                      <UserPlus className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Assign Case to Agent</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Card>
+                <CardContent className="py-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {startIndex + 1}-{Math.min(endIndex, filteredCases.length)} of{' '}
+                      {filteredCases.length}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        <span className="hidden sm:inline ml-1">Previous</span>
+                      </Button>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                          .filter((page) => {
+                            return (
+                              page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1
+                            );
+                          })
+                          .map((page, index, array) => (
+                            <div key={page} className="flex items-center">
+                              {index > 0 && array[index - 1] !== page - 1 && (
+                                <span className="px-2 text-muted-foreground">...</span>
+                              )}
+                              <Button
+                                variant={currentPage === page ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setCurrentPage(page)}
+                                className="h-8 w-8 p-0"
+                              >
+                                {page}
+                              </Button>
+                            </div>
+                          ))}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        <span className="hidden sm:inline mr-1">Next</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
+
+        {/* Assign Case Dialog */}
+        {selectedCaseForAssignment && (
+          <AssignCaseDialog
+            caseData={selectedCaseForAssignment}
+            open={assignDialogOpen}
+            onOpenChange={(open) => {
+              setAssignDialogOpen(open);
+              if (!open) setSelectedCaseForAssignment(null);
+            }}
+            onSuccess={() => {
+              refetch();
+              setSelectedCaseForAssignment(null);
+            }}
+          />
+        )}
+      </div>
+    </TooltipProvider>
   );
 }
 

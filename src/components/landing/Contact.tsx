@@ -96,10 +96,10 @@ export function Contact() {
         {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4">
-            {t('landing.contact.title')}
+            <span suppressHydrationWarning>{t('landing.contact.title')}</span>
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-            {t('landing.contact.subtitle')}
+            <span suppressHydrationWarning>{t('landing.contact.subtitle')}</span>
           </p>
         </div>
 
@@ -110,13 +110,18 @@ export function Contact() {
             {contactInfo(t).map((info, index) => {
               const Icon = info.icon;
               return (
-                <Card key={index} className="hover:shadow-lg transition-shadow border-2">
+                <Card
+                  key={index}
+                  className="hover:shadow-lg transition-shadow duration-200 border-2"
+                >
                   <CardContent className="flex items-start space-x-4 p-6">
                     <div className={`${info.bgColor} p-4 rounded-xl`}>
                       <Icon className={`h-6 w-6 ${info.color}`} />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold mb-2 text-lg">{info.title}</h3>
+                      <h3 className="font-semibold mb-2 text-lg">
+                        <span suppressHydrationWarning>{info.title}</span>
+                      </h3>
                       <a
                         href={info.href}
                         className="text-muted-foreground hover:text-primary transition-colors text-sm"
@@ -134,27 +139,31 @@ export function Contact() {
               <CardHeader>
                 <div className="flex items-center space-x-2">
                   <Clock className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg">{t('landing.contact.hours')}</CardTitle>
+                  <CardTitle className="text-lg">
+                    <span suppressHydrationWarning>{t('landing.contact.hours')}</span>
+                  </CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                  <span className="text-muted-foreground font-medium">
+                  <span className="text-muted-foreground font-medium" suppressHydrationWarning>
                     {t('landing.contact.weekdays')}
                   </span>
                   <Badge variant="secondary">9:00 AM - 6:00 PM</Badge>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                  <span className="text-muted-foreground font-medium">
+                  <span className="text-muted-foreground font-medium" suppressHydrationWarning>
                     {t('landing.contact.saturday')}
                   </span>
                   <Badge variant="secondary">10:00 AM - 4:00 PM</Badge>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                  <span className="text-muted-foreground font-medium">
+                  <span className="text-muted-foreground font-medium" suppressHydrationWarning>
                     {t('landing.contact.sunday')}
                   </span>
-                  <Badge variant="outline">{t('landing.contact.closed')}</Badge>
+                  <Badge variant="outline">
+                    <span suppressHydrationWarning>{t('landing.contact.closed')}</span>
+                  </Badge>
                 </div>
               </CardContent>
             </Card>
@@ -163,9 +172,11 @@ export function Contact() {
           {/* Contact Form - Right Side */}
           <Card className="lg:col-span-3 border-2 shadow-xl">
             <CardHeader className="pb-6">
-              <CardTitle className="text-2xl">{t('landing.contact.formTitle')}</CardTitle>
+              <CardTitle className="text-2xl">
+                <span suppressHydrationWarning>{t('landing.contact.formTitle')}</span>
+              </CardTitle>
               <CardDescription className="text-base">
-                {t('landing.contact.formSubtitle')}
+                <span suppressHydrationWarning>{t('landing.contact.formSubtitle')}</span>
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -177,7 +188,9 @@ export function Contact() {
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base">{t('landing.contact.name')}</FormLabel>
+                          <FormLabel className="text-base">
+                            <span suppressHydrationWarning>{t('landing.contact.name')}</span>
+                          </FormLabel>
                           <FormControl>
                             <Input placeholder="John Doe" className="h-12" {...field} />
                           </FormControl>
@@ -192,7 +205,7 @@ export function Contact() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-base">
-                            {t('landing.contact.emailLabel')}
+                            <span suppressHydrationWarning>{t('landing.contact.emailLabel')}</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -214,7 +227,7 @@ export function Contact() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-base">
-                          {t('landing.contact.phoneLabel')}
+                          <span suppressHydrationWarning>{t('landing.contact.phoneLabel')}</span>
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -234,7 +247,9 @@ export function Contact() {
                     name="message"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base">{t('landing.contact.message')}</FormLabel>
+                        <FormLabel className="text-base">
+                          <span suppressHydrationWarning>{t('landing.contact.message')}</span>
+                        </FormLabel>
                         <FormControl>
                           <textarea
                             placeholder={t('landing.contact.messagePlaceholder')}
@@ -253,14 +268,16 @@ export function Contact() {
                     size="lg"
                     disabled={form.formState.isSubmitting}
                   >
-                    {form.formState.isSubmitting ? (
-                      t('landing.contact.sending')
-                    ) : (
-                      <>
-                        <Send className="mr-2 h-5 w-5" />
-                        {t('landing.contact.send')}
-                      </>
-                    )}
+                    <span suppressHydrationWarning>
+                      {form.formState.isSubmitting ? (
+                        t('landing.contact.sending')
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-5 w-5" />
+                          {t('landing.contact.send')}
+                        </>
+                      )}
+                    </span>
                   </Button>
                 </form>
               </Form>

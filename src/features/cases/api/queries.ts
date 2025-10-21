@@ -36,7 +36,7 @@ export function useCase(id: string) {
     queryKey: [CASES_KEY, id],
     queryFn: async () => {
       const response = await apiClient.get(`/api/cases/${id}`);
-      return response.data.data.case as Case;
+      return response.data.data as Case;
     },
     enabled: !!id,
   });

@@ -17,7 +17,16 @@ import { escapeHtml, textToSafeHtml } from '@/lib/utils/helpers';
 const contactSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
-  phone: z.string().optional(),
+  phone: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((val) => val || undefined),
+  subject: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((val) => val || undefined),
   message: z.string().min(10, 'Message must be at least 10 characters'),
 });
 
@@ -25,14 +34,17 @@ const contactSchema = z.object({
 const postHandler = asyncHandler(async (request: NextRequest) => {
   const body = await request.json();
 
+  logger.info('Received contact form submission', { body });
+
   // Validate input
   const validationResult = contactSchema.safeParse(body);
   if (!validationResult.success) {
+    logger.error('Validation failed', { errors: validationResult.error.issues });
     const errors = validationResult.error.issues.map((err) => err.message).join(', ');
     throw new ApiError(errors, HttpStatus.BAD_REQUEST);
   }
 
-  const { name, email, phone, message } = validationResult.data;
+  const { name, email, phone, subject, message } = validationResult.data;
 
   try {
     // Save contact submission to database
@@ -41,6 +53,7 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
         name,
         email,
         phone,
+        subject: subject || 'General Inquiry',
         message,
         status: 'NEW',
       },
@@ -58,26 +71,79 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
       const safeName = escapeHtml(name);
       const safeEmail = escapeHtml(email);
       const safePhone = phone ? escapeHtml(phone) : null;
+      const safeSubject = subject ? escapeHtml(subject) : 'General Inquiry';
       const safeMessage = textToSafeHtml(message); // Convert newlines to <br/> after escaping
 
       sendEmail({
         to: adminEmail,
-        subject: `New Contact Form Submission from ${safeName}`,
+        subject: `Contact Form: ${safeSubject} - ${safeName}`,
         html: `
-                    <h2>New Contact Form Submission</h2>
-                    <p><strong>Name:</strong> ${safeName}</p>
-                    <p><strong>Email:</strong> ${safeEmail}</p>
-                    ${safePhone ? `<p><strong>Phone:</strong> ${safePhone}</p>` : ''}
-                    <p><strong>Message:</strong></p>
-                    <blockquote style="border-left: 4px solid #4F46E5; padding-left: 16px; margin: 16px 0; background-color: #f9fafb; padding: 16px;">
-                        ${safeMessage}
-                    </blockquote>
-                    <p><strong>Submitted at:</strong> ${new Date().toLocaleString()}</p>
-                    <hr style="margin: 24px 0; border: none; border-top: 1px solid #e5e7eb;">
-                    <p style="color: #6b7280; font-size: 14px;">
-                        Contact ID: ${contact.id}<br>
-                        This message was sent from the Patrick Travel Services contact form.
-                    </p>
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <style>
+                            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
+                            .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+                            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; text-align: center; }
+                            .header h2 { margin: 0; font-size: 24px; }
+                            .content { padding: 30px; }
+                            .info-row { margin-bottom: 16px; }
+                            .info-label { font-weight: bold; color: #667eea; margin-bottom: 4px; }
+                            .info-value { color: #333; }
+                            .message-box { background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin: 20px 0; border-radius: 4px; }
+                            .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #6c757d; border-top: 1px solid #e5e7eb; }
+                            .timestamp { color: #6b7280; font-size: 13px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+                            .contact-id { background: #e9ecef; padding: 8px 12px; border-radius: 4px; display: inline-block; margin-top: 8px; font-family: monospace; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <div class="header">
+                                <h2>📧 New Contact Form Submission</h2>
+                            </div>
+                            <div class="content">
+                                <div class="info-row">
+                                    <div class="info-label">Subject:</div>
+                                    <div class="info-value" style="font-size: 16px; font-weight: 600; color: #667eea;">${safeSubject}</div>
+                                </div>
+                                <div class="info-row">
+                                    <div class="info-label">Name:</div>
+                                    <div class="info-value">${safeName}</div>
+                                </div>
+                                <div class="info-row">
+                                    <div class="info-label">Email:</div>
+                                    <div class="info-value"><a href="mailto:${safeEmail}" style="color: #667eea; text-decoration: none;">${safeEmail}</a></div>
+                                </div>
+                                ${
+                                  safePhone
+                                    ? `
+                                <div class="info-row">
+                                    <div class="info-label">Phone:</div>
+                                    <div class="info-value">${safePhone}</div>
+                                </div>
+                                `
+                                    : ''
+                                }
+                                <div class="info-row" style="margin-top: 24px;">
+                                    <div class="info-label">Message:</div>
+                                </div>
+                                <div class="message-box">
+                                    ${safeMessage}
+                                </div>
+                                <div class="timestamp">
+                                    <strong>Submitted at:</strong> ${new Date().toLocaleString()}<br>
+                                    <span class="contact-id">Contact ID: ${contact.id}</span>
+                                </div>
+                            </div>
+                            <div class="footer">
+                                <p style="margin: 0; font-weight: 600;">Patrick Travel Services</p>
+                                <p style="margin: 8px 0 0 0;">This message was sent from the contact support form.</p>
+                            </div>
+                        </div>
+                    </body>
+                    </html>
                 `,
       }).catch((error) => {
         // Log email error but don't fail the request

@@ -75,7 +75,11 @@ export const useRegister = () => {
         refreshToken: data.token, // Firebase uses the same token
       });
       toast.success('Registration successful! Welcome to Patrick Travel Services.');
-      router.push('/dashboard');
+
+      // Delay redirect to show success state
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1500);
     },
     onError: (error: ApiError) => {
       // Handle errors from backend
@@ -144,12 +148,10 @@ export const useLogin = () => {
       });
       toast.success(`Welcome back, ${data.user.firstName}!`);
 
-      // Redirect based on role
-      if (data.user.role === 'CLIENT') {
+      // Delay redirect to show success state
+      setTimeout(() => {
         router.push('/dashboard');
-      } else {
-        router.push('/dashboard');
-      }
+      }, 1500);
     },
     onError: (error: ApiError) => {
       // Handle Firebase errors
@@ -323,7 +325,10 @@ export const useGoogleSignIn = () => {
         toast.success(`Welcome back, ${data.user.firstName}!`);
       }
 
-      router.push('/dashboard');
+      // Delay redirect to show success state
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1500);
     },
     onError: (error: ApiError) => {
       let message = 'Google sign-in failed. Please try again.';

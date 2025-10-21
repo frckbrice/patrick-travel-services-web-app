@@ -198,7 +198,9 @@ function LoadingFallback() {
       <Card className="border-2">
         <CardContent className="p-8 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">{t('common.loading')}</p>
+          <p className="mt-4 text-muted-foreground" suppressHydrationWarning>
+            {t('common.loading')}
+          </p>
         </CardContent>
       </Card>
     </div>

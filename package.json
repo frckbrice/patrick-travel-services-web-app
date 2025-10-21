@@ -17,6 +17,7 @@
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts",
+    "test:email": "tsx scripts/test-email.ts",
     "pwa:generate-icons": "node scripts/generate-pwa-icons.js",
     "perf:optimize-images": "bash scripts/optimize-images.sh",
     "perf:analyze": "ANALYZE=true pnpm build",

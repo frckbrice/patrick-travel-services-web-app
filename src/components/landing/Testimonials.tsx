@@ -44,10 +44,10 @@ export function Testimonials() {
         {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4">
-            {t('landing.testimonials.title')}
+            <span suppressHydrationWarning>{t('landing.testimonials.title')}</span>
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-            {t('landing.testimonials.subtitle')}
+            <span suppressHydrationWarning>{t('landing.testimonials.subtitle')}</span>
           </p>
         </div>
 
@@ -56,10 +56,10 @@ export function Testimonials() {
           {testimonials.map((testimonial, index) => (
             <Card
               key={index}
-              className="relative overflow-hidden hover:shadow-2xl transition-all duration-300 border-2"
+              className="relative overflow-hidden hover:shadow-2xl transition-all duration-200 border-2 will-change-transform"
             >
               {/* Background Gradient */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-2xl"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-2xl pointer-events-none"></div>
 
               <CardContent className="pt-8 relative">
                 {/* Quote Icon */}
@@ -78,7 +78,7 @@ export function Testimonials() {
 
                 {/* Testimonial Content */}
                 <p className="text-muted-foreground mb-6 leading-relaxed italic">
-                  &ldquo;{testimonial.content}&rdquo;
+                  <span suppressHydrationWarning>&ldquo;{testimonial.content}&rdquo;</span>
                 </p>
 
                 {/* Author Info */}
@@ -92,8 +92,12 @@ export function Testimonials() {
                   </Avatar>
                   <div className="flex-1">
                     <p className="font-semibold text-base">{testimonial.name}</p>
-                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                    <p className="text-xs text-muted-foreground">{testimonial.location}</p>
+                    <p className="text-sm text-muted-foreground">
+                      <span suppressHydrationWarning>{testimonial.role}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      <span suppressHydrationWarning>{testimonial.location}</span>
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -106,7 +110,9 @@ export function Testimonials() {
           <div className="inline-flex items-center space-x-2 bg-muted px-6 py-3 rounded-full">
             <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" aria-hidden="true" />
             <span className="font-semibold">4.9/5.0</span>
-            <span className="text-muted-foreground">{t('landing.testimonials.rating')}</span>
+            <span className="text-muted-foreground">
+              <span suppressHydrationWarning>{t('landing.testimonials.rating')}</span>
+            </span>
           </div>
         </div>
       </div>

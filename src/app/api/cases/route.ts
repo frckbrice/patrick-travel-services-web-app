@@ -46,6 +46,10 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
   if (req.user.role === 'CLIENT') {
     // Clients can only see their own cases
     where.clientId = req.user.userId;
+    logger.info('CLIENT case filter', {
+      userId: req.user.userId,
+      clientId: where.clientId,
+    });
   } else if (req.user.role === 'AGENT' && userId) {
     // Agents can filter by userId
     where.clientId = userId;
@@ -65,6 +69,7 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
             email: true,
             firstName: true,
             lastName: true,
+            phone: true,
           },
         },
         assignedAgent: {
@@ -87,6 +92,9 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
     userId: req.user.userId,
     role: req.user.role,
     count: cases.length,
+    total,
+    filter: where,
+    caseIds: cases.map((c) => c.id),
   });
 
   return successResponse(

@@ -26,38 +26,40 @@ function FeatureCard({
 
   return (
     <Card
-      className={`group relative overflow-hidden border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-xl ${
+      className={`group relative overflow-hidden border-2 hover:border-primary/50 transition-all duration-200 hover:shadow-xl ${
         isDesktop
-          ? `absolute w-56 ${position} hover:scale-105 z-20 bg-card/95 backdrop-blur-sm`
-          : 'hover:-translate-y-1'
+          ? `absolute w-56 ${position} hover:scale-[1.02] z-20 bg-card/95 backdrop-blur-sm will-change-transform`
+          : 'hover:-translate-y-1 will-change-transform'
       }`}
     >
       <CardContent className="p-5 space-y-3">
         {/* Icon */}
         <div className="relative">
           <div
-            className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}
+            className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-200 will-change-transform`}
             aria-label={t(titleKey)}
           >
             <Icon className="h-6 w-6 text-white" />
           </div>
           {/* Glow Effect */}
           <div
-            className={`absolute inset-0 bg-gradient-to-br ${gradient} rounded-2xl blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300`}
+            className={`absolute inset-0 bg-gradient-to-br ${gradient} rounded-2xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-200 pointer-events-none`}
           />
         </div>
 
         {/* Content */}
         <div className={isDesktop ? 'space-y-2' : 'space-y-1'}>
-          <h3 className="text-lg font-bold group-hover:text-primary transition-colors duration-300">
-            {t(titleKey)}
+          <h3 className="text-lg font-bold group-hover:text-primary transition-colors duration-200">
+            <span suppressHydrationWarning>{t(titleKey)}</span>
           </h3>
-          <p className="text-xs text-muted-foreground leading-relaxed">{t(descriptionKey)}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            <span suppressHydrationWarning>{t(descriptionKey)}</span>
+          </p>
         </div>
 
         {/* Hover Effect Gradient */}
         <div
-          className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none`}
+          className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-200 pointer-events-none`}
         />
       </CardContent>
     </Card>
@@ -130,10 +132,10 @@ export function WhyChooseUs() {
         {/* Section Header */}
         <div className="text-center mb-12 md:mb-16 lg:mb-20">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4">
-            {t('landing.whyChooseUs.title')}
+            <span suppressHydrationWarning>{t('landing.whyChooseUs.title')}</span>
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-            {t('landing.whyChooseUs.subtitle')}
+            <span suppressHydrationWarning>{t('landing.whyChooseUs.subtitle')}</span>
           </p>
         </div>
 
@@ -168,22 +170,22 @@ export function WhyChooseUs() {
                       src="/images/mpe_hero_3.png"
                       alt={t('landing.whyChooseUs.imageText')}
                       fill
-                      className="object-cover scale-110 w-full hover:scale-125 transition-transform duration-700"
+                      className="object-cover scale-110 w-full hover:scale-110 transition-transform duration-300 will-change-transform"
                       sizes="500px"
                     />
                     {/* Gradient Overlays */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/20"></div>
-                    <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-blue-600/10"></div>
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/20 pointer-events-none"></div>
+                    <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-blue-600/10 pointer-events-none"></div>
                   </div>
 
                   {/* Center Badge */}
                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-2xl rounded-full p-8 shadow-2xl border-4 border-primary/40 z-10">
                     <div className="text-center">
                       <div className="text-5xl font-extrabold bg-gradient-to-r from-primary via-blue-600 to-primary bg-clip-text text-transparent mb-2">
-                        {t('landing.hero.successRateValue')}
+                        <span suppressHydrationWarning>{t('landing.hero.successRateValue')}</span>
                       </div>
                       <div className="text-sm font-bold text-muted-foreground uppercase tracking-wide">
-                        {t('landing.whyChooseUs.successRate')}
+                        <span suppressHydrationWarning>{t('landing.whyChooseUs.successRate')}</span>
                       </div>
                     </div>
                   </div>

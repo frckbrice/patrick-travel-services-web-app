@@ -22,7 +22,15 @@ const handler = asyncHandler(
       throw new ApiError(ERROR_MESSAGES.FORBIDDEN, HttpStatus.FORBIDDEN);
     }
 
-    const VALID_STATUSES = ['OPEN', 'IN_PROGRESS', 'PENDING', 'RESOLVED', 'CLOSED'] as const;
+    const VALID_STATUSES = [
+      'SUBMITTED',
+      'UNDER_REVIEW',
+      'DOCUMENTS_REQUIRED',
+      'PROCESSING',
+      'APPROVED',
+      'REJECTED',
+      'CLOSED',
+    ] as const;
 
     const body = await request.json();
     const { status, note } = body;
@@ -55,7 +63,38 @@ const handler = asyncHandler(
     const caseData = await prisma.case.update({
       where: { id: params.id },
       data: { status },
-      include: { client: true },
+      include: {
+        client: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+          },
+        },
+        assignedAgent: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        documents: {
+          select: {
+            id: true,
+            fileName: true,
+            originalName: true,
+            filePath: true,
+            mimeType: true,
+            fileSize: true,
+            documentType: true,
+            status: true,
+            uploadDate: true,
+          },
+        },
+      },
     });
 
     // Create status history

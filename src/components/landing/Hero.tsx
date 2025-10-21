@@ -33,50 +33,52 @@ export function Hero() {
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
         <div className="max-w-4xl mx-auto text-center space-y-8 md:space-y-10">
           {/* Trust Badge */}
-          <div className="flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-500">
             <Badge
               variant="secondary"
               className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-colors"
             >
               <Award className="h-4 w-4" />
-              <span>{t('landing.hero.badge')}</span>
+              <span suppressHydrationWarning>{t('landing.hero.badge')}</span>
             </Badge>
           </div>
 
           {/* Main Headline */}
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] text-white">
-              {t('landing.hero.title')}
+              <span suppressHydrationWarning>{t('landing.hero.title')}</span>
             </h1>
             <p className="text-lg md:text-xl lg:text-2xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
-              {t('landing.hero.subtitle')}
+              <span suppressHydrationWarning>{t('landing.hero.subtitle')}</span>
             </p>
           </div>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150">
             <Button
               size="lg"
-              className="text-base px-10 h-14 shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 group !bg-gradient-to-r !from-blue-600 !to-cyan-600 hover:!from-blue-700 hover:!to-cyan-700 dark:!from-blue-500 dark:!to-cyan-500 dark:hover:!from-blue-600 dark:hover:!to-cyan-600 !text-white hover:!text-white !border-0"
+              className="text-base px-10 h-14 shadow-2xl hover:shadow-blue-500/50 transition-all duration-200 group !bg-gradient-to-r !from-blue-600 !to-cyan-600 hover:!from-blue-700 hover:!to-cyan-700 dark:!from-blue-500 dark:!to-cyan-500 dark:hover:!from-blue-600 dark:hover:!to-cyan-600 !text-white hover:!text-white !border-0 will-change-transform"
               asChild
             >
               <Link href="/register">
-                {t('landing.hero.cta')}
+                <span suppressHydrationWarning>{t('landing.hero.cta')}</span>
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>
             <Button
               size="lg"
               variant="outline"
-              className="text-base px-10 h-14 border-2 border-white/40 bg-white/15 backdrop-blur-sm hover:bg-white/25 text-white hover:border-white/60 transition-all duration-300"
+              className="text-base px-10 h-14 border-2 border-white/40 bg-white/15 backdrop-blur-sm hover:bg-white/25 text-white hover:border-white/60 transition-all duration-200 will-change-transform"
               asChild
             >
-              <Link href="/login">{t('landing.hero.login')}</Link>
+              <Link href="/login">
+                <span suppressHydrationWarning>{t('landing.hero.login')}</span>
+              </Link>
             </Button>
           </div>
 
           {/* Stats Card - Bottom Centered */}
-          <div className="pt-12 md:pt-16 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-300">
+          <div className="pt-12 md:pt-16 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-200">
             <div className="bg-white/15 backdrop-blur-md rounded-2xl border border-white/30 p-6 md:p-8 shadow-2xl">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
                 {/* Stat 1 */}
@@ -88,7 +90,7 @@ export function Hero() {
                     500+
                   </div>
                   <div className="text-xs md:text-sm text-gray-300 font-medium">
-                    {t('landing.hero.clients')}
+                    <span suppressHydrationWarning>{t('landing.hero.clients')}</span>
                   </div>
                 </div>
 
@@ -101,7 +103,7 @@ export function Hero() {
                     94%
                   </div>
                   <div className="text-xs md:text-sm text-gray-300 font-medium">
-                    {t('landing.hero.success')}
+                    <span suppressHydrationWarning>{t('landing.hero.success')}</span>
                   </div>
                 </div>
 
@@ -114,7 +116,7 @@ export function Hero() {
                     10+
                   </div>
                   <div className="text-xs md:text-sm text-gray-300 font-medium">
-                    {t('landing.hero.years')}
+                    <span suppressHydrationWarning>{t('landing.hero.years')}</span>
                   </div>
                 </div>
 
@@ -126,7 +128,10 @@ export function Hero() {
                   <div className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white">
                     50+
                   </div>
-                  <div className="text-xs md:text-sm text-gray-300 font-medium">
+                  <div
+                    className="text-xs md:text-sm text-gray-300 font-medium"
+                    suppressHydrationWarning
+                  >
                     Countries Served
                   </div>
                 </div>

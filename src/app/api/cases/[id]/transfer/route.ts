@@ -117,6 +117,7 @@ const handler = asyncHandler(
               email: true,
               firstName: true,
               lastName: true,
+              phone: true,
             },
           },
           assignedAgent: {
@@ -125,6 +126,19 @@ const handler = asyncHandler(
               email: true,
               firstName: true,
               lastName: true,
+            },
+          },
+          documents: {
+            select: {
+              id: true,
+              fileName: true,
+              originalName: true,
+              filePath: true,
+              mimeType: true,
+              fileSize: true,
+              documentType: true,
+              status: true,
+              uploadDate: true,
             },
           },
         },

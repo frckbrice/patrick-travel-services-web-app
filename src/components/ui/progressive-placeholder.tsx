@@ -20,6 +20,7 @@ interface StatCardPlaceholderProps {
   title: string;
   icon: LucideIcon;
   className?: string;
+  loadingText?: string;
 }
 
 /**
@@ -30,6 +31,7 @@ export const StatCardPlaceholder = memo(function StatCardPlaceholder({
   title,
   icon: Icon,
   className,
+  loadingText = 'Loading...',
 }: StatCardPlaceholderProps) {
   return (
     <Card className={className}>
@@ -39,7 +41,9 @@ export const StatCardPlaceholder = memo(function StatCardPlaceholder({
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold text-muted-foreground/50 animate-pulse">--</div>
-        <p className="text-xs text-muted-foreground">Loading...</p>
+        <p className="text-xs text-muted-foreground" suppressHydrationWarning>
+          {loadingText}
+        </p>
       </CardContent>
     </Card>
   );

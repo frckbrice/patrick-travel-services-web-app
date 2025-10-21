@@ -71,7 +71,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-          <p className="mt-4 text-muted-foreground">{t('common.loading')}</p>
+          <p className="mt-4 text-muted-foreground" suppressHydrationWarning>
+            {t('common.loading')}
+          </p>
         </div>
       </div>
     );
@@ -83,7 +85,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-          <p className="mt-4 text-muted-foreground">{t('dashboard.redirectingToLogin')}</p>
+          <p className="mt-4 text-muted-foreground" suppressHydrationWarning>
+            {t('dashboard.redirectingToLogin')}
+          </p>
         </div>
       </div>
     );
@@ -151,17 +155,19 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 </SheetContent>
               </Sheet>
 
-              <Link href="/dashboard" className="flex items-center space-x-2">
-                <Image
-                  src="/images/app-logo.png"
-                  alt={t('common.appName')}
-                  width={32}
-                  height={32}
-                  className="object-contain"
-                  priority
-                />
-                <span className="hidden font-bold sm:inline-block text-primary">
-                  {t('common.appName')}
+              <Link href="/dashboard" className="flex items-center space-x-3">
+                <div className="relative flex items-center justify-center w-10 h-10 rounded-lg bg-white dark:bg-white p-1.5">
+                  <Image
+                    src="/images/app-logo.png"
+                    alt="Patrick Travel Service"
+                    width={40}
+                    height={40}
+                    className="object-contain"
+                    priority
+                  />
+                </div>
+                <span className="hidden font-bold sm:inline-block text-primary text-lg">
+                  Patrick Travel Service
                 </span>
               </Link>
             </div>
