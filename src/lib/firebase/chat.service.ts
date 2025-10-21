@@ -237,10 +237,13 @@ export async function sendMessage(params: SendMessageParams): Promise<string> {
 
 export interface ChatRoom {
   id?: string;
-  participants: Record<string, { id: string; name: string; email: string }>;
+  participants: Record<string, boolean> | Record<string, { id: string; name: string; email: string }>;
+  caseId?: string;
   lastMessage?: string;
   lastMessageAt?: number;
   unreadCount?: Record<string, number>;
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 export interface ChatMessage {
