@@ -244,7 +244,7 @@ export interface ChatRoom {
 }
 
 export interface ChatMessage {
-  id: string;
+  id?: string;
   senderId: string;
   senderName: string;
   content: string;
