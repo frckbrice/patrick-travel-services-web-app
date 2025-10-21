@@ -44,7 +44,21 @@ import { logger } from '@/lib/utils/logger';
 import { Download } from 'lucide-react';
 import { EmailComposer } from './EmailComposer';
 
-export function MessagesList() {
+interface MessagesListProps {
+  preselectedClientId?: string;
+  preselectedClientName?: string;
+  preselectedClientEmail?: string;
+  caseReference?: string;
+  initialMode?: 'email' | 'chat';
+}
+
+export function MessagesList({
+  preselectedClientId,
+  preselectedClientName,
+  preselectedClientEmail,
+  caseReference,
+  initialMode,
+}: MessagesListProps = {}) {
   const { t, i18n } = useTranslation();
   const { user } = useAuthStore();
   const [selected, setSelected] = useState<string | null>(null);
@@ -62,6 +76,17 @@ export function MessagesList() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Handle preselected client - open email composer or select chat
+  useEffect(() => {
+    if (preselectedClientId && initialMode === 'email') {
+      // Open email composer with pre-filled recipient
+      setEmailComposerOpen(true);
+    } else if (preselectedClientId && initialMode !== 'email') {
+      // Try to find and select the chat room for this client
+      // This will be handled after conversations load
+    }
+  }, [preselectedClientId, initialMode]);
 
   // REAL-TIME: Get chat rooms (replaces polling)
   const { chatRooms: apiConversations, isLoading: isLoadingConversations } = useRealtimeChatRooms();
@@ -178,12 +203,26 @@ export function MessagesList() {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Auto-select first conversation if available
+  // Auto-select conversation based on preselected client or first available
   useEffect(() => {
-    if (!selected && conversations.length > 0) {
-      setSelected(conversations[0].id);
+    if (conversations.length > 0) {
+      if (preselectedClientId && !selected) {
+        // Try to find the conversation for the preselected client
+        const targetConversation = conversations.find(
+          (conv) => conv.participantId === preselectedClientId
+        );
+        if (targetConversation) {
+          setSelected(targetConversation.id);
+        } else if (!selected) {
+          // If no conversation exists yet, select first available
+          setSelected(conversations[0].id);
+        }
+      } else if (!selected) {
+        // No preselection, just select first conversation
+        setSelected(conversations[0].id);
+      }
     }
-  }, [conversations, selected]);
+  }, [conversations, selected, preselectedClientId]);
 
   const formatTime = (date: string) => {
     // Avoid hydration mismatch - don't render time on server
@@ -344,8 +383,10 @@ export function MessagesList() {
       <EmailComposer
         open={emailComposerOpen}
         onOpenChange={setEmailComposerOpen}
-        recipientId={selectedConversation?.participantId}
-        recipientName={selectedConversation?.participantName}
+        recipientId={preselectedClientId || selectedConversation?.participantId}
+        recipientName={preselectedClientName || selectedConversation?.participantName}
+        recipientEmail={preselectedClientEmail}
+        caseReference={caseReference}
       />
 
       <div className="grid lg:grid-cols-3 gap-4 h-[calc(100vh-16rem)]">

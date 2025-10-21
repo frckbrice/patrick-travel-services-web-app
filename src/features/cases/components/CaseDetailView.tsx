@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/features/auth/store';
 import { useCase, useUpdateCaseStatus, useAddInternalNote } from '../api';
 import { useApproveDocument, useRejectDocument } from '@/features/documents/api';
@@ -52,6 +53,7 @@ import {
   Eye,
   UserPlus,
   RefreshCw,
+  Send,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -79,6 +81,7 @@ const priorityOptions = [
 ];
 
 export function CaseDetailView({ caseId }: CaseDetailViewProps) {
+  const router = useRouter();
   const { user } = useAuthStore();
   const { data, isLoading, error, refetch } = useCase(caseId);
   const updateCaseStatus = useUpdateCaseStatus(caseId);
@@ -211,6 +214,30 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
     } finally {
       setSavingNote(false);
     }
+  };
+
+  const handleMessageClient = () => {
+    if (!caseData.client) {
+      toast.error('Client information not available');
+      return;
+    }
+    // Navigate to messages page with client parameters
+    const clientName = `${caseData.client.firstName || ''} ${caseData.client.lastName || ''}`.trim();
+    router.push(
+      `/dashboard/messages?clientId=${caseData.clientId}&clientName=${encodeURIComponent(clientName)}&clientEmail=${encodeURIComponent(caseData.client.email)}&caseRef=${encodeURIComponent(caseData.referenceNumber)}`
+    );
+  };
+
+  const handleEmailClient = () => {
+    if (!caseData.client) {
+      toast.error('Client information not available');
+      return;
+    }
+    // Navigate to messages page with email mode and client parameters
+    const clientName = `${caseData.client.firstName || ''} ${caseData.client.lastName || ''}`.trim();
+    router.push(
+      `/dashboard/messages?mode=email&clientId=${caseData.clientId}&clientName=${encodeURIComponent(clientName)}&clientEmail=${encodeURIComponent(caseData.client.email)}&caseRef=${encodeURIComponent(caseData.referenceNumber)}`
+    );
   };
 
   return (
@@ -443,6 +470,53 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                   />
                   <InfoRow icon={Mail} label="Email" value={caseData.client?.email || 'N/A'} />
                   <InfoRow icon={Phone} label="Phone" value={caseData.client?.phone || 'N/A'} />
+                  
+                  {/* Message/Email Client Actions - Only for Agents/Admins */}
+                  {isAgent && caseData.client && (
+                    <>
+                      <Separator className="my-3" />
+                      <div className="space-y-2 pt-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                          Client Communication
+                        </p>
+                        <div className="flex gap-2">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={handleMessageClient}
+                              >
+                                <MessageSquare className="mr-2 h-4 w-4" />
+                                Chat
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Start a real-time chat with this client</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={handleEmailClient}
+                              >
+                                <Send className="mr-2 h-4 w-4" />
+                                Email
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Send a formal email to this client</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '@/features/auth/store';
 import { useSendEmail } from '../api/mutations';
 import { useCases } from '@/features/cases/api/queries';
@@ -31,7 +31,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Mail, Paperclip, X, Send, FileIcon, Loader2 } from 'lucide-react';
+import { Mail, Paperclip, X, Send, FileIcon, Loader2, Briefcase, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { logger } from '@/lib/utils/logger';
 import { useTranslation } from 'react-i18next';
@@ -45,6 +45,8 @@ interface EmailComposerProps {
   onOpenChange: (open: boolean) => void;
   recipientId?: string; // For agents - pre-select recipient
   recipientName?: string;
+  recipientEmail?: string;
+  caseReference?: string;
 }
 
 export function EmailComposer({
@@ -52,6 +54,8 @@ export function EmailComposer({
   onOpenChange,
   recipientId,
   recipientName,
+  recipientEmail,
+  caseReference,
 }: EmailComposerProps) {
   const { t } = useTranslation();
   const { user } = useAuthStore();
@@ -66,6 +70,20 @@ export function EmailComposer({
   const [attachments, setAttachments] = useState<MessageAttachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Update selected recipient when props change
+  useEffect(() => {
+    if (recipientId) {
+      setSelectedRecipient(recipientId);
+    }
+  }, [recipientId]);
+
+  // Pre-fill subject with case reference if available
+  useEffect(() => {
+    if (caseReference && open && !subject) {
+      setSubject(`Regarding Case: ${caseReference}`);
+    }
+  }, [caseReference, open]);
 
   // Fetch cases for clients (only when dialog is open for performance)
   const { data: casesData, isLoading: isLoadingCases } = useCases(
@@ -197,26 +215,58 @@ export function EmailComposer({
 
   // Form content component (reused in both Sheet and Dialog)
   const FormContent = () => (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* Recipient Info Card - For Agents/Admins */}
+      {user?.role !== 'CLIENT' && (recipientName || recipientEmail) && (
+        <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-full">
+              <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-semibold text-blue-900 dark:text-blue-100">
+                Sending email to:
+              </h4>
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mt-1">
+                {recipientName}
+              </p>
+              {recipientEmail && (
+                <p className="text-xs text-blue-600 dark:text-blue-400 truncate">
+                  {recipientEmail}
+                </p>
+              )}
+              {caseReference && (
+                <div className="mt-2 flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-300">
+                  <Briefcase className="h-3 w-3" />
+                  <span>Case: {caseReference}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Case/Client Selector */}
       {user?.role === 'CLIENT' ? (
         <div className="space-y-2">
-          <Label htmlFor="case-select">{t('email.selectCase') || 'Select Case'}</Label>
+          <Label htmlFor="case-select" className="text-sm font-semibold">
+            {t('email.selectCase') || 'Select Case'}
+          </Label>
           {isLoadingCases ? (
             <SimpleSkeleton className="h-10 w-full rounded-md" />
           ) : userCases.length === 0 ? (
-            <div className="text-sm text-muted-foreground p-3 bg-muted rounded-md">
+            <div className="text-sm text-amber-700 dark:text-amber-300 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-md border border-amber-200 dark:border-amber-800">
               {t('email.noCasesAvailable') || 'No cases available. Please create a case first.'}
             </div>
           ) : (
             <Select value={caseId} onValueChange={setCaseId}>
-              <SelectTrigger id="case-select">
+              <SelectTrigger id="case-select" className="h-11">
                 <SelectValue placeholder={t('email.chooseCasePlaceholder') || 'Choose a case...'} />
               </SelectTrigger>
               <SelectContent>
                 {userCases.map((caseItem: any) => (
                   <SelectItem key={caseItem.id} value={caseItem.id}>
-                    <div className="flex flex-col">
+                    <div className="flex flex-col py-1">
                       <span className="font-medium">{caseItem.referenceNumber}</span>
                       <span className="text-xs text-muted-foreground">
                         {getServiceTypeLabel(caseItem.serviceType)} •{' '}
@@ -228,54 +278,60 @@ export function EmailComposer({
               </SelectContent>
             </Select>
           )}
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <AlertCircle className="h-3 w-3" />
             {t('email.caseHelper') || 'Email will be sent to the agent assigned to this case'}
           </p>
         </div>
-      ) : (
-        <div className="space-y-2">
-          <Label htmlFor="recipient">
-            {t('email.recipient') || 'Recipient'} {recipientName && `(${recipientName})`}
-          </Label>
-          <Input
-            id="recipient"
-            value={selectedRecipient}
-            onChange={(e) => setSelectedRecipient(e.target.value)}
-            placeholder={t('email.recipientPlaceholder') || 'Enter recipient ID or email'}
-            disabled={!!recipientId}
-          />
-        </div>
-      )}
+      ) : null}
 
       {/* Subject */}
       <div className="space-y-2">
-        <Label htmlFor="subject">{t('email.subject') || 'Subject'}</Label>
+        <Label htmlFor="subject" className="text-sm font-semibold flex items-center gap-2">
+          {t('email.subject') || 'Subject'}
+          <span className="text-red-500">*</span>
+        </Label>
         <Input
           id="subject"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
           placeholder={t('email.subjectPlaceholder') || 'Enter email subject...'}
           maxLength={200}
+          className="h-11 text-base"
         />
+        <div className="flex justify-between items-center">
+          <p className="text-xs text-muted-foreground">
+            {subject.trim() ? '✓ Subject provided' : 'Subject is required'}
+          </p>
+          <p className="text-xs text-muted-foreground">{subject.length}/200</p>
+        </div>
       </div>
 
       {/* Message Content - Rich Text Area */}
       <div className="space-y-2">
-        <Label htmlFor="content">{t('email.message') || 'Message'}</Label>
+        <Label htmlFor="content" className="text-sm font-semibold flex items-center gap-2">
+          {t('email.message') || 'Message'}
+          <span className="text-red-500">*</span>
+        </Label>
         <Textarea
           id="content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder={t('email.contentPlaceholder') || 'Type your message here...'}
-          className="min-h-[200px] resize-y"
+          placeholder={t('email.contentPlaceholder') || 'Type your message here...\n\nYou can format your message with:\n• Line breaks\n• Bullet points\n• Multiple paragraphs'}
+          className="min-h-[200px] resize-y text-base leading-relaxed"
           maxLength={5000}
         />
-        <p className="text-xs text-muted-foreground">{content.length}/5000 characters</p>
+        <div className="flex justify-between items-center">
+          <p className="text-xs text-muted-foreground">
+            {content.trim() ? `✓ ${content.split(/\s+/).filter(Boolean).length} words` : 'Message is required'}
+          </p>
+          <p className="text-xs text-muted-foreground">{content.length}/5000</p>
+        </div>
       </div>
 
       {/* Attachments */}
-      <div className="space-y-2">
-        <Label>{t('email.attachments') || 'Attachments'} (Optional)</Label>
+      <div className="space-y-3">
+        <Label className="text-sm font-semibold">{t('email.attachments') || 'Attachments'} (Optional)</Label>
 
         {/* Hidden file input */}
         <input
@@ -289,12 +345,20 @@ export function EmailComposer({
 
         {/* Attachment Preview */}
         {attachments.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+            <p className="text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+              Attached Files ({attachments.length}/3)
+            </p>
             {attachments.map((attachment, index) => (
-              <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-lg text-sm">
-                <FileIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <div 
+                key={index} 
+                className="flex items-center gap-3 p-2.5 bg-white dark:bg-slate-950 rounded-md border border-slate-200 dark:border-slate-800 shadow-sm"
+              >
+                <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded">
+                  <FileIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{attachment.name}</p>
+                  <p className="font-medium text-sm truncate">{attachment.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {attachment.size > 1024 * 1024
                       ? `${(attachment.size / (1024 * 1024)).toFixed(2)} MB`
@@ -304,7 +368,7 @@ export function EmailComposer({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7"
+                  className="h-8 w-8 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
                   onClick={() => handleRemoveAttachment(index)}
                   disabled={isUploading || sendEmail.isPending}
                 >
@@ -320,11 +384,23 @@ export function EmailComposer({
           size="sm"
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading || attachments.length >= 3 || sendEmail.isPending}
-          className="w-full"
+          className="w-full h-11 border-dashed border-2 hover:border-solid"
         >
           <Paperclip className="h-4 w-4 mr-2" />
-          {isUploading ? 'Uploading...' : `Attach Files (${attachments.length}/3)`}
+          {isUploading ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Uploading...
+            </>
+          ) : (
+            `${attachments.length === 0 ? 'Add' : 'Add More'} Files (${attachments.length}/3)`
+          )}
         </Button>
+        {attachments.length === 0 && (
+          <p className="text-xs text-muted-foreground text-center">
+            Support: Images, PDF, Word documents • Max 3 files
+          </p>
+        )}
       </div>
     </div>
   );
