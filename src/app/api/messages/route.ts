@@ -43,7 +43,8 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
       deprecated: true,
       message: 'This API is deprecated. Use Firebase Realtime Database directly from client.',
     },
-    'Use client-side Firebase access'
+    'Use client-side Firebase access',
+    HttpStatus.OK
   );
 });
 
@@ -66,7 +67,7 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
       message: 'This API is deprecated. Use Firebase Realtime Database directly from client.',
     },
     'Use client-side Firebase access',
-    HttpStatus.GONE
+    HttpStatus.OK
   );
 });
 
