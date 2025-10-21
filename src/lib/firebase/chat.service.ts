@@ -236,7 +236,7 @@ export async function sendMessage(params: SendMessageParams): Promise<string> {
 }
 
 export interface ChatRoom {
-  id: string;
+  id?: string;
   participants: Record<string, { id: string; name: string; email: string }>;
   lastMessage?: string;
   lastMessageAt?: number;
