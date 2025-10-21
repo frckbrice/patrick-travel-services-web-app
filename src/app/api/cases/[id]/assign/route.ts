@@ -13,6 +13,7 @@ import { createRealtimeNotification } from '@/lib/firebase/notifications.service
 import { sendPushNotificationToUser } from '@/lib/notifications/expo-push.service';
 import { sendEmail } from '@/lib/notifications/email.service';
 import { initializeFirebaseChat, sendWelcomeMessage } from '@/lib/firebase/chat.service';
+import { getAgentCaseAssignmentEmailTemplate } from '@/lib/notifications/email-templates';
 
 const handler = asyncHandler(
   async (request: NextRequest, context: { params: Promise<{ id: string }> }) => {
@@ -97,6 +98,43 @@ const handler = asyncHandler(
       const agentFullName = `${agent.firstName} ${agent.lastName}`;
       const clientFullName = `${caseData.client.firstName} ${caseData.client.lastName}`;
 
+      // Get email templates
+      const clientEmailTemplate = {
+        to: caseData.client.email,
+        subject: `Case ${caseData.referenceNumber} - Advisor Assigned`,
+        html: `
+          <h2>Your Case Has Been Assigned!</h2>
+          <p>Dear ${clientFullName},</p>
+          <p>Great news! Your immigration case <strong>${caseData.referenceNumber}</strong> has been assigned to one of our experienced advisors.</p>
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Your Advisor</h3>
+            <p style="margin: 5px 0;"><strong>Name:</strong> ${agentFullName}</p>
+            <p style="margin: 5px 0;"><strong>Case Reference:</strong> ${caseData.referenceNumber}</p>
+          </div>
+          <p>Your advisor will review your case and contact you shortly to discuss the next steps.</p>
+          <p>You can also reach out to them directly through the chat feature in your mobile app or web dashboard.</p>
+          <p style="margin-top: 30px;">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL}/case/${params.id}" 
+               style="background: #0066CC; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+              View Case Details
+            </a>
+          </p>
+          <p style="color: #666; font-size: 14px; margin-top: 30px;">
+            Best regards,<br/>
+            Patrick Travel Services Team
+          </p>
+        `,
+      };
+
+      const agentEmailTemplate = getAgentCaseAssignmentEmailTemplate({
+        agentName: agentFullName,
+        caseReference: caseData.referenceNumber,
+        clientName: clientFullName,
+        serviceType: caseData.serviceType,
+        priority: caseData.priority,
+        caseId: params.id,
+      });
+
       await Promise.all([
         // 1. Notify the AGENT (web dashboard)
         createRealtimeNotification(agentId, {
@@ -127,35 +165,30 @@ const handler = asyncHandler(
           },
         }),
 
-        // 4. Send email to CLIENT
-        sendEmail({
-          to: caseData.client.email,
-          subject: `Case ${caseData.referenceNumber} - Advisor Assigned`,
-          html: `
-            <h2>Your Case Has Been Assigned!</h2>
-            <p>Dear ${clientFullName},</p>
-            <p>Great news! Your immigration case <strong>${caseData.referenceNumber}</strong> has been assigned to one of our experienced advisors.</p>
-            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="margin-top: 0;">Your Advisor</h3>
-              <p style="margin: 5px 0;"><strong>Name:</strong> ${agentFullName}</p>
-              <p style="margin: 5px 0;"><strong>Case Reference:</strong> ${caseData.referenceNumber}</p>
-            </div>
-            <p>Your advisor will review your case and contact you shortly to discuss the next steps.</p>
-            <p>You can also reach out to them directly through the chat feature in your mobile app or web dashboard.</p>
-            <p style="margin-top: 30px;">
-              <a href="${process.env.NEXT_PUBLIC_APP_URL}/case/${params.id}" 
-                 style="background: #0066CC; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                View Case Details
-              </a>
-            </p>
-            <p style="color: #666; font-size: 14px; margin-top: 30px;">
-              Best regards,<br/>
-              Patrick Travel Services Team
-            </p>
-          `,
+        // 4. Send mobile push notification to AGENT
+        sendPushNotificationToUser(agentId, {
+          title: '🎯 New Case Assigned',
+          body: `Case ${caseData.referenceNumber} from ${clientFullName} has been assigned to you. Priority: ${caseData.priority}`,
+          data: {
+            type: 'CASE_ASSIGNED',
+            caseId: params.id,
+            caseRef: caseData.referenceNumber,
+            clientId: caseData.clientId,
+            clientName: clientFullName,
+          },
         }),
 
-        // 5. Initialize Firebase chat conversation
+        // 5. Send email to CLIENT
+        sendEmail(clientEmailTemplate),
+
+        // 6. Send email to AGENT
+        sendEmail({
+          to: caseData.assignedAgent!.email,
+          subject: agentEmailTemplate.subject,
+          html: agentEmailTemplate.html,
+        }),
+
+        // 7. Initialize Firebase chat conversation
         initializeFirebaseChat(
           params.id,
           caseData.referenceNumber,
@@ -165,7 +198,7 @@ const handler = asyncHandler(
           agentFullName
         ),
 
-        // 6. Optional: Send automatic welcome message from agent
+        // 8. Optional: Send automatic welcome message from agent
         sendWelcomeMessage(
           params.id,
           agentId,
