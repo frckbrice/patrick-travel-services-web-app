@@ -3,7 +3,6 @@ import { adminAuth } from '@/lib/firebase/firebase-admin';
 import { prisma } from '@/lib/db/prisma';
 import { logger } from '@/lib/utils/logger';
 import { z } from 'zod';
-import bcrypt from 'bcryptjs';
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Token is required'),
@@ -37,7 +36,18 @@ export async function POST(request: NextRequest) {
 
     const { token, password } = validation.data;
 
-    // Find user by reset token
+    if (!adminAuth) {
+      logger.error('Firebase Admin not initialized');
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Authentication service unavailable',
+        },
+        { status: 500 }
+      );
+    }
+
+    // Find user by reset token in database
     const user = await prisma.user.findFirst({
       where: {
         resetToken: token,
@@ -57,40 +67,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash the new password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    try {
+      // Update password in Firebase Auth (handles hashing automatically)
+      await adminAuth.updateUser(user.id, {
+        password: password,
+      });
 
-    // Update user password in database
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        password: hashedPassword,
-        resetToken: null,
-        resetTokenExpiry: null,
-      },
-    });
+      // Clear reset token from database
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          password: password, // Store password in DB as well for consistency
+          resetToken: null,
+          resetTokenExpiry: null,
+        },
+      });
 
-    // Update Firebase Auth password if admin SDK is available
-    if (adminAuth) {
-      try {
-        await adminAuth.updateUser(user.id, {
-          password: password,
-        });
-      } catch (firebaseError) {
-        // Log but don't fail - database password is updated
-        logger.warn('Failed to update Firebase password', firebaseError);
-      }
+      logger.info('Password reset successful', { email: user.email });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Password reset successfully',
+        data: {
+          email: user.email,
+        },
+      });
+    } catch (firebaseError) {
+      logger.error('Failed to update password', firebaseError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Failed to reset password',
+        },
+        { status: 500 }
+      );
     }
-
-    logger.info('Password reset successful', { email: user.email });
-
-    return NextResponse.json({
-      success: true,
-      message: 'Password reset successfully',
-      data: {
-        email: user.email,
-      },
-    });
   } catch (error: any) {
     logger.error('Reset password error', { error: error.message });
     return NextResponse.json(
