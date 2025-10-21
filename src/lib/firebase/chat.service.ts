@@ -170,3 +170,84 @@ export async function deleteFirebaseChat(caseId: string): Promise<void> {
     throw error;
   }
 }
+
+/**
+ * Send a message in a chat room
+ * Used for client-side direct Firebase messaging
+ */
+export interface SendMessageParams {
+  senderId: string;
+  senderName: string;
+  senderEmail: string;
+  recipientId: string;
+  recipientName: string;
+  recipientEmail: string;
+  content: string;
+  caseId?: string;
+  subject?: string;
+  attachments?: any[];
+}
+
+export async function sendMessage(params: SendMessageParams): Promise<string> {
+  try {
+    // Determine chat room ID (use caseId if available, otherwise create from participant IDs)
+    const chatRoomId = params.caseId || [params.senderId, params.recipientId].sort().join('-');
+    
+    const timestamp = Date.now();
+    const messageId = `${timestamp}-${Math.random().toString(36).substr(2, 9)}`;
+    const messageRef = ref(database, `chats/${chatRoomId}/messages/${messageId}`);
+
+    const message = {
+      id: messageId,
+      senderId: params.senderId,
+      senderName: params.senderName,
+      content: params.content,
+      sentAt: timestamp,
+      attachments: params.attachments || [],
+    };
+
+    await set(messageRef, message);
+
+    // Update chat room metadata
+    const metadataRef = ref(database, `chats/${chatRoomId}/metadata`);
+    await update(metadataRef, {
+      lastMessage: params.content.substring(0, 100),
+      lastMessageAt: timestamp,
+      participants: {
+        [params.senderId]: {
+          id: params.senderId,
+          name: params.senderName,
+          email: params.senderEmail,
+        },
+        [params.recipientId]: {
+          id: params.recipientId,
+          name: params.recipientName,
+          email: params.recipientEmail,
+        },
+      },
+    });
+
+    logger.info('Message sent via Firebase', { chatRoomId, messageId });
+    return messageId;
+  } catch (error) {
+    logger.error('Failed to send message', error);
+    throw error;
+  }
+}
+
+export interface ChatRoom {
+  id: string;
+  participants: Record<string, { id: string; name: string; email: string }>;
+  lastMessage?: string;
+  lastMessageAt?: number;
+  unreadCount?: Record<string, number>;
+}
+
+export interface ChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  content: string;
+  sentAt: number;
+  attachments?: any[];
+}
