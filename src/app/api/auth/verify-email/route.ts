@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Email verified successfully',
         data: {
-          email,
+          email: user.email,
         },
       });
     } catch (error: any) {
