@@ -2,7 +2,7 @@
 
 A production-ready immigration services management platform built with Next.js 15, designed to streamline case management, client communications, and administrative operations for immigration consulting services.
 
-## 🚀 Features
+##  Features
 
 ### Authentication & Authorization
 - **Firebase Authentication** for secure user management
@@ -54,7 +54,7 @@ A production-ready immigration services management platform built with Next.js 1
 - User profile management
 - Settings and preferences
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 - **Framework:** Next.js 15+ (App Router)
@@ -84,7 +84,7 @@ A production-ready immigration services management platform built with Next.js 1
 - **Type Checking:** TypeScript 5 (strict mode)
 - **Package Manager:** pnpm (preferred)
 
-## 🔐 Why Firebase Auth?
+##  Why Firebase Auth?
 
 We chose Firebase Authentication over custom JWT for several key reasons:
 
@@ -96,14 +96,14 @@ We chose Firebase Authentication over custom JWT for several key reasons:
 
 See [AUTH_MIGRATION_GUIDE.md](./AUTH_MIGRATION_GUIDE.md) for detailed authentication documentation.
 
-## 📋 Prerequisites
+##  Prerequisites
 
 - Node.js 18.x or higher
 - pnpm 8.x or higher (preferred) or yarn
 - PostgreSQL 14.x or higher
 - Firebase account (for real-time messaging)
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### 1. Clone the repository
 
@@ -169,7 +169,7 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## 🐳 Docker Setup (Alternative)
+##  Docker Setup (Alternative)
 
 You can run the entire application stack using Docker and Docker Compose.
 
@@ -662,7 +662,7 @@ This project is proprietary and confidential.
 
 ## 👥 Support
 
-For support and questions, please contact the development team.
+For support and questions, please contact the me at https://maebrieporfolio.vercel.app.
 
 ---
 
