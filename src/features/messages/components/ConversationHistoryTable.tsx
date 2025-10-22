@@ -38,7 +38,8 @@ import {
   Filter,
 } from 'lucide-react';
 import { SimpleSkeleton, SkeletonText } from '@/components/ui/simple-skeleton';
-import { cn, getInitials } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { getInitials } from '@/lib/utils/helpers';
 import { toast } from 'sonner';
 
 interface Conversation {
@@ -373,7 +374,9 @@ export function ConversationHistoryTable() {
                       </TableCell>
 
                       {/* Type */}
-                      <TableCell>{getConversationTypeBadge(conversation.conversationType)}</TableCell>
+                      <TableCell>
+                        {getConversationTypeBadge(conversation.conversationType)}
+                      </TableCell>
 
                       {/* Last Message */}
                       <TableCell>
@@ -397,7 +400,9 @@ export function ConversationHistoryTable() {
                         {conversation.caseReference ? (
                           <div className="flex items-center gap-1">
                             <Briefcase className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-sm font-medium">{conversation.caseReference}</span>
+                            <span className="text-sm font-medium">
+                              {conversation.caseReference}
+                            </span>
                           </div>
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
@@ -496,4 +501,3 @@ export function ConversationHistoryTableSkeleton() {
     </div>
   );
 }
-

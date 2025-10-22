@@ -26,10 +26,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
 
   // Build where clause
   const where: any = {
-    OR: [
-      { senderId: req.user.userId },
-      { recipientId: req.user.userId },
-    ],
+    OR: [{ senderId: req.user.userId }, { recipientId: req.user.userId }],
   };
 
   if (messageType) {
@@ -96,7 +93,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
     if (!conversationsMap.has(conversationKey)) {
       // Determine the other participant
       const otherParticipant =
-        message.senderId === req.user.userId ? message.recipient : message.sender;
+        message.senderId === req.user!.userId ? message.recipient : message.sender;
 
       conversationsMap.set(conversationKey, {
         id: conversationKey,
@@ -120,7 +117,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
       conversation.messageCount += 1;
       if (message.messageType === 'EMAIL') conversation.hasEmail = true;
       if (message.messageType === 'CHAT') conversation.hasChat = true;
-      if (!message.isRead && message.recipientId === req.user.userId) {
+      if (!message.isRead && message.recipientId === req.user!.userId) {
         conversation.unreadCount += 1;
       }
       conversation.messages.push(message);
@@ -176,4 +173,3 @@ const handler = asyncHandler(async (request: NextRequest) => {
 export const GET = withCorsMiddleware(
   withRateLimit(authenticateToken(handler), RateLimitPresets.STANDARD)
 );
-
