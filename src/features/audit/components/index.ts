@@ -1,3 +1,6 @@
 // Audit Components exports
-export * from './AuditLogsList';
-
+export { AuditLogsList, AuditLogsListSkeleton } from './AuditLogsList';
+export {
+  AuditLogsListEnhanced,
+  AuditLogsListSkeleton as AuditLogsListEnhancedSkeleton,
+} from './AuditLogsListEnhanced';

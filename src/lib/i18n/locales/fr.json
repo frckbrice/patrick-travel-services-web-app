@@ -17,12 +17,23 @@
     "search": "Rechercher",
     "filter": "Filtrer",
     "export": "Exporter",
-    "import": "Importer"
+    "import": "Importer",
+    "goHome": "Retour à l'Accueil",
+    "goBack": "Retour",
+    "backToDashboard": "Retour au Tableau de Bord",
+    "dashboardHome": "Accueil du Tableau de Bord",
+    "dashboard": "Tableau de Bord",
+    "tryAgain": "Réessayer",
+    "contactSupport": "Contacter le Support",
+    "goToDashboard": "Aller au Tableau de Bord",
+    "faq": "FAQ",
+    "or": "ou"
   },
   "auth": {
     "login": "Connexion",
     "register": "S'inscrire",
     "logout": "Déconnexion",
+    "loggingOut": "Déconnexion en cours...",
     "welcome": "Bienvenue",
     "welcomeBack": "Bon retour",
     "signInMessage": "Connectez-vous à votre compte pour continuer",
@@ -53,7 +64,23 @@
     "sending": "Envoi en cours...",
     "backToLogin": "Retour à la connexion",
     "checkEmail": "Vérifiez votre e-mail",
-    "resetLinkSent": "Nous avons envoyé les instructions de réinitialisation à votre e-mail"
+    "resetLinkSent": "Nous avons envoyé les instructions de réinitialisation à votre e-mail",
+    "orContinueWithEmail": "Ou continuer avec e-mail",
+    "continueWithGoogle": "Continuer avec Google",
+    "sendAnotherEmail": "Envoyer un Autre E-mail",
+    "resetPasswordDescription": "Entrez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe",
+    "emailPlaceholder": "vous@exemple.com",
+    "invalidResetLink": "Lien de Réinitialisation Invalide",
+    "invalidResetLinkDescription": "Ce lien de réinitialisation de mot de passe est invalide ou a expiré.",
+    "requestNewResetLink": "Demander un Nouveau Lien",
+    "enterNewPassword": "Entrez votre nouveau mot de passe ci-dessous",
+    "resetting": "Réinitialisation...",
+    "inviteCode": {
+      "label": "Code d'Invitation",
+      "subLabel": "(Optionnel - pour l'inscription du personnel)",
+      "placeholder": "agent-xxxxxxxxx ou admin-xxxxxxxxx",
+      "helper": "Vous avez un code d'invitation? Entrez-le pour vous inscrire en tant que membre du personnel."
+    }
   },
   "dashboard": {
     "title": "Tableau de bord",
@@ -65,12 +92,16 @@
     "notifications": "Notifications",
     "quickActions": "Actions rapides",
     "recentActivity": "Activité récente",
-    "viewAll": "Voir tout"
+    "viewAll": "Voir tout",
+    "navigation": "Navigation",
+    "goBackToSite": "Retour au site",
+    "redirectingToLogin": "Redirection vers la connexion..."
   },
   "cases": {
     "title": "Cas",
     "newCase": "Nouveau cas",
     "myCases": "Mes cas",
+    "allCases": "Tous les Cas",
     "caseDetails": "Détails du cas",
     "status": "Statut",
     "priority": "Priorité",
@@ -83,7 +114,84 @@
     "processing": "En traitement",
     "approved": "Approuvé",
     "rejected": "Rejeté",
-    "closed": "Fermé"
+    "closed": "Fermé",
+    "management": {
+      "manageAll": "Gérer tous les cas d'immigration et les affectations",
+      "manageAssigned": "Gérer vos cas d'immigration assignés",
+      "export": "Exporter",
+      "exportFormat": "Format d'Export",
+      "exportCSV": "Exporter en CSV",
+      "exportXLSX": "Exporter en XLSX",
+      "exportTooltip": "Exporter les Cas en CSV ou Excel",
+      "case": "Cas",
+      "cases": "Cas",
+      "caseSelected": "cas sélectionné",
+      "casesSelected": "cas sélectionnés",
+      "searchPlaceholder": "Rechercher par référence ou nom de client...",
+      "serviceType": "Type de Service",
+      "allServices": "Tous les Services",
+      "allStatus": "Tous les Statuts",
+      "activeCases": "Cas Actifs",
+      "assignedAgent": "Agent Assigné",
+      "allAgents": "Tous les Agents",
+      "unassigned": "⚠️ Non assigné",
+      "allPriority": "Toutes les Priorités",
+      "startDate": "Date de Début",
+      "endDate": "Date de Fin",
+      "clearSelection": "Effacer la Sélection",
+      "clear": "Effacer",
+      "bulkAssign": "Assignation en Masse",
+      "assignToAgent": "Assigner à un Agent",
+      "assignSelectedCases": "Assigner les Cas Sélectionnés à un Agent",
+      "bulkStatus": "Statut en Masse",
+      "updateStatus": "Mettre à Jour le Statut",
+      "updateStatusSelected": "Mettre à Jour le Statut des Cas Sélectionnés",
+      "noCasesFound": "Aucun Cas Trouvé",
+      "noMatchingFilters": "Aucun cas ne correspond à vos filtres actuels",
+      "couldNotDetermineUser": "Impossible de Déterminer l'Utilisateur Actuel",
+      "refreshOrLogin": "Veuillez essayer de rafraîchir la page ou de vous reconnecter.",
+      "returnToLogin": "Retour à la Connexion"
+    },
+    "table": {
+      "reference": "Référence",
+      "customer": "Client",
+      "serviceType": "Type de Service",
+      "status": "Statut",
+      "date": "Date",
+      "assignedAgent": "Agent Assigné",
+      "actions": "Actions",
+      "view": "Voir",
+      "assign": "Assigner",
+      "unassigned": "Non assigné",
+      "assignedTo": "Assigné à",
+      "page": "Page",
+      "of": "sur",
+      "previous": "Précédent",
+      "next": "Suivant"
+    },
+    "statusLabels": {
+      "SUBMITTED": "Nouvelle Soumission",
+      "UNDER_REVIEW": "En Cours d'Examen",
+      "DOCUMENTS_REQUIRED": "En Attente de Documents",
+      "PROCESSING": "En Traitement",
+      "APPROVED": "Approuvé",
+      "REJECTED": "Rejeté",
+      "CLOSED": "Fermé"
+    },
+    "priorityLabels": {
+      "LOW": "Faible",
+      "NORMAL": "Normale",
+      "HIGH": "Haute",
+      "URGENT": "Urgente"
+    },
+    "serviceLabels": {
+      "STUDENT_VISA": "Visa Étudiant",
+      "WORK_PERMIT": "Permis de Travail",
+      "FAMILY_REUNIFICATION": "Réunification Familiale",
+      "TOURIST_VISA": "Visa Touristique",
+      "BUSINESS_VISA": "Visa d'Affaires",
+      "PERMANENT_RESIDENCY": "Résidence Permanente"
+    }
   },
   "documents": {
     "title": "Documents",
@@ -96,7 +204,90 @@
     "status": "Statut",
     "pending": "En attente",
     "verified": "Vérifié",
-    "rejected": "Rejeté"
+    "rejected": "Rejeté",
+    "approved": "Approuvé",
+    "verifiedBy": "Vérifié par",
+    "viewCase": "Voir le Cas",
+    "view": "Voir",
+    "download": "Télécharger",
+    "delete": "Supprimer",
+    "uploadBtn": "Télécharger",
+    "uploadNew": "Télécharger un nouveau document pour votre dossier",
+    "uploadForCase": "Télécharger un document pour votre dossier d'immigration",
+    "documentType": "Type de Document",
+    "selectDocumentType": "Sélectionner le type de document",
+    "selectType": "Sélectionner le type",
+    "caseId": "ID du Cas",
+    "caseIdTemp": "ID du Cas (temporaire)",
+    "selectCase": "Sélectionner un Cas",
+    "enterCaseId": "Entrer l'ID du cas",
+    "chooseCasePlaceholder": "Choisissez un cas...",
+    "noCasesAvailable": "Aucun cas disponible. Veuillez créer un cas d'abord.",
+    "caseHelper": "Choisissez le cas auquel ce document appartient",
+    "caseIdHelper": "Entrez l'ID du cas auquel ce document appartient",
+    "caseIdHelper2": "Entrez l'ID de votre cas",
+    "file": "Fichier",
+    "maxSize10MB": "Max: 10MB. Autorisé: PDF, JPG, PNG, DOC, DOCX",
+    "maxSize16MB": "Max: 16MB. Formats supportés: PDF, JPG, PNG, DOC, DOCX",
+    "uploading": "Téléchargement en cours...",
+    "uploadSuccess": "Document téléchargé avec succès",
+    "uploadFailed": "Échec du téléchargement. Veuillez réessayer.",
+    "invalidFileSize": "La taille du fichier dépasse 10MB. Veuillez sélectionner un fichier plus petit.",
+    "invalidFileSize16MB": "La taille du fichier dépasse la limite de 16MB. Le fichier sélectionné fait {{size}}MB.",
+    "invalidFileType": "Type de fichier invalide. Autorisé: PDF, JPG, PNG, DOC, DOCX",
+    "invalidFileTypeDetailed": "Type de fichier invalide: {{type}}. Types autorisés: PDF, JPG, PNG, DOC, DOCX.",
+    "fillAllFields": "Veuillez remplir tous les champs obligatoires",
+    "selectFileTypeAndCase": "Veuillez sélectionner un fichier, un type de document et un cas",
+    "errorLoading": "Erreur lors du chargement des documents. Veuillez réessayer.",
+    "errorLoadingShort": "Erreur lors du chargement des documents",
+    "invalidDocumentUrl": "URL de document invalide",
+    "openedInNewTab": "Ouvert dans un nouvel onglet",
+    "failedToOpen": "Échec de l'ouverture du fichier. Veuillez vérifier votre bloqueur de pop-ups.",
+    "failedToOpenShort": "Échec de l'ouverture du fichier",
+    "failedToDownload": "Échec du téléchargement du document",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce document?",
+    "allStatus": "Tous les Statuts",
+    "all": "Tous",
+    "noDocuments": "Aucun Document",
+    "noDocumentsMatch": "Aucun document ne correspond au filtre",
+    "uploadFirst": "Téléchargez votre premier document",
+    "noDocumentsUploaded": "Aucun document n'a été téléchargé",
+    "noDocumentsFound": "Aucun Document Trouvé",
+    "adjustFilters": "Essayez d'ajuster vos filtres",
+    "manageDocuments": "Télécharger et gérer vos documents",
+    "reviewAllDocuments": "Examiner tous les documents des clients du système",
+    "reviewAssignedDocuments": "Examiner les documents de vos clients assignés",
+    "searchByClient": "Rechercher par nom de client...",
+    "client": "Client",
+    "totalDocuments": "Total des Documents",
+    "pendingReview": "En Attente d'Examen",
+    "latestUpload": "Dernier Téléchargement",
+    "actions": "Actions",
+    "document": "document",
+    "documents_plural": "documents",
+    "pendingCount": "{{count}} en attente",
+    "none": "Aucun",
+    "viewDocuments": "Voir les Documents",
+    "viewLatestCase": "Voir le Dernier Cas",
+    "showing": "Affichage de {{from}} à {{to}} sur {{total}} clients",
+    "page": "Page {{current}} sur {{total}}",
+    "clientDocuments": "Documents de {{name}}",
+    "documentsUploaded": "{{count}} {{type}} téléchargé(s)",
+    "pendingReviewCount": "{{count}} en attente d'examen",
+    "approveRejectHint": "💡 Pour approuver ou rejeter des documents, cliquez sur \"Voir le Cas\" pour ouvrir les détails complets du cas.",
+    "fileSelected": "✓ {{name}} ({{size}})",
+    "types": {
+      "PASSPORT": "Passeport",
+      "ID_CARD": "Carte d'Identité",
+      "BIRTH_CERTIFICATE": "Certificat de Naissance",
+      "MARRIAGE_CERTIFICATE": "Certificat de Mariage",
+      "DIPLOMA": "Diplôme",
+      "EMPLOYMENT_LETTER": "Lettre d'Emploi",
+      "BANK_STATEMENT": "Relevé Bancaire",
+      "PROOF_OF_RESIDENCE": "Preuve de Résidence",
+      "PHOTO": "Photo",
+      "OTHER": "Autre"
+    }
   },
   "messages": {
     "title": "Messages",
@@ -105,7 +296,27 @@
     "sendMessage": "Envoyer un message",
     "typeMessage": "Tapez un message...",
     "noMessages": "Aucun message",
-    "startConversation": "Commencez une conversation avec votre agent"
+    "startConversation": "Commencez une conversation avec votre agent",
+    "justNow": "À l'instant",
+    "yesterday": "Hier"
+  },
+  "email": {
+    "compose": "Composer un Email",
+    "send": "Envoyer l'Email",
+    "sending": "Envoi en cours...",
+    "subject": "Sujet",
+    "subjectPlaceholder": "Entrez le sujet de l'email...",
+    "message": "Message",
+    "contentPlaceholder": "Tapez votre message ici...",
+    "attachments": "Pièces jointes",
+    "selectCase": "Sélectionner un Cas",
+    "chooseCasePlaceholder": "Choisissez un cas...",
+    "noCasesAvailable": "Aucun cas disponible. Veuillez créer un cas d'abord.",
+    "caseHelper": "L'email sera envoyé à l'agent assigné à ce cas",
+    "recipient": "Destinataire",
+    "recipientPlaceholder": "Entrez l'ID ou l'email du destinataire",
+    "clientDescription": "Envoyez un email formel à votre agent assigné",
+    "agentDescription": "Envoyez un email formel à votre client"
   },
   "profile": {
     "title": "Profil",
@@ -118,11 +329,48 @@
   },
   "settings": {
     "title": "Paramètres",
+    "subtitle": "Gérez vos préférences et paramètres de compte",
     "general": "Paramètres généraux",
     "security": "Sécurité",
     "notifications": "Notifications",
     "language": "Langue",
     "theme": "Thème",
+    "appearance": {
+      "title": "Apparence",
+      "description": "Personnalisez l'apparence de l'application",
+      "themeLabel": "Thème",
+      "themeDescription": "Choisissez votre thème d'affichage (clair, sombre ou système)",
+      "languageLabel": "Langue",
+      "languageDescription": "Sélectionnez votre langue préférée"
+    },
+    "notificationSettings": {
+      "title": "Notifications",
+      "description": "Configurez comment vous recevez les notifications",
+      "emailLabel": "Notifications par E-mail",
+      "emailDescription": "Recevez des mises à jour par e-mail sur vos dossiers",
+      "pushLabel": "Notifications Push",
+      "pushDescription": "Recevez des notifications push dans votre navigateur",
+      "smsLabel": "Notifications SMS",
+      "smsDescription": "Recevez des SMS pour les mises à jour critiques"
+    },
+    "securitySettings": {
+      "title": "Sécurité",
+      "description": "Gérez la sécurité et l'authentification de votre compte",
+      "changePassword": "Changer le Mot de Passe",
+      "changePasswordTitle": "Changer le Mot de Passe",
+      "changePasswordDescription": "Mettez à jour votre mot de passe pour sécuriser votre compte",
+      "currentPassword": "Mot de Passe Actuel",
+      "newPassword": "Nouveau Mot de Passe",
+      "confirmPassword": "Confirmer le Nouveau Mot de Passe",
+      "updatePassword": "Mettre à Jour le Mot de Passe",
+      "cancel": "Annuler",
+      "passwordUpdated": "Mot de passe mis à jour avec succès!",
+      "twoFactorAuth": "Authentification à Deux Facteurs",
+      "comingSoon": "Bientôt Disponible",
+      "oauthPasswordTitle": "Changement de Mot de Passe Non Disponible",
+      "oauthPasswordMessage": "Vous vous êtes connecté avec Google. Votre mot de passe est géré par Google, pas par notre application. Pour changer votre mot de passe, visitez les paramètres de votre compte Google.",
+      "manageGooglePassword": "Gérer le Mot de Passe Google"
+    },
     "emailNotifications": "Notifications par e-mail",
     "pushNotifications": "Notifications push",
     "smsNotifications": "Notifications SMS",
@@ -132,16 +380,208 @@
     "darkMode": "Mode sombre",
     "systemMode": "Système par défaut"
   },
+  "notifications": {
+    "title": "Notifications",
+    "pageTitle": "Notifications",
+    "pageSubtitle": "Restez informé de l'avancement de votre dossier",
+    "markAllAsRead": "Tout marquer comme lu",
+    "markingAsRead": "Marquage en cours...",
+    "unread": "non lu",
+    "allNotifications": "Toutes les notifications",
+    "filters": {
+      "all": "Toutes les notifications",
+      "caseUpdates": "Mises à jour de cas",
+      "messages": "Messages",
+      "documentVerified": "Document vérifié",
+      "documentRejected": "Document rejeté",
+      "announcements": "Annonces"
+    },
+    "showUnreadOnly": "Afficher seulement les non lus",
+    "showingUnread": "Affichage des non lus",
+    "noNotifications": "Aucune notification",
+    "noMatchingFilters": "Aucune notification ne correspond à vos filtres",
+    "allCaughtUp": "Vous êtes à jour!",
+    "errorLoading": "Erreur lors du chargement des notifications",
+    "justNow": "À l'instant",
+    "hoursAgo": "Il y a {{hours}}h",
+    "yesterday": "Hier",
+    "daysAgo": "Il y a {{days}} jours",
+    "invalidDate": "Date invalide",
+    "markAsReadSuccess": "Notification marquée comme lue",
+    "markAsReadError": "Échec du marquage de la notification comme lue. Veuillez réessayer.",
+    "markAllAsReadSuccess": "Toutes les notifications marquées comme lues",
+    "markAllAsReadError": "Échec du marquage de toutes les notifications comme lues. Veuillez réessayer."
+  },
   "users": {
     "title": "Utilisateurs",
+    "userManagement": "Gestion des Utilisateurs",
+    "manageSystemUsers": "Gérer les utilisateurs et les permissions du système",
     "addUser": "Ajouter un utilisateur",
     "editUser": "Modifier l'utilisateur",
+    "deleteUser": "Supprimer l'utilisateur",
     "role": "Rôle",
     "client": "Client",
     "agent": "Agent",
     "admin": "Administrateur",
     "active": "Actif",
-    "inactive": "Inactif"
+    "inactive": "Inactif",
+    "searchPlaceholder": "Rechercher par nom ou e-mail...",
+    "all": "Tous",
+    "clients": "Clients",
+    "agents": "Agents",
+    "admins": "Administrateurs",
+    "systemUsers": "Utilisateurs du Système",
+    "viewManageUsers": "Voir et gérer tous les utilisateurs enregistrés",
+    "user": "Utilisateur",
+    "contact": "Contact",
+    "status": "Statut",
+    "joined": "Inscrit",
+    "actions": "Actions",
+    "activate": "Activer",
+    "deactivate": "Désactiver",
+    "noUsersFound": "Aucun utilisateur trouvé",
+    "noUsersYet": "Aucun utilisateur",
+    "adjustFilters": "Essayez d'ajuster vos filtres",
+    "usersWillAppear": "Les utilisateurs apparaîtront ici lors de leur inscription",
+    "editUserDialog": {
+      "title": "Modifier l'Utilisateur",
+      "description": "Mettre à jour le rôle et le statut de l'utilisateur",
+      "roleLabel": "Rôle",
+      "statusLabel": "Statut"
+    },
+    "deleteUserDialog": {
+      "title": "Supprimer l'Utilisateur",
+      "description": "Cette action ne peut pas être annulée. Cela supprimera définitivement le compte utilisateur.",
+      "deleting": "Suppression...",
+      "deleteButton": "Supprimer l'Utilisateur"
+    },
+    "saving": "Enregistrement...",
+    "saveChanges": "Enregistrer les Modifications"
+  },
+  "inviteCodes": {
+    "title": "Codes d'Invitation",
+    "management": "Gestion des Codes d'Invitation",
+    "description": "Générer et gérer les codes d'invitation pour l'inscription du personnel",
+    "generateCode": "Générer un Code",
+    "activeCode": "Actif",
+    "expiredCode": "Expiré",
+    "exhaustedCode": "Épuisé",
+    "all": "Tous",
+    "active": "Actif",
+    "expired": "Expiré",
+    "code": "Code",
+    "role": "Rôle",
+    "uses": "Utilisations",
+    "expires": "Expire",
+    "createdBy": "Créé Par",
+    "actions": "Actions",
+    "copyCode": "Copier le Code",
+    "revoke": "Révoquer",
+    "viewDetails": "Voir les Détails",
+    "noCodesFound": "Aucun code d'invitation trouvé",
+    "generateFirst": "Générez votre premier code d'invitation",
+    "copiedToClipboard": "Code copié dans le presse-papiers!",
+    "revokeConfirm": "Êtes-vous sûr de vouloir révoquer ce code d'invitation?",
+    "generateDialog": {
+      "title": "Générer un Code d'Invitation",
+      "description": "Créer un nouveau code d'invitation pour l'inscription du personnel",
+      "roleLabel": "Rôle",
+      "selectRole": "Sélectionner le rôle",
+      "maxUsesLabel": "Utilisations Maximales",
+      "expiryLabel": "Expire Dans",
+      "days": "jours",
+      "generating": "Génération...",
+      "generate": "Générer le Code"
+    }
+  },
+  "auditLogs": {
+    "title": "Journaux d'Audit",
+    "systemAudit": "Piste d'Audit du Système",
+    "description": "Suivre et surveiller toutes les activités du système",
+    "action": "Action",
+    "user": "Utilisateur",
+    "details": "Détails",
+    "timestamp": "Horodatage",
+    "filterByAction": "Filtrer par action",
+    "allActions": "Toutes les Actions",
+    "searchPlaceholder": "Rechercher dans les journaux...",
+    "noLogsFound": "Aucun journal d'audit trouvé",
+    "noLogsYet": "Aucun journal d'audit",
+    "adjustFilters": "Essayez d'ajuster vos filtres",
+    "systemActivity": "L'activité du système apparaîtra ici"
+  },
+  "clients": {
+    "title": "Clients",
+    "management": "Gestion des Clients",
+    "description": "Voir et gérer tous les clients",
+    "myClients": "Mes Clients",
+    "allClients": "Tous les Clients",
+    "searchPlaceholder": "Rechercher des clients...",
+    "totalCases": "Total des Cas",
+    "activeCases": "Cas Actifs",
+    "noClientsFound": "Aucun client trouvé",
+    "adjustFilters": "Essayez d'ajuster vos filtres",
+    "viewDetails": "Voir les Détails",
+    "viewCases": "Voir les Cas",
+    "contact": "Contact"
+  },
+  "analytics": {
+    "title": "Analytique",
+    "performanceMetrics": "Métriques de Performance",
+    "description": "Suivre les performances et les statistiques du système",
+    "overview": "Vue d'Ensemble",
+    "cases": "Cas",
+    "users": "Utilisateurs",
+    "documents": "Documents"
+  },
+  "faq": {
+    "title": "FAQ",
+    "management": "Gestion des FAQ",
+    "description": "Gérer les questions fréquemment posées",
+    "addQuestion": "Ajouter une Question",
+    "editQuestion": "Modifier la Question",
+    "deleteQuestion": "Supprimer la Question",
+    "question": "Question",
+    "answer": "Réponse",
+    "category": "Catégorie",
+    "order": "Ordre",
+    "actions": "Actions",
+    "noFaqsFound": "Aucune FAQ trouvée",
+    "createFirst": "Créez votre première FAQ",
+    "section": {
+      "title": "Questions Fréquemment Posées",
+      "description": "Trouvez des réponses aux questions courantes",
+      "searchPlaceholder": "Rechercher des questions...",
+      "allQuestions": "Toutes les Questions",
+      "noResults": "Aucun résultat trouvé",
+      "noResultsDesc": "Essayez des mots-clés différents ou parcourez toutes les questions",
+      "stillHaveQuestions": "Vous avez encore des questions?",
+      "supportReady": "Notre équipe d'assistance est prête à répondre à toutes vos questions",
+      "contactSupportBtn": "Contacter le Support",
+      "createAccountBtn": "Créer un Compte"
+    }
+  },
+  "templates": {
+    "title": "Ressources et Modèles",
+    "pageDescription": "Téléchargez des formulaires vierges, des guides et des listes de contrôle pour votre demande d'immigration",
+    "download": "Télécharger",
+    "downloading": "Téléchargement...",
+    "downloaded": "Modèle téléchargé",
+    "downloadFailed": "Échec du téléchargement",
+    "noTemplates": "Aucun Modèle Disponible",
+    "noTemplatesDescription": "Les modèles apparaîtront ici une fois ajoutés par les administrateurs",
+    "generalTemplates": "Modèles Généraux",
+    "filterByService": "Filtrer par Service",
+    "filterByCategory": "Filtrer par Catégorie",
+    "allServices": "Tous les Services",
+    "allCategories": "Toutes les Catégories",
+    "required": "Obligatoire",
+    "categories": {
+      "FORM": "Formulaires",
+      "GUIDE": "Guides",
+      "SAMPLE": "Exemples",
+      "CHECKLIST": "Listes de Contrôle"
+    }
   },
   "validation": {
     "required": "Ce champ est obligatoire",
@@ -163,14 +603,22 @@
       "subtitle": "Services d'immigration professionnels pour vous aider à réaliser vos rêves d'étudier, de travailler ou de vivre à l'étranger.",
       "cta": "Commencer",
       "login": "Se Connecter",
+      "badge": "Partenaire d'Immigration de Confiance Depuis 2014",
+      "imageText": "Votre Voyage Global",
       "feature1": "Guidance experte tout au long de votre parcours d'immigration",
       "feature2": "Suivez l'état de votre dossier en temps réel",
       "feature3": "94% de taux de réussite pour les demandes de visa",
+      "features": {
+        "expertGuidance": "Guidance experte tout au long de votre parcours d'immigration",
+        "realTimeTracking": "Suivez l'état de votre dossier en temps réel",
+        "successRate": "94% de taux de réussite pour les demandes de visa"
+      },
       "clients": "Clients Satisfaits",
       "success": "Taux de Réussite",
+      "successRate": "Taux de Réussite",
+      "successRateValue": "94%",
       "years": "Années d'Expérience",
-      "imageText": "Votre Voyage Global",
-      "badge": "Partenaire d'Immigration de Confiance Depuis 2014",
+      "trustedBy": "Approuvé par {{count}}+ Clients",
       "expertConsultants": "Consultants Experts",
       "licensedProfessionals": "Professionnels agréés",
       "support247": "Support 24/7",
@@ -182,6 +630,7 @@
       "title": "Pourquoi Nous Choisir",
       "subtitle": "Nous combinons expertise, dévouement et résultats prouvés pour vous aider à atteindre vos objectifs d'immigration en toute confiance",
       "imageText": "Notre Équipe d'Experts en Immigration",
+      "successRate": "Taux de Réussite",
       "features": {
         "security": {
           "title": "Sécurisé et Confidentiel",
@@ -263,6 +712,10 @@
       "send": "Envoyer le Message",
       "sending": "Envoi en cours...",
       "success": "Message envoyé avec succès! Nous vous répondrons bientôt.",
+      "error": "Échec de l'envoi du message. Veuillez réessayer.",
+      "error_too_many_requests": "Trop de requêtes. Veuillez réessayer plus tard.",
+      "error_server": "Erreur du serveur. Veuillez réessayer plus tard.",
+      "error_network": "Erreur de réseau. Veuillez vérifier votre connexion Internet.",
       "cannotFind": "Vous ne trouvez pas ce que vous cherchez?",
       "supportTeam": "Notre équipe d'assistance est là pour vous aider",
       "contactSupport": "Contacter le Support"
@@ -280,7 +733,412 @@
       "terms": "Conditions d'Utilisation",
       "cookies": "Politique des Cookies",
       "rights": "Tous droits réservés."
+    },
+    "about": {
+      "badge": "À Propos de Patrick Travel Services",
+      "title": "Votre Partenaire d'Immigration de Confiance",
+      "subtitle": "Aider les individus et les familles à réaliser leurs rêves de vivre, travailler ou étudier à l'étranger depuis 2014.",
+      "statsYears": "Années d'Expérience",
+      "statsClients": "Clients Satisfaits",
+      "statsSuccess": "Taux de Réussite",
+      "imageAlt": "À Propos de Patrick Travel Services",
+      "licensedBadge": "Agréé",
+      "licensedSince": "Depuis 2014",
+      "mission": {
+        "title": "Notre Mission",
+        "paragraph1": "Chez Patrick Travel Services, nous croyons que chacun mérite l'opportunité de poursuivre ses rêves à l'échelle mondiale. Notre mission est de rendre l'immigration accessible, transparente et réussie pour tous nos clients.",
+        "paragraph2": "Avec plus d'une décennie d'expérience, nous avons aidé des centaines de familles à naviguer dans des processus d'immigration complexes avec confiance et tranquillité d'esprit.",
+        "licensedTitle": "Agréé et Assuré",
+        "licensedDesc": "Professionnels entièrement certifiés",
+        "fastTitle": "Traitement Rapide",
+        "fastDesc": "Délais de traitement rapides",
+        "statsCases": "Dossiers Traités",
+        "statsSuccessRate": "Taux de Réussite",
+        "statsExperience": "Années d'Expérience",
+        "statsSupport": "Support"
+      },
+      "values": {
+        "title": "Nos Valeurs Fondamentales",
+        "subtitle": "Les principes qui guident tout ce que nous faisons",
+        "excellence": {
+          "title": "Excellence",
+          "description": "Nous maintenons les normes les plus élevées en matière de conseil en immigration"
+        },
+        "compassion": {
+          "title": "Compassion",
+          "description": "Nous comprenons la nature personnelle de votre parcours"
+        },
+        "results": {
+          "title": "Résultats",
+          "description": "Concentré sur l'obtention de résultats réussis pour chaque client"
+        },
+        "partnership": {
+          "title": "Partenariat",
+          "description": "Établir des relations durables avec nos clients"
+        }
+      },
+      "team": {
+        "title": "Rencontrez Notre Équipe",
+        "subtitle": "Des professionnels expérimentés dédiés à votre succès",
+        "member1": {
+          "name": "Patrick E.",
+          "role": "Fondateur et PDG",
+          "description": "Consultant en immigration agréé avec plus de 15 ans d'expérience"
+        },
+        "member2": {
+          "name": "Sarah Thompson",
+          "role": "Consultante Senior en Immigration",
+          "description": "Spécialiste des visas étudiants et de travail"
+        },
+        "member3": {
+          "name": "David Chen",
+          "role": "Gestionnaire de Cas",
+          "description": "Expert en cas de réunification familiale"
+        }
+      },
+      "cta": {
+        "title": "Prêt à Commencer Votre Voyage?",
+        "description": "Laissez-nous vous aider à atteindre vos objectifs d'immigration avec des conseils d'experts et un soutien personnalisé.",
+        "getStarted": "Commencer Aujourd'hui",
+        "contact": "Nous Contacter"
+      }
+    }
+  },
+  "errors": {
+    "pageNotFound": "Page Non Trouvée",
+    "pageNotFoundDescription": "La page que vous recherchez n'existe pas ou a été déplacée.",
+    "ifErrorPersists": "Si vous pensez qu'il s'agit d'une erreur, veuillez",
+    "somethingWentWrong": "Quelque Chose S'est Mal Passé",
+    "unexpectedError": "Nous avons rencontré une erreur inattendue. Ne vous inquiétez pas, vos données sont en sécurité.",
+    "errorId": "ID de l'Erreur",
+    "ifProblemPersists": "Si ce problème persiste, veuillez",
+    "pageLoadError": "Nous avons rencontré une erreur lors du chargement de cette page. Vos données sont en sécurité.",
+    "dashboardPageNotFound": "Cette page du tableau de bord n'existe pas. Veuillez vérifier l'URL ou naviguer à l'aide de la barre latérale.",
+    "accessDenied": "Accès Refusé",
+    "noPermission": "Vous n'avez pas la permission d'accéder à cette page. Veuillez contacter votre administrateur si vous pensez qu'il s'agit d'une erreur.",
+    "needHelp": "Besoin d'aide? Visitez notre",
+    "globalError": {
+      "title": "Erreur Critique",
+      "description": "Une erreur critique s'est produite. Veuillez essayer de rafraîchir la page.",
+      "tryAgain": "Réessayer",
+      "goHome": "Retour à l'Accueil"
+    }
+  },
+  "offline": {
+    "title": "Vous Êtes Hors Ligne",
+    "description": "Il semble que vous ayez perdu votre connexion Internet. Certaines fonctionnalités peuvent ne pas être disponibles pour le moment.",
+    "tryAgain": "Réessayer",
+    "goBack": "Retour",
+    "whileOffline": "Hors ligne, vous pouvez:",
+    "features": {
+      "viewPages": "Voir les pages précédemment chargées",
+      "accessCache": "Accéder au contenu en cache",
+      "reviewCases": "Consulter vos dossiers et documents"
+    },
+    "syncMessage": "Les modifications se synchroniseront lorsque vous serez de nouveau en ligne"
+  },
+  "cache": {
+    "title": "Effacer le Cache du Service Worker",
+    "description": "Si vous rencontrez des problèmes avec le PWA bloquant les requêtes API, utilisez cette page pour effacer le cache.",
+    "serviceWorkers": "Service Workers",
+    "serviceWorkersDescription": "Service workers actuellement enregistrés",
+    "caches": "Caches",
+    "cachesDescription": "Entrées de cache stockées",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "present": "Présent",
+    "empty": "Vide",
+    "management": "Gestion du Cache",
+    "managementDescription": "Effacez les service workers et les caches pour résoudre les problèmes de blocage des requêtes API",
+    "clearing": "Effacement...",
+    "clearAll": "Effacer Tous les Service Workers et Caches",
+    "clearApiOnly": "Effacer Uniquement le Cache API",
+    "refreshStatus": "Actualiser le Statut",
+    "clearAllSuccess": "Tous les service workers et caches effacés avec succès! Rechargement de la page dans 2 secondes...",
+    "clearApiSuccess": "Cache API effacé avec succès!",
+    "clearError": "Erreur lors de l'effacement du cache: {{error}}",
+    "clearApiError": "Erreur lors de l'effacement du cache API: {{error}}",
+    "devMode": "Mode Développement",
+    "devModeDescription": "Le PWA est configuré pour être désactivé en mode développement. Si vous voyez toujours des service workers actifs, ils peuvent provenir d'une version de production précédente. Cliquez sur \"Effacer Tout\" pour les supprimer.",
+    "manualClearing": "Effacement Manuel du Cache",
+    "manualClearingDescription": "Vous pouvez également effacer le cache manuellement dans votre navigateur:",
+    "manualStep1": "Ouvrez les DevTools du navigateur (F12)",
+    "manualStep2": "Allez dans l'onglet Application",
+    "manualStep3": "Cliquez sur \"Clear storage\" dans la barre latérale gauche",
+    "manualStep4": "Cochez \"Unregister service workers\" et \"Cache storage\"",
+    "manualStep5": "Cliquez sur \"Clear site data\""
+  },
+  "legal": {
+    "lastUpdated": "Dernière mise à jour",
+    "disclaimer": "Note importante",
+    "disclaimerText": "Ceci est un modèle. Veuillez consulter un professionnel du droit pour personnaliser ce contenu afin de répondre à vos besoins commerciaux spécifiques et de respecter les lois applicables dans votre juridiction.",
+    "contactEmail": "privacy@patricktravel.com",
+    "supportEmail": "support@patricktravel.com",
+    "address": "123 Main Street, Anytown, Yaounde, Cameroun",
+    "responseTime": "Dans les 30 jours",
+    "privacy": {
+      "title": "Politique de Confidentialité",
+      "description": "Découvrez comment nous collectons, utilisons et protégeons vos informations personnelles",
+      "intro": "Patrick Travel Services (\"nous\", \"notre\" ou \"nos\") s'engage à protéger votre vie privée. Cette Politique de Confidentialité explique comment nous collectons, utilisons, divulguons et protégeons vos informations lorsque vous utilisez notre plateforme de services d'immigration.",
+      "informationWeCollect": {
+        "title": "Informations que Nous Collectons",
+        "personalInfo": "Informations Personnelles",
+        "personalDesc": "Nous collectons les informations personnelles suivantes lorsque vous vous inscrivez et utilisez nos services:",
+        "accountInfo": "Informations de Compte: Nom, adresse e-mail, numéro de téléphone, mot de passe",
+        "immigrationDocs": "Documents d'Immigration: Passeport, cartes d'identité, actes de naissance, diplômes, lettres d'emploi",
+        "caseInfo": "Informations de Dossier: Demandes de visa, type de service, dates de soumission",
+        "communicationData": "Données de Communication: Messages échangés avec les agents, mises à jour des dossiers",
+        "deviceInfo": "Informations sur l'Appareil: Adresse IP, type d'appareil, type de navigateur à des fins de sécurité",
+        "autoCollected": "Informations Collectées Automatiquement",
+        "usageData": "Données d'utilisation (pages visitées, fonctionnalités utilisées)",
+        "logData": "Données de journal (heures d'accès, journaux d'erreurs)",
+        "deviceIdentifiers": "Identifiants d'appareil pour les notifications push"
+      },
+      "howWeUse": {
+        "title": "Comment Nous Utilisons Vos Informations",
+        "desc": "Nous utilisons vos informations aux fins suivantes:",
+        "serviceProvision": "Fourniture de Services: Traiter les demandes de visa et les services d'immigration",
+        "communication": "Communication: Envoyer des mises à jour de dossiers, des notifications et répondre aux demandes",
+        "accountMgmt": "Gestion de Compte: Maintenir votre compte et fournir un support client",
+        "security": "Sécurité: Protéger contre la fraude, l'accès non autorisé et les incidents de sécurité",
+        "legalCompliance": "Conformité Légale: Se conformer aux obligations légales et protéger nos droits",
+        "serviceImprovement": "Amélioration du Service: Analyser l'utilisation pour améliorer notre plateforme et nos services"
+      },
+      "legalBasis": {
+        "title": "Base Légale du Traitement (RGPD)",
+        "desc": "En vertu du RGPD, nous traitons vos données sur la base de:",
+        "consent": "Consentement: Vous avez donné un consentement explicite pour le traitement de vos données personnelles",
+        "contract": "Contrat: Le traitement est nécessaire pour fournir les services que vous avez demandés",
+        "legalObligation": "Obligation Légale: Nous devons traiter les données pour nous conformer aux exigences légales",
+        "legitimateInterest": "Intérêt Légitime: Le traitement est nécessaire pour nos intérêts commerciaux légitimes"
+      },
+      "dataSharing": {
+        "title": "Comment Nous Partageons Vos Informations",
+        "desc": "Nous pouvons partager vos informations avec:",
+        "immigrationAuth": "Autorités d'Immigration: Comme requis pour le traitement des visas",
+        "serviceProviders": "Fournisseurs de Services: Services tiers qui nous aident à fonctionner (Firebase, UploadThing, Expo)",
+        "legalAuth": "Autorités Légales: Lorsque requis par la loi ou pour protéger nos droits",
+        "businessTransfers": "Transferts d'Entreprise: En rapport avec une fusion, acquisition ou vente d'actifs",
+        "noSelling": "Nous ne vendons pas vos informations personnelles à des tiers à des fins de marketing."
+      },
+      "yourRights": {
+        "title": "Vos Droits RGPD",
+        "desc": "En vertu du RGPD, vous avez les droits suivants:",
+        "access": "Droit d'Accès: Demander une copie de vos données personnelles",
+        "rectification": "Droit de Rectification: Corriger les données inexactes ou incomplètes",
+        "erasure": "Droit à l'Effacement: Demander la suppression de vos données (\"droit à l'oubli\")",
+        "portability": "Droit à la Portabilité des Données: Recevoir vos données dans un format lisible par machine",
+        "restrict": "Droit de Limiter le Traitement: Limiter la façon dont nous utilisons vos données",
+        "object": "Droit d'Opposition: S'opposer à certains types de traitement",
+        "withdraw": "Droit de Retirer le Consentement: Retirer le consentement à tout moment",
+        "howToExercise": "Comment Exercer Vos Droits",
+        "exerciseDesc": "Vous pouvez exercer ces droits via:",
+        "accountSettings": "Paramètres du Compte: Mettre à jour le profil, exporter les données ou supprimer le compte",
+        "email": "E-mail: Contacter",
+        "mobileApp": "Application Mobile: Utiliser les fonctionnalités RGPD dans votre profil",
+        "responseTime": "Nous répondrons à votre demande dans les 30 jours."
+      },
+      "dataSecurity": {
+        "title": "Sécurité des Données",
+        "desc": "Nous mettons en œuvre des mesures de sécurité standard de l'industrie pour protéger vos données:",
+        "encryption": "Chiffrement: Données chiffrées en transit (HTTPS/TLS) et au repos",
+        "authentication": "Authentification: Politiques de mot de passe sécurisées et authentification biométrique optionnelle",
+        "accessControl": "Contrôle d'Accès: Accès basé sur les rôles pour garantir que les données ne sont accessibles qu'aux utilisateurs autorisés",
+        "regularAudits": "Audits Réguliers: Évaluations de sécurité et tests de vulnérabilité",
+        "secureStorage": "Stockage Sécurisé: Identifiants stockés dans le trousseau de l'appareil (mobile)"
+      },
+      "dataRetention": {
+        "title": "Conservation des Données",
+        "desc": "Nous conservons vos données pour les périodes suivantes:",
+        "activeAccounts": "Comptes Actifs: Données conservées tant que votre compte est actif",
+        "deletedAccounts": "Comptes Supprimés: Période de grâce de 30 jours avant la suppression permanente",
+        "legalRequirements": "Exigences Légales: Certaines données peuvent être conservées plus longtemps à des fins légales/de conformité",
+        "caseRecords": "Dossiers de Cas: Dossiers de cas d'immigration conservés comme requis par la loi"
+      },
+      "contact": {
+        "title": "Nous Contacter",
+        "desc": "Si vous avez des questions sur cette Politique de Confidentialité ou nos pratiques en matière de données, veuillez contacter:",
+        "dpo": "Délégué à la Protection des Données"
+      },
+      "supervisory": {
+        "title": "Autorité de Contrôle",
+        "desc": "Si vous êtes situé dans l'UE/EEE, vous avez le droit de déposer une plainte auprès de votre autorité locale de protection des données si vous estimez que nous n'avons pas traité vos préoccupations de manière adéquate."
+      }
+    },
+    "terms": {
+      "title": "Conditions de Service",
+      "description": "Termes et conditions pour l'utilisation de nos services",
+      "acceptance": {
+        "title": "Acceptation des Conditions",
+        "desc": "En accédant et en utilisant la plateforme Patrick Travel Services (\"Service\"), vous acceptez et acceptez d'être lié par les termes et dispositions de cet accord. Si vous n'acceptez pas de vous conformer à ces conditions, veuillez ne pas utiliser ce service.",
+        "important": "Votre utilisation continue du Service constitue l'acceptation de ces Conditions et de toute modification future."
+      },
+      "license": {
+        "title": "Licence d'Utilisation",
+        "desc": "L'autorisation est accordée d'accéder temporairement au Service à des fins personnelles et non commerciales uniquement. Il s'agit de l'octroi d'une licence, et non d'un transfert de titre, et en vertu de cette licence, vous ne pouvez pas:",
+        "modifyCopy": "Modifier ou copier les matériaux",
+        "commercialUse": "Utiliser les matériaux à des fins commerciales ou pour tout affichage public",
+        "reverseEngineer": "Tenter de faire de l'ingénierie inverse de tout logiciel contenu dans le Service",
+        "removeCopyright": "Supprimer toute mention de droit d'auteur ou autre notation propriétaire des matériaux",
+        "transfer": "Transférer les matériaux à une autre personne ou \"refléter\" les matériaux sur un autre serveur"
+      },
+      "account": {
+        "title": "Compte Utilisateur",
+        "desc": "Pour accéder à certaines fonctionnalités du Service, vous devez créer un compte. Vous acceptez de:",
+        "accurateInfo": "Fournir des informations exactes, actuelles et complètes lors de l'inscription",
+        "updateInfo": "Maintenir et mettre à jour rapidement les informations de votre compte",
+        "security": "Maintenir la sécurité de votre mot de passe et accepter tous les risques d'accès non autorisé",
+        "notify": "Nous informer immédiatement de toute utilisation non autorisée de votre compte",
+        "noSharing": "Ne pas partager vos identifiants de compte avec des tiers",
+        "securityNotice": "Vous êtes responsable de toutes les activités qui se produisent sous votre compte. Ne partagez jamais votre mot de passe avec qui que ce soit."
+      },
+      "services": {
+        "title": "Services d'Immigration",
+        "desc": "Patrick Travel Services fournit des services de consultation en immigration et de traitement de documents. Nous nous efforçons de fournir un service de la plus haute qualité, mais veuillez comprendre:",
+        "noGuarantee": "Nous ne garantissons pas l'approbation de toute demande de visa ou d'immigration",
+        "subjectToReview": "Toutes les demandes sont soumises à examen et approbation par les autorités d'immigration compétentes",
+        "processingTimes": "Les délais de traitement peuvent varier selon les agences gouvernementales",
+        "additionalDocs": "Des documents supplémentaires peuvent être demandés par les autorités d'immigration à tout moment du processus",
+        "ourRole": "Notre rôle est de vous guider tout au long du processus de demande, de préparer votre documentation et de représenter votre cas au mieux de nos capacités. Les décisions finales appartiennent aux autorités d'immigration."
+      },
+      "privacy": {
+        "title": "Confidentialité et Protection des Données",
+        "desc": "Votre utilisation du Service est également régie par notre Politique de Confidentialité. En utilisant le Service, vous consentez à la collecte, l'utilisation et le partage de vos informations comme décrit dans notre Politique de Confidentialité.",
+        "commitment": "Nous nous engageons à protéger vos données personnelles conformément au RGPD et aux autres lois applicables en matière de protection des données."
+      },
+      "fees": {
+        "title": "Frais et Paiement",
+        "desc": "Certaines fonctionnalités du Service peuvent nécessiter le paiement de frais. Vous acceptez de:",
+        "payFees": "Payer tous les frais applicables comme décrit sur le Service",
+        "accurateBilling": "Fournir des informations de facturation exactes",
+        "authorizeCharges": "Autoriser les frais sur votre moyen de paiement",
+        "payRegardless": "Payer pour les services rendus même si les demandes de visa sont refusées",
+        "refundPolicy": "Politique de Remboursement",
+        "refundDesc": "Tous les frais ne sont pas remboursables sauf indication contraire. En cas d'erreurs de service ou d'insatisfaction, veuillez nous contacter pour discuter des options de résolution."
+      },
+      "termination": {
+        "title": "Résiliation du Compte",
+        "userTermination": "Vous pouvez résilier votre compte à tout moment via les paramètres de votre compte.",
+        "weReserve": "Nous nous réservons le droit de suspendre ou de résilier votre compte si vous violez ces Conditions ou vous engagez dans des activités frauduleuses ou illégales, y compris mais sans s'y limiter:",
+        "falseInfo": "Fournir de fausses informations",
+        "illegalPurposes": "Utiliser le Service à des fins illégales",
+        "violateIP": "Violer les droits de propriété intellectuelle",
+        "harassing": "Harceler d'autres utilisateurs ou le personnel",
+        "compromiseSecurity": "Tenter de compromettre la sécurité du système",
+        "dataRetention": "Lors de la résiliation, vos données seront programmées pour suppression dans les 30 jours conformément aux réglementations RGPD. Vous pouvez demander une suppression immédiate en contactant le support."
+      },
+      "liability": {
+        "title": "Limitation de Responsabilité",
+        "desc": "En aucun cas Patrick Travel Services ou ses fournisseurs ne seront responsables de tout dommage (y compris, sans limitation, les dommages pour perte de données ou de profit, ou dus à une interruption d'activité) résultant de l'utilisation ou de l'impossibilité d'utiliser le Service, même si nous avons été informés de la possibilité de tels dommages.",
+        "jurisdiction": "Certaines juridictions n'autorisent pas l'exclusion ou la limitation de responsabilité pour les dommages consécutifs ou accessoires, donc la limitation ci-dessus peut ne pas s'appliquer à vous."
+      },
+      "changes": {
+        "title": "Modifications des Conditions",
+        "desc": "Nous nous réservons le droit de modifier ces Conditions à tout moment. Nous informerons les utilisateurs de tout changement important par e-mail ou via le Service. Votre utilisation continue du Service après de telles modifications constitue votre acceptation des Conditions mises à jour.",
+        "encourage": "Nous vous encourageons à consulter ces Conditions périodiquement pour rester informé de tout changement."
+      },
+      "governing": {
+        "title": "Loi Applicable",
+        "desc": "Ces Conditions seront régies et interprétées conformément aux lois applicables, sans égard aux dispositions relatives aux conflits de lois.",
+        "disputes": "Tout litige découlant de ces Conditions ou de votre utilisation du Service sera soumis à la juridiction exclusive des tribunaux de la juridiction applicable."
+      },
+      "contact": {
+        "title": "Informations de Contact",
+        "desc": "Si vous avez des questions sur ces Conditions, veuillez nous contacter à:"
+      },
+      "acknowledgment": {
+        "title": "Reconnaissance de l'Accord",
+        "desc": "En utilisant Patrick Travel Services, vous reconnaissez que vous avez lu, compris et acceptez d'être lié par ces Conditions de Service. Si vous n'acceptez pas ces conditions, veuillez cesser immédiatement d'utiliser nos services."
+      }
+    },
+    "cookies": {
+      "title": "Politique des Cookies",
+      "description": "Comment nous utilisons les cookies et technologies similaires",
+      "whatAre": {
+        "title": "Qu'est-ce que les Cookies?",
+        "desc1": "Les cookies sont de petits fichiers texte placés sur votre ordinateur ou appareil mobile lorsque vous visitez un site Web. Ils sont largement utilisés pour faire fonctionner les sites Web plus efficacement, fournir une meilleure expérience utilisateur et fournir des informations aux propriétaires de sites Web.",
+        "desc2": "Les cookies peuvent être \"persistants\" ou \"de session\". Les cookies persistants restent sur votre appareil après la fermeture de votre navigateur, tandis que les cookies de session sont supprimés lorsque vous fermez votre navigateur."
+      },
+      "howWeUse": {
+        "title": "Comment Nous Utilisons les Cookies",
+        "desc": "Patrick Travel Services utilise les cookies aux fins suivantes:",
+        "authentication": "Authentification: Pour vous garder connecté pendant que vous naviguez sur notre plateforme",
+        "security": "Sécurité: Pour protéger votre compte et détecter les activités frauduleuses",
+        "preferences": "Préférences: Pour mémoriser vos paramètres (langue, thème, préférences de notification)",
+        "analytics": "Analytique: Pour comprendre comment les utilisateurs interagissent avec notre plateforme et améliorer nos services",
+        "performance": "Performance: Pour optimiser les temps de chargement et les performances globales de la plateforme"
+      },
+      "types": {
+        "title": "Types de Cookies que Nous Utilisons",
+        "essential": {
+          "title": "Cookies Essentiels",
+          "desc": "Ces cookies sont nécessaires au bon fonctionnement du site Web. Ils activent des fonctionnalités de base telles que la sécurité, l'authentification et les fonctionnalités d'accessibilité. Ces cookies ne peuvent pas être désactivés.",
+          "examples": "session_token, csrf_token, auth_state"
+        },
+        "functional": {
+          "title": "Cookies Fonctionnels",
+          "desc": "Ces cookies permettent des fonctionnalités améliorées et une personnalisation, telles que la sélection de la langue, les préférences de thème et les paramètres utilisateur. Le site Web fonctionnera toujours si vous désactivez ces cookies, mais certaines fonctionnalités peuvent ne pas fonctionner comme prévu.",
+          "examples": "language_preference, theme_mode, sidebar_collapsed"
+        },
+        "analytics": {
+          "title": "Cookies Analytiques",
+          "desc": "Ces cookies nous aident à comprendre comment les visiteurs interagissent avec notre site Web en collectant et en rapportant des informations de manière anonyme. Cela nous aide à améliorer notre plateforme et l'expérience utilisateur.",
+          "examples": "_ga (Google Analytics), _gid, analytics_consent"
+        },
+        "performance": {
+          "title": "Cookies de Performance",
+          "desc": "Ces cookies collectent des informations sur la façon dont vous utilisez notre site Web, comme les pages que vous visitez le plus souvent. Ces données sont utilisées pour optimiser notre plateforme et améliorer les temps de chargement.",
+          "examples": "performance_timing, resource_cache"
+        }
+      },
+      "thirdParty": {
+        "title": "Cookies Tiers",
+        "desc": "Nous utilisons les services tiers suivants qui peuvent définir des cookies:",
+        "firebase": {
+          "title": "Google Firebase",
+          "desc": "Utilisé pour les services d'authentification et de base de données en temps réel. Firebase définit des cookies pour maintenir les sessions utilisateur et fournir une authentification sécurisée.",
+          "link": "Voir la Politique de Confidentialité de Google"
+        },
+        "uploadthing": {
+          "title": "UploadThing",
+          "desc": "Utilisé pour le stockage sécurisé de fichiers et le téléchargement de documents. UploadThing peut définir des cookies pour l'authentification et le suivi de la progression du téléchargement.",
+          "link": "Voir la Politique de Confidentialité d'UploadThing"
+        },
+        "expo": {
+          "title": "Notifications Push Expo",
+          "desc": "Utilisé pour les notifications push mobiles. Expo peut définir des jetons d'appareil pour identifier et envoyer des notifications à votre appareil.",
+          "link": "Voir la Politique de Confidentialité d'Expo"
+        }
+      },
+      "manage": {
+        "title": "Comment Gérer les Cookies",
+        "browserSettings": "Paramètres du Navigateur",
+        "browserDesc": "La plupart des navigateurs Web vous permettent de contrôler les cookies via leurs paramètres de préférences. Vous pouvez:",
+        "viewDelete": "Voir quels cookies sont stockés et les supprimer individuellement",
+        "blockThirdParty": "Bloquer les cookies tiers",
+        "blockSpecific": "Bloquer les cookies de sites spécifiques",
+        "blockAll": "Bloquer tous les cookies",
+        "deleteOnClose": "Supprimer tous les cookies lorsque vous fermez votre navigateur",
+        "browserSpecific": "Instructions Spécifiques au Navigateur",
+        "chrome": "Gérer les cookies dans Chrome",
+        "firefox": "Gérer les cookies dans Firefox",
+        "safari": "Gérer les cookies dans Safari",
+        "edge": "Gérer les cookies dans Edge",
+        "important": "Si vous désactivez ou supprimez les cookies essentiels, certaines fonctionnalités de notre plateforme peuvent ne pas fonctionner correctement et vous pourriez ne pas être en mesure d'accéder à certaines zones du site Web."
+      },
+      "updates": {
+        "title": "Mises à Jour de Cette Politique des Cookies",
+        "desc1": "Nous pouvons mettre à jour cette Politique des Cookies de temps en temps pour refléter les changements technologiques, législatifs ou nos opérations commerciales. Nous publierons la politique mise à jour sur cette page avec une nouvelle date de \"Dernière mise à jour\".",
+        "desc2": "Nous vous encourageons à consulter cette Politique des Cookies périodiquement pour rester informé de la façon dont nous utilisons les cookies et technologies similaires."
+      },
+      "contact": {
+        "title": "Nous Contacter",
+        "desc": "Si vous avez des questions sur cette Politique des Cookies ou notre utilisation des cookies, veuillez contacter:"
+      },
+      "privacyMatters": {
+        "title": "Votre Vie Privée Compte",
+        "desc": "Nous nous engageons à être transparents sur la façon dont nous collectons et utilisons les données. En utilisant nos services, vous consentez à notre utilisation des cookies comme décrit dans cette politique. Vous pouvez gérer vos préférences de cookies à tout moment via les paramètres de votre navigateur ou en nous contactant directement."
+      }
     }
   }
 }
-

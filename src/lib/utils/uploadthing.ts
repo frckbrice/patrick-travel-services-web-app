@@ -1,17 +1,16 @@
 import {
-    generateReactHelpers,
-    generateUploadButton,
-    generateUploadDropzone,
-} from "@uploadthing/react";
+  generateReactHelpers,
+  generateUploadButton,
+  generateUploadDropzone,
+} from '@uploadthing/react';
 
-import type { OurFileRouter } from "@/app/api/uploadthing/core";
+import type { OurFileRouter } from '@/app/api/uploadthing/core';
 
 /**
  * UploadThing React helpers
  * Provides hooks and utilities for file uploads
  */
-export const { useUploadThing, uploadFiles } =
-    generateReactHelpers<OurFileRouter>();
+export const { useUploadThing, uploadFiles } = generateReactHelpers<OurFileRouter>();
 
 /**
  * Pre-built Upload Button component
@@ -24,4 +23,3 @@ export const UploadButton = generateUploadButton<OurFileRouter>();
  * Usage: <UploadDropzone endpoint="documentUploader" onClientUploadComplete={...} />
  */
 export const UploadDropzone = generateUploadDropzone<OurFileRouter>();
-

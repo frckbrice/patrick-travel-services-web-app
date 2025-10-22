@@ -5,75 +5,139 @@
 
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
+import { adminAuth } from '@/lib/firebase/firebase-admin';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants';
 import { logger } from '@/lib/utils/logger';
-import {
-    successResponse,
-    errorResponse,
-    serverErrorResponse,
-} from '@/lib/utils/api-response';
+import { successResponse, errorResponse, serverErrorResponse } from '@/lib/utils/api-response';
 import { asyncHandler, ApiError, HttpStatus } from '@/lib/utils/error-handler';
 import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
+import { createSafeLogIdentifier } from '@/lib/utils/pii-hash';
+import { setCustomClaimsWithRetry } from '@/lib/utils/firebase-claims';
 
 const handler = asyncHandler(async (request: NextRequest) => {
-    const body = await request.json();
-    const { firebaseUid } = body;
+  // Check if Firebase Admin is initialized
+  if (!adminAuth) {
+    logger.error('Firebase Admin not initialized');
+    throw new ApiError('Authentication service unavailable', HttpStatus.SERVICE_UNAVAILABLE);
+  }
 
-    if (!firebaseUid) {
-        throw new ApiError('Firebase UID is required', HttpStatus.BAD_REQUEST);
+  // Verify Firebase ID token from Authorization header OR request body
+  // This supports both web (header) and mobile (body) clients
+  const authHeader = request.headers.get('authorization');
+  let token: string | undefined;
+
+  // Try to get token from Authorization header first (preferred)
+  if (authHeader?.startsWith('Bearer ')) {
+    token = authHeader.split('Bearer ')[1];
+  } else {
+    // Fallback: Check request body for { idToken: "..." } (mobile compatibility)
+    try {
+      const body = await request.json();
+      if (body && typeof body.idToken === 'string' && body.idToken.trim().length > 0) {
+        token = body.idToken.trim();
+        logger.info('Login using idToken from request body (mobile client)');
+      }
+    } catch (error) {
+      // JSON parsing failed, will be handled by token check below
     }
+  }
 
-        // Find user by Firebase UID
-        const user = await prisma.user.findUnique({
-            where: { id: firebaseUid },
-            select: {
-                id: true,
-                email: true,
-                firstName: true,
-                lastName: true,
-                phone: true,
-                role: true,
-                isActive: true,
-                isVerified: true,
-                lastLogin: true,
-                createdAt: true,
-                updatedAt: true,
-            },
-        });
+  if (!token) {
+    throw new ApiError(
+      'Unauthorized - Missing Firebase ID token. Send either Authorization header or { idToken: "..." } in body',
+      HttpStatus.UNAUTHORIZED
+    );
+  }
 
-        if (!user) {
-            throw new ApiError(ERROR_MESSAGES.NOT_FOUND, HttpStatus.NOT_FOUND);
-        }
+  let decodedToken;
 
-        // Check if account is active
-        if (!user.isActive) {
-            throw new ApiError(
-                ERROR_MESSAGES.ACCOUNT_INACTIVE,
-                HttpStatus.FORBIDDEN
-            );
-        }
+  try {
+    decodedToken = await adminAuth.verifyIdToken(token);
+    // Log with hashed UID to prevent PII leakage
+    logger.info(
+      'Firebase token verified for login',
+      createSafeLogIdentifier(decodedToken.uid, null)
+    );
+  } catch (error: any) {
+    logger.error('Firebase token verification failed', { error: error.message });
+    throw new ApiError('Invalid authentication token', HttpStatus.UNAUTHORIZED);
+  }
 
-        // Update last login
-        await prisma.user.update({
-            where: { id: user.id },
-            data: { lastLogin: new Date() },
-        });
+  // Extract Firebase UID from verified token (this is secure)
+  const firebaseUid = decodedToken.uid;
 
-        logger.info('User logged in successfully', { userId: user.id, email: user.email });
+  // Find user by Firebase UID
+  const user = await prisma.user.findUnique({
+    where: { id: firebaseUid },
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
+      role: true,
+      isActive: true,
+      isVerified: true,
+      lastLogin: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
 
-        return successResponse(
-            {
-                user: {
-                    ...user,
-                    lastLogin: new Date(),
-                },
-            },
-            SUCCESS_MESSAGES.LOGIN_SUCCESS
-        );
+  if (!user) {
+    throw new ApiError(ERROR_MESSAGES.NOT_FOUND, HttpStatus.NOT_FOUND);
+  }
+
+  // Check if account is active
+  if (!user.isActive) {
+    throw new ApiError(ERROR_MESSAGES.ACCOUNT_INACTIVE, HttpStatus.FORBIDDEN);
+  }
+
+  // Update last login
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { lastLogin: new Date() },
+  });
+
+  // CRITICAL FIX FOR 403 ERRORS: Refresh custom claims on every login
+  // This ensures the Firebase ID token always has the correct role and userId
+  // Without this, users may get 403 Forbidden errors when accessing role-protected routes
+  try {
+    await setCustomClaimsWithRetry(
+      firebaseUid,
+      {
+        role: user.role,
+        userId: user.id,
+      },
+      {
+        maxRetries: 2, // Fewer retries for login (not as critical as registration)
+        rollbackOnFailure: false, // Don't delete user on login claim failure
+      }
+    );
+    logger.info('Custom claims refreshed on login', { userId: user.id, role: user.role });
+  } catch (claimsError) {
+    // Log but don't fail login - user can still proceed with existing claims
+    logger.warn('Failed to refresh custom claims on login', {
+      userId: user.id,
+      error: claimsError instanceof Error ? claimsError.message : String(claimsError),
+    });
+    // Continue with login - this isn't critical enough to block the user
+  }
+
+  // Log with hashed identifiers to prevent PII leakage
+  logger.info('User logged in successfully', createSafeLogIdentifier(user.id, user.email));
+
+  return successResponse(
+    {
+      user: {
+        ...user,
+        lastLogin: new Date(),
+      },
+    },
+    SUCCESS_MESSAGES.LOGIN_SUCCESS
+  );
 });
 
 // Apply middleware: CORS -> Rate Limit -> Handler
-export const POST = withCorsMiddleware(
-    withRateLimit(handler, RateLimitPresets.AUTH)
-);
+export const POST = withCorsMiddleware(withRateLimit(handler, RateLimitPresets.AUTH));

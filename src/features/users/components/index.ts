@@ -1,3 +1,3 @@
 // Users Components exports
-export * from './UsersList';
-
+export { UsersList, UsersListSkeleton } from './UsersList';
+export { UsersListEnhanced } from './UsersListEnhanced';

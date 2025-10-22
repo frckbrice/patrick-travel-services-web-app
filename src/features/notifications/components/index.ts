@@ -1,3 +1,2 @@
 // Notifications Components exports
-export * from './NotificationsList';
-
+export * from './NotificationsTable';

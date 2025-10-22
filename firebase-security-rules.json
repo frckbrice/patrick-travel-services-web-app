@@ -1,0 +1,45 @@
+{
+  "rules": {
+    "messages": {
+      ".read": "auth != null",
+      ".indexOn": ["caseId", "senderId", "recipientId", "sentAt"],
+      "$messageId": {
+        ".write": "auth != null && auth.uid == newData.child('senderId').val()",
+        ".validate": "newData.hasChildren(['senderId', 'senderName', 'recipientId', 'content', 'sentAt', 'isRead']) && newData.child('content').isString() && newData.child('content').val().length > 0 && newData.child('content').val().length <= 5000"
+      }
+    },
+
+    "chatRooms": {
+      ".read": "auth != null",
+      ".indexOn": ["lastMessageAt"],
+      "$roomId": {
+        ".read": "auth != null && root.child('chatRooms/' + $roomId + '/participants/' + auth.uid).exists()",
+        ".write": "auth != null && ((root.child('chatRooms/' + $roomId).exists() && root.child('chatRooms/' + $roomId + '/participants/' + auth.uid).exists()) || (!root.child('chatRooms/' + $roomId).exists() && newData.child('participants/' + auth.uid).exists()))",
+        ".validate": "newData.hasChildren(['participants', 'createdAt', 'updatedAt'])",
+        "participants": {
+          "$participantId": {
+            ".validate": "newData.isBoolean() && newData.val() === true"
+          }
+        }
+      }
+    },
+
+    "presence": {
+      ".read": true,
+      "$userId": {
+        ".write": "$userId === auth.uid",
+        ".validate": "newData.hasChildren(['userId', 'status', 'lastSeen']) && newData.child('status').val().matches(/^(online|offline|away)$/)"
+      }
+    },
+
+    "typing": {
+      "$roomId": {
+        ".read": "auth != null",
+        "$userId": {
+          ".write": "$userId === auth.uid",
+          ".validate": "newData.hasChildren(['userId', 'userName', 'chatRoomId', 'isTyping', 'timestamp']) || !newData.exists()"
+        }
+      }
+    }
+  }
+}

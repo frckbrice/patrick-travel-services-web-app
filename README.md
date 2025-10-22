@@ -5,6 +5,7 @@ A production-ready immigration services management platform built with Next.js 1
 ##  Features
 
 ### Authentication & Authorization
+
 - **Firebase Authentication** for secure user management
 - Role-based access control (Admin, Agent, Client)
 - Password reset and email verification
@@ -12,6 +13,7 @@ A production-ready immigration services management platform built with Next.js 1
 - Works seamlessly with both web and mobile clients
 
 ### Case Management
+
 - Complete case lifecycle management
 - Real-time case status tracking
 - Document verification and management
@@ -20,6 +22,7 @@ A production-ready immigration services management platform built with Next.js 1
 - Case analytics and reporting
 
 ### Client Management
+
 - Comprehensive client profiles
 - Case history tracking
 - Document management
@@ -27,13 +30,29 @@ A production-ready immigration services management platform built with Next.js 1
 - Client analytics
 
 ### Document Management
+
 - Secure document upload and storage
 - Document verification workflow
+- User-friendly case selection (shows reference numbers, not IDs)
 - Version control
-- Document categorization
-- Download and preview capabilities
+
+### Communication
+
+- Real-time chat (Firebase Realtime Database)
+- Email messaging with case-based routing
+- Presence tracking & typing indicators
+- Email tracking & history in PostgreSQL
+
+### Resources & Templates
+
+- Downloadable document templates (forms, guides, checklists)
+- Grouped by service type and category
+- Admin template management
+- Download tracking analytics
+- Required document indicators
 
 ### Messaging System
+
 - Real-time messaging with Firebase
 - Agent-client communication
 - File attachments support
@@ -41,6 +60,7 @@ A production-ready immigration services management platform built with Next.js 1
 - Conversation history
 
 ### Analytics Dashboard
+
 - Case statistics and metrics
 - Revenue tracking
 - Agent performance metrics
@@ -48,6 +68,12 @@ A production-ready immigration services management platform built with Next.js 1
 - Visual charts and reports (Recharts)
 
 ### Additional Features
+
+- **Invite Code System** - Secure staff onboarding with TanStack Table UI
+  - Server-side pagination, filtering, and sorting
+  - Role-based code generation (AGENT/ADMIN)
+  - Usage tracking and expiration management
+  - 8-column table with progress bars and status badges
 - Audit logging for compliance
 - FAQ management
 - Notification system
@@ -57,12 +83,15 @@ A production-ready immigration services management platform built with Next.js 1
 ## Tech Stack
 
 ### Frontend
+
 - **Framework:** Next.js 15+ (App Router)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS 4
 - **UI Components:** shadcn/ui
+- **Data Tables:** TanStack Table v8 (Invite Codes, Users, Clients, Documents, FAQ, Audit Logs)
 - **State Management:** Zustand + React Context API
 - **Data Fetching:** TanStack Query (React Query)
+- **Caching:** Native Map() + React Query (zero dependencies, 0KB bundle cost)
 - **Forms:** React Hook Form + Zod validation
 - **Charts:** Recharts
 - **Notifications:** Sonner (shadcn)
@@ -71,6 +100,7 @@ A production-ready immigration services management platform built with Next.js 1
 - **HTTP Client:** Axios with interceptors
 
 ### Backend
+
 - **API:** Next.js API Routes
 - **Database:** PostgreSQL with Prisma ORM
 - **Authentication:** Firebase Auth (no custom JWT needed)
@@ -78,6 +108,7 @@ A production-ready immigration services management platform built with Next.js 1
 - **File Upload:** [UploadThing](https://uploadthing.com) - Simple and developer-friendly
 
 ### Development Tools
+
 - **Code Quality:** ESLint 9, Prettier
 - **Git Hooks:** Husky, lint-staged
 - **Commit Convention:** Commitlint (Conventional Commits)
@@ -144,6 +175,10 @@ NEXT_PUBLIC_FIREBASE_APP_ID="your-app-id"
 # Get your token from https://uploadthing.com/dashboard
 UPLOADTHING_TOKEN="your-uploadthing-token"
 
+# PII Hash Secret (REQUIRED for secure logging)
+# Generate with: openssl rand -hex 32
+PII_HASH_SECRET="your-random-secret-here"
+
 # App
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
@@ -174,18 +209,21 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 You can run the entire application stack using Docker and Docker Compose.
 
 ### Prerequisites for Docker
+
 - Docker Engine 20.10+
 - Docker Compose v2.0+
 
 ### Quick Start with Docker
 
 1. **Clone and navigate to the project**
+
 ```bash
 git clone <repository-url>
 cd mpe-digital-project-1/web
 ```
 
 2. **Copy environment file**
+
 ```bash
 cp .env.example .env
 ```
@@ -193,26 +231,31 @@ cp .env.example .env
 Edit `.env` and configure your environment variables.
 
 3. **Start all services**
+
 ```bash
 docker-compose up -d
 ```
 
 This will start:
+
 - PostgreSQL database (port 5432)
 - Next.js web application (port 3000)
 - PgAdmin (port 5050) - Optional, use `docker-compose --profile tools up -d`
 
 4. **Run database migrations**
+
 ```bash
 docker-compose exec web pnpm prisma:migrate
 ```
 
 5. **View logs**
+
 ```bash
 docker-compose logs -f web
 ```
 
 6. **Stop all services**
+
 ```bash
 docker-compose down
 ```
@@ -259,7 +302,9 @@ docker push username/patrick-travel-web:latest
 ```
 
 ### Docker Hub
+
 The application is available on Docker Hub:
+
 ```bash
 docker pull <docker-username>/patrick-travel-web:latest
 ```
@@ -267,6 +312,7 @@ docker pull <docker-username>/patrick-travel-web:latest
 ## Available Scripts
 
 ### Development
+
 ```bash
 pnpm dev          # Start development server
 pnpm build        # Build for production
@@ -274,6 +320,7 @@ pnpm start        # Start production server
 ```
 
 ### Code Quality
+
 ```bash
 pnpm lint         # Run ESLint
 pnpm lint:fix     # Fix ESLint issues
@@ -284,6 +331,7 @@ pnpm validate     # Run all quality checks + build
 ```
 
 ### Database
+
 ```bash
 pnpm prisma:generate  # Generate Prisma Client
 pnpm prisma:migrate   # Run database migrations
@@ -292,11 +340,12 @@ pnpm prisma:studio    # Open Prisma Studio
 ```
 
 ### Git Hooks
+
 ```bash
 pnpm precommit    # Run pre-commit checks (lint-staged + type-check)
 ```
 
-##  Project Structure
+## Project Structure
 
 ```
 web/
@@ -372,47 +421,51 @@ web/
 └── tsconfig.json           # TypeScript configuration
 ```
 
-##  Authentication Flow
+## Authentication Flow
 
 ### Registration
+
 1. Client calls Firebase `createUserWithEmailAndPassword`
 2. Backend creates user in database via `/api/auth/register`
 3. Firebase returns custom token for immediate login
 4. Client exchanges custom token for ID token
 
 ### Login
+
 1. Client calls Firebase `signInWithEmailAndPassword`
 2. Firebase returns ID token (JWT managed by Firebase)
 3. Client syncs with backend via `/api/auth/login`
 4. ID token used for all subsequent API calls
 
 ### Protected API Calls
+
 1. Client includes Firebase ID token in `Authorization` header
 2. Backend middleware verifies token with Firebase Admin SDK
 3. Custom claims (role, permissions) extracted from token
 4. Request processed based on user's role
 
 ### Token Management
+
 - **ID tokens** are short-lived (1 hour)
 - **Firebase SDK** automatically refreshes tokens
 - **No manual refresh logic needed** - it just works!
 
 See [AUTH_MIGRATION_GUIDE.md](./AUTH_MIGRATION_GUIDE.md) for complete documentation.
 
-##  Database Schema
+## Database Schema
 
 The application uses PostgreSQL with Prisma ORM. Key entities include:
 
 - **Users** - System users (clients, agents, admins)
 - **Cases** - Immigration cases with status tracking
 - **Documents** - Case-related documents
-- **Messages** - Communication threads (stored in Firebase)
+- **Messages** - Chat (Firebase Realtime DB) + Emails (PostgreSQL with tracking)
 - **Notifications** - User notifications
 - **AuditLogs** - System activity tracking for compliance
 
 See `prisma/schema.prisma` for the complete schema.
 
-##  Firebase Integration
+## Firebase Integration
 
 Firebase is used for real-time messaging functionality:
 
@@ -421,25 +474,29 @@ Firebase is used for real-time messaging functionality:
 - **File attachments** - Support for document sharing
 - **Read receipts** - Message status tracking
 
-##  UI Components
+## UI Components
 
 Built with [shadcn/ui](https://ui.shadcn.com/):
+
 - Fully accessible components (ARIA compliant)
 - Customizable with Tailwind CSS
 - Dark mode support ready
 - Consistent design system
 - Pre-built form components
 
-##  Code Quality & Git Workflow
+## Code Quality & Git Workflow
 
 ### Pre-commit Hooks (via Husky)
+
 Automatically runs before each commit:
+
 - ESLint checks and fixes
 - Prettier formatting
 - TypeScript type checking
 - Staged files only (lint-staged)
 
 ### Commit Message Format
+
 Following [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```
@@ -448,15 +505,16 @@ type(scope): subject
 Types: feat, fix, docs, style, refactor, test, chore
 
 Examples:
-feat(auth): add password reset functionality
+feat(auth): add  reset functionality
 fix(cases): resolve status update bug
 docs(readme): update installation instructions
 refactor(api): improve error handling
 ```
 
-##  API Endpoints
+## API Endpoints
 
 ### Authentication
+
 - `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - User login
 - `POST /api/auth/logout` - User logout
@@ -464,30 +522,41 @@ refactor(api): improve error handling
 - `POST /api/auth/refresh-token` - Refresh access token
 
 ### Cases (CRUD)
+
 - `GET /api/cases` - List all cases
 - `POST /api/cases` - Create new case
 - `GET /api/cases/[id]` - Get case details
 - `PUT /api/cases/[id]` - Update case
 - `DELETE /api/cases/[id]` - Delete case
 
+### Templates
+
+- `GET /api/templates` - List document templates
+- `POST /api/templates` - Create template (admin only)
+- `GET /api/templates/[id]` - Download template
+- `DELETE /api/templates/[id]` - Delete template (admin only)
+
 ### Documents (CRUD)
+
 - `GET /api/documents` - List documents
 - `POST /api/documents` - Upload document
 - `GET /api/documents/[id]` - Get document
 - `DELETE /api/documents/[id]` - Delete document
 
 ### Users (CRUD - Admin only)
+
 - `GET /api/users` - List users
 - `GET /api/users/[id]` - Get user details
 - `PUT /api/users/[id]` - Update user
 - `DELETE /api/users/[id]` - Delete user
 
 ### Messages
+
 - `GET /api/messages` - List conversations
 - `POST /api/messages` - Send message
 - `GET /api/messages/[id]` - Get conversation
 
-##  CI/CD Pipeline
+## CI/CD Pipeline
 
 The project includes a comprehensive GitHub Actions workflow for continuous integration and deployment.
 
@@ -527,12 +596,14 @@ PRODUCTION_URL=https://your-production-url.com
 2. **Workflow Triggers**
 
 The CI/CD pipeline runs on:
+
 - Push to `main` or `develop` branches
 - Pull requests to `main` or `develop`
 
 3. **Docker Image Publishing**
 
 On successful build to `main` branch:
+
 - Docker image is built and pushed to Docker Hub
 - Tagged with: `latest`, branch name, commit SHA
 - Available at: `docker pull <username>/patrick-travel-web:latest`
@@ -544,7 +615,7 @@ On successful build to `main` branch:
 gh workflow run ci-cd.yml
 ```
 
-##  Deployment
+## Deployment
 
 ### Docker Deployment (Recommended)
 
@@ -588,13 +659,14 @@ pnpm start
 ### Environment Variables for Production
 
 Ensure all environment variables are properly set:
+
 - Database connection string (DATABASE_URL)
 - JWT secrets (JWT_SECRET, JWT_REFRESH_SECRET)
 - Firebase credentials (both admin and client)
 - File storage credentials (Cloudinary/UploadThing)
 - App URL (NEXT_PUBLIC_APP_URL)
 
-##  Security Features
+## Security Features
 
 - **Firebase Authentication** - Industry-standard security with automatic updates
 - **Firebase ID Token Verification** - All API routes protected with Firebase Admin SDK
@@ -604,13 +676,15 @@ Ensure all environment variables are properly set:
 - **SQL Injection Prevention** - Prisma ORM with parameterized queries
 - **XSS Protection** - Built-in Next.js security features
 - **CORS Configuration** - Configurable for production
+- **PII Protection** - HMAC-SHA256 hashing of sensitive data in logs (see [PII_PROTECTION_LOGGING.md](./docs/PII_PROTECTION_LOGGING.md))
 - **Rate Limiting** - Recommended for production (not included)
 
-##  File Upload with UploadThing
+## File Upload with UploadThing
 
 UploadThing provides a simpler, more developer-friendly alternative to traditional cloud storage:
 
 ### Features
+
 - **Simple Authentication** - Uses your existing Firebase auth
 - **Type-safe** - Full TypeScript support
 - **Generous Free Tier** - 2GB free storage
@@ -638,7 +712,7 @@ import { FileUploader } from '@/components/upload/FileUploader';
 
 See [UploadThing Documentation](https://docs.uploadthing.com) for more information.
 
-##  Best Practices
+## Best Practices
 
 - **Type Safety:** Full TypeScript coverage
 - **Code Quality:** ESLint + Prettier enforced
@@ -647,8 +721,9 @@ See [UploadThing Documentation](https://docs.uploadthing.com) for more informati
 - **State Management:** Zustand for global state, React Query for server state
 - **Error Handling:** Centralized error handling with custom logger
 - **API Design:** RESTful conventions with consistent responses
+- **UX Design:** User-friendly selectors (e.g., case selection shows reference numbers, not raw IDs)
 
-##  Contributing
+## Contributing
 
 1. Create a feature branch (`git checkout -b feature/amazing-feature`)
 2. Make your changes
@@ -656,7 +731,7 @@ See [UploadThing Documentation](https://docs.uploadthing.com) for more informati
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-##  License
+## License
 
 This project is proprietary and confidential.
 
@@ -666,5 +741,4 @@ For support and questions, please contact the me at https://maebrieporfolio.verc
 
 ---
 
-**Built with ❤️ by Avom Brice *
-
+\*_Built with ❤️ by Avom Brice _

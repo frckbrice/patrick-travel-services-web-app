@@ -8,55 +8,73 @@ import { NOTIFICATIONS_KEY } from './queries';
 
 // Mark notification as read
 export function useMarkNotificationRead() {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: async (id: string) => {
-            const response = await apiClient.put(`/api/notifications/${id}`);
-            return response.data.data.notification as Notification;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY] });
-        },
-        onError: (error: any) => {
-            toast.error(error.response?.data?.error || 'Failed to mark as read');
-        },
-    });
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await apiClient.put(`/api/notifications/${id}`);
+      return response.data.data.notification as Notification;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to mark as read');
+    },
+  });
+}
+
+// Mark all notifications as read
+export function useMarkAllNotificationsRead() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const response = await apiClient.put('/api/notifications/mark-all-read');
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to mark all as read');
+    },
+  });
 }
 
 // Delete notification
 export function useDeleteNotification() {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: async (id: string) => {
-            await apiClient.delete(`/api/notifications/${id}`);
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY] });
-            toast.success('Notification deleted');
-        },
-        onError: (error: any) => {
-            toast.error(error.response?.data?.error || 'Failed to delete notification');
-        },
-    });
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/api/notifications/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY] });
+      toast.success('Notification deleted');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to delete notification');
+    },
+  });
 }
 
 // Create notification (ADMIN/AGENT only)
 export function useCreateNotification() {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: async (data: CreateNotificationInput) => {
-            const response = await apiClient.post('/api/notifications', data);
-            return response.data.data.notification as Notification;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY] });
-            toast.success('Notification created');
-        },
-        onError: (error: any) => {
-            toast.error(error.response?.data?.error || 'Failed to create notification');
-        },
-    });
+  return useMutation({
+    mutationFn: async (data: CreateNotificationInput) => {
+      const response = await apiClient.post('/api/notifications', data);
+      return response.data.data.notification as Notification;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY] });
+      toast.success('Notification created');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to create notification');
+    },
+  });
 }
