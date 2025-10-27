@@ -312,30 +312,10 @@ export function useRealtimeMessages(chatRoomId: string | null) {
 
     setIsLoading(true);
 
-    // DEMO MODE: Set timeout to show mock data if Firebase takes too long (DEVELOPMENT ONLY)
-    const isDevelopment = process.env.NODE_ENV === 'development';
-
-    if (isDevelopment) {
-      timeoutRef.current = setTimeout(() => {
-        console.log('[DEMO MODE] Firebase timeout - showing mock messages for', chatRoomId);
-        setUseMockData(true);
-
-        // Generate mock messages with current user data
-        const currentUserName = user ? `${user.firstName} ${user.lastName}`.trim() : 'User';
-        const currentUserEmail = user?.email || 'user@example.com';
-        const currentUserId = user?.id || 'current-user';
-
-        setMessages(
-          getMockMessagesForRoom(chatRoomId, currentUserId, currentUserName, currentUserEmail)
-        );
-        setIsLoading(false);
-      }, 800); // 800ms timeout - faster response
-    } else {
-      // PRODUCTION: Stop loading after 2 seconds even if no data
-      timeoutRef.current = setTimeout(() => {
-        setIsLoading(false);
-      }, 2000);
-    }
+    // PRODUCTION: Stop loading after 2 seconds even if no data
+    timeoutRef.current = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
 
     const unsubscribe = subscribeToRoomMessages(chatRoomId, (newMessages) => {
       // Clear timeout if Firebase responds
@@ -343,46 +323,9 @@ export function useRealtimeMessages(chatRoomId: string | null) {
         clearTimeout(timeoutRef.current);
       }
 
-      const currentUserName = user ? `${user.firstName} ${user.lastName}`.trim() : 'User';
-      const currentUserEmail = user?.email || 'user@example.com';
-      const currentUserId = user?.id || 'current-user';
-
-      if (newMessages.length > 0) {
-        // DEMO MODE: Merge Firebase messages with mock data (DEVELOPMENT ONLY)
-        if (isDevelopment) {
-          const mockMessages = getMockMessagesForRoom(
-            chatRoomId,
-            currentUserId,
-            currentUserName,
-            currentUserEmail
-          );
-          // Combine mock and real messages, removing duplicates by ID
-          const messageMap = new Map<string, ChatMessage>();
-
-          // Add mock messages first
-          mockMessages.forEach((msg) => messageMap.set(msg.id!, msg));
-          // Override/add with real Firebase messages
-          newMessages.forEach((msg) => messageMap.set(msg.id!, msg));
-
-          // Convert back to array and sort by time
-          const combinedMessages = Array.from(messageMap.values()).sort(
-            (a, b) => a.sentAt - b.sentAt
-          );
-          setMessages(combinedMessages);
-          setUseMockData(false);
-        } else {
-          // Production: Only use Firebase data
-          setMessages(newMessages);
-          setUseMockData(false);
-        }
-      } else if (!useMockData && isDevelopment) {
-        // Firebase is empty but connected - show mock data for demo (DEVELOPMENT ONLY)
-        console.log('[DEMO MODE] Firebase empty - showing mock messages for', chatRoomId);
-        setMessages(
-          getMockMessagesForRoom(chatRoomId, currentUserId, currentUserName, currentUserEmail)
-        );
-        setUseMockData(true);
-      }
+      // Only use real Firebase data
+      setMessages(newMessages);
+      setUseMockData(false);
       setIsLoading(false);
     });
 
@@ -452,22 +395,10 @@ export function useRealtimeChatRooms() {
 
     setIsLoading(true);
 
-    // DEMO MODE: Set timeout to show mock data if Firebase takes too long (DEVELOPMENT ONLY)
-    const isDevelopment = process.env.NODE_ENV === 'development';
-
-    if (isDevelopment) {
-      timeoutRef.current = setTimeout(() => {
-        console.log('[DEMO MODE] Firebase timeout - showing mock data');
-        setUseMockData(true);
-        setChatRooms(getMockChatRooms(user.id));
-        setIsLoading(false);
-      }, 1000); // 1 second timeout - faster response
-    } else {
-      // PRODUCTION: Stop loading after 2 seconds even if no data
-      timeoutRef.current = setTimeout(() => {
-        setIsLoading(false);
-      }, 2000);
-    }
+    // PRODUCTION: Stop loading after 2 seconds even if no data
+    timeoutRef.current = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
 
     const unsubscribe = subscribeToUserChatRooms(user.id, (rooms) => {
       // Clear timeout if Firebase responds
@@ -475,16 +406,9 @@ export function useRealtimeChatRooms() {
         clearTimeout(timeoutRef.current);
       }
 
-      if (rooms.length > 0) {
-        // Firebase has data - use it
-        setChatRooms(rooms);
-        setUseMockData(false);
-      } else if (!useMockData && isDevelopment) {
-        // Firebase is empty but connected - show mock data for demo (DEVELOPMENT ONLY)
-        console.log('[DEMO MODE] Firebase empty - showing mock data');
-        setChatRooms(getMockChatRooms(user.id));
-        setUseMockData(true);
-      }
+      // Only use real Firebase data
+      setChatRooms(rooms);
+      setUseMockData(false);
       setIsLoading(false);
     });
 
@@ -574,29 +498,10 @@ export function useMultipleUserPresence(userIds: string[]) {
 
     setIsLoading(true);
 
-    // DEMO MODE: Set timeout to show mock data if Firebase takes too long (DEVELOPMENT ONLY)
-    const isDevelopment = process.env.NODE_ENV === 'development';
-
-    if (isDevelopment) {
-      timeoutRef.current = setTimeout(() => {
-        console.log('[DEMO MODE] Firebase timeout - showing mock presence data');
-        setUseMockData(true);
-        // Filter mock presences to only requested users
-        const filteredPresences: Record<string, UserPresence> = {};
-        userIds.forEach((userId) => {
-          if (MOCK_PRESENCES[userId]) {
-            filteredPresences[userId] = MOCK_PRESENCES[userId];
-          }
-        });
-        setPresences(filteredPresences);
-        setIsLoading(false);
-      }, 500); // 500ms timeout - fast response
-    } else {
-      // PRODUCTION: Stop loading after 1 second even if no data
-      timeoutRef.current = setTimeout(() => {
-        setIsLoading(false);
-      }, 1000);
-    }
+    // PRODUCTION: Stop loading after 1 second even if no data
+    timeoutRef.current = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
 
     const unsubscribe = subscribeToMultipleUserPresence(userIds, (newPresences) => {
       // Clear timeout if Firebase responds
@@ -604,22 +509,9 @@ export function useMultipleUserPresence(userIds: string[]) {
         clearTimeout(timeoutRef.current);
       }
 
-      if (Object.keys(newPresences).length > 0) {
-        // Firebase has data - use it
-        setPresences(newPresences);
-        setUseMockData(false);
-      } else if (!useMockData && isDevelopment) {
-        // Firebase is empty but connected - show mock data for demo (DEVELOPMENT ONLY)
-        console.log('[DEMO MODE] Firebase empty - showing mock presence data');
-        const filteredPresences: Record<string, UserPresence> = {};
-        userIds.forEach((userId) => {
-          if (MOCK_PRESENCES[userId]) {
-            filteredPresences[userId] = MOCK_PRESENCES[userId];
-          }
-        });
-        setPresences(filteredPresences);
-        setUseMockData(true);
-      }
+      // Only use real Firebase data
+      setPresences(newPresences);
+      setUseMockData(false);
       setIsLoading(false);
     });
 

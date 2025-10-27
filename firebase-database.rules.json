@@ -1,0 +1,61 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "chats": {
+      "$caseId": {
+        // Rules for reading messages
+        ".read": "auth != null && (
+          data.child('metadata/participants/clientId').val() == auth.uid ||
+          data.child('metadata/participants/agentId').val() == auth.uid
+        )",
+
+        // Rules for writing messages
+        ".write": "auth != null && (
+          data.child('metadata/participants/clientId').val() == auth.uid ||
+          data.child('metadata/participants/agentId').val() == auth.uid
+        )",
+
+        "messages": {
+          "$messageId": {
+            ".validate": "newData.hasChildren(['senderId', 'senderName', 'content', 'sentAt', 'caseId']) &&
+              newData.child('senderId').val() == auth.uid &&
+              newData.child('caseId').val() == $caseId"
+          }
+        },
+
+        "metadata": {
+          ".validate": "newData.hasChildren(['participants', 'caseId']) &&
+            newData.child('caseId').val() == $caseId"
+        }
+      }
+    },
+
+    "presence": {
+      "$userId": {
+        ".read": true,
+        ".write": "auth != null && auth.uid == $userId",
+        ".validate": "newData.hasChildren(['userId', 'status', 'lastSeen'])"
+      }
+    },
+
+    "typing": {
+      "$chatRoomId": {
+        ".read": true,
+        "$userId": {
+          ".write": "auth != null && auth.uid == $userId",
+          ".validate": "newData.hasChildren(['userId', 'isTyping', 'timestamp'])"
+        }
+      }
+    },
+
+    "notifications": {
+      "$userId": {
+        ".read": "auth != null && auth.uid == $userId",
+        ".write": false,
+        ".indexOn": ["timestamp", "isRead"]
+      }
+    }
+  }
+}

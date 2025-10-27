@@ -120,38 +120,62 @@ export function MessagesList({
 
   // Transform ChatRoom to Conversation format for UI
   const conversations = useMemo(() => {
-    if (!apiConversations || apiConversations.length === 0) {
-      // Return empty array - no mock data fallback in production
-      return [];
+    const conversationList: Conversation[] = [];
+
+    // Add existing Firebase chat rooms
+    if (apiConversations && apiConversations.length > 0) {
+      const firebaseConvos = apiConversations
+        .filter((room: FirebaseChatRoom): room is FirebaseChatRoom & { id: string } => !!room.id)
+        .map((room) => {
+          // Get the other participant (not current user)
+          const otherParticipantId = Object.keys(room.participants || {}).find(
+            (id) => id !== user?.id
+          );
+          const unreadCount = user?.id && room.unreadCount ? room.unreadCount[user.id] || 0 : 0;
+
+          // Lookup user info for participant (performance-optimized)
+          const participantInfo = getUserInfo(otherParticipantId);
+          const participantName = participantInfo?.fullName || 'Unknown User';
+          const participantRole = participantInfo?.role || 'User';
+
+          return {
+            id: room.id,
+            participantId: otherParticipantId || '',
+            participantName,
+            participantRole,
+            lastMessage: room.lastMessage || '',
+            lastMessageTime: room.lastMessageAt
+              ? new Date(room.lastMessageAt).toISOString()
+              : new Date().toISOString(),
+            unreadCount,
+          } as Conversation;
+        });
+
+      conversationList.push(...firebaseConvos);
     }
 
-    return apiConversations
-      .filter((room: FirebaseChatRoom): room is FirebaseChatRoom & { id: string } => !!room.id)
-      .map((room) => {
-        // Get the other participant (not current user)
-        const otherParticipantId = Object.keys(room.participants || {}).find(
-          (id) => id !== user?.id
-        );
-        const unreadCount = user?.id && room.unreadCount ? room.unreadCount[user.id] || 0 : 0;
+    // If preselected client from URL and not in existing conversations, add virtual entry
+    if (preselectedClientId && preselectedClientName) {
+      const existsInList = conversationList.some(
+        (conv) => conv.participantId === preselectedClientId
+      );
 
-        // Lookup user info for participant (performance-optimized)
-        const participantInfo = getUserInfo(otherParticipantId);
-        const participantName = participantInfo?.fullName || 'Unknown User';
-        const participantRole = participantInfo?.role || 'User';
+      if (!existsInList) {
+        // Create virtual conversation for preselected client
+        conversationList.unshift({
+          id: `virtual-${preselectedClientId}`, // Virtual ID, will be replaced when chat room is created
+          participantId: preselectedClientId,
+          participantName: preselectedClientName,
+          participantRole: 'CLIENT',
+          lastMessage: 'Ready to start conversation',
+          lastMessageTime: new Date().toISOString(),
+          unreadCount: 0,
+        } as Conversation);
+      }
+    }
 
-        return {
-          id: room.id,
-          participantId: otherParticipantId || '',
-          participantName,
-          participantRole,
-          lastMessage: room.lastMessage || '',
-          lastMessageTime: room.lastMessageAt
-            ? new Date(room.lastMessageAt).toISOString()
-            : new Date().toISOString(),
-          unreadCount,
-        } as Conversation;
-      });
-  }, [apiConversations, user?.id, getUserInfo]);
+    return conversationList;
+  }, [apiConversations, user?.id, getUserInfo, preselectedClientId, preselectedClientName]);
 
   // Transform API messages to UI format and merge with optimistic messages
   const messages = useMemo(() => {
@@ -205,24 +229,29 @@ export function MessagesList({
 
   // Auto-select conversation based on preselected client or first available
   useEffect(() => {
-    if (conversations.length > 0) {
-      if (preselectedClientId && !selected) {
-        // Try to find the conversation for the preselected client
-        const targetConversation = conversations.find(
-          (conv) => conv.participantId === preselectedClientId
-        );
-        if (targetConversation) {
-          setSelected(targetConversation.id);
-        } else if (!selected) {
-          // If no conversation exists yet, select first available
-          setSelected(conversations[0].id);
-        }
-      } else if (!selected) {
-        // No preselection, just select first conversation
-        setSelected(conversations[0].id);
+    if (conversations.length === 0) return;
+
+    // PRIORITY: If we have a preselected client from URL, always select that conversation
+    if (preselectedClientId) {
+      const targetConversation = conversations.find(
+        (conv) => conv.participantId === preselectedClientId
+      );
+
+      if (targetConversation && targetConversation.id !== selected) {
+        console.log('[Auto-select] Selecting preselected client conversation:', {
+          conversationId: targetConversation.id,
+          clientId: preselectedClientId,
+          clientName: targetConversation.participantName,
+          isNew: targetConversation.id.startsWith('virtual-'),
+        });
+        setSelected(targetConversation.id);
       }
+    } else if (!selected) {
+      // No preselection, select first conversation
+      console.log('[Auto-select] No preselection - selecting first conversation');
+      setSelected(conversations[0].id);
     }
-  }, [conversations, selected, preselectedClientId]);
+  }, [conversations, preselectedClientId, selected]);
 
   const formatTime = (date: string) => {
     // Avoid hydration mismatch - don't render time on server
@@ -371,7 +400,11 @@ export function MessagesList({
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
-          <p className="text-muted-foreground mt-2">Communicate with your immigration advisor</p>
+          <p className="text-muted-foreground mt-2">
+            {user?.role === 'CLIENT'
+              ? 'Communicate with your immigration advisor'
+              : 'Manage conversations with your clients'}
+          </p>
         </div>
         <Button variant="outline" onClick={() => setEmailComposerOpen(true)} className="gap-2">
           <Mail className="h-4 w-4" />
@@ -526,9 +559,19 @@ export function MessagesList({
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
-                    <p className="text-sm text-muted-foreground">
-                      No messages yet. Start a conversation!
-                    </p>
+                    <div className="text-center space-y-3 max-w-md">
+                      <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+                        <MessageSquare className="h-8 w-8 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-semibold mb-1">
+                          No conversation yet with {selectedConversation?.participantName}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          Start a new conversation by typing your message below
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <>
