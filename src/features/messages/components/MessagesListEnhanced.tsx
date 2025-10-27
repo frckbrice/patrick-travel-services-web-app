@@ -359,7 +359,7 @@ export function MessagesList({
 
       // Convert to MessageAttachment format
       const newAttachments: MessageAttachment[] = uploadedFiles.map((file) => ({
-        url: file.url,
+        url: file.ufsUrl,
         name: file.name,
         size: file.size,
         type: file.type || 'application/octet-stream',

@@ -26,8 +26,10 @@ export function MessagesPageWithTabs({
 
   // If coming from case details with a specific client, show active tab
   useEffect(() => {
-    if (preselectedClientId || initialMode) {
+    if (preselectedClientId || initialMode === 'chat') {
       setActiveTab('active');
+    } else if (initialMode === 'email') {
+      setActiveTab('active'); // Stay on active tab for email mode too
     }
   }, [preselectedClientId, initialMode]);
 
@@ -62,4 +64,3 @@ export function MessagesPageWithTabs({
     </div>
   );
 }
-

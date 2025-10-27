@@ -113,8 +113,9 @@ export function ConversationHistoryTable() {
   }, [conversations]);
 
   const handleStartChat = (conversation: Conversation) => {
+    // Navigate to messages page with client info and chat mode to switch to Active Chats tab
     router.push(
-      `/dashboard/messages?clientId=${conversation.participantId}&clientName=${encodeURIComponent(conversation.participantName)}&clientEmail=${encodeURIComponent(conversation.participantEmail)}`
+      `/dashboard/messages?mode=chat&clientId=${conversation.participantId}&clientName=${encodeURIComponent(conversation.participantName)}&clientEmail=${encodeURIComponent(conversation.participantEmail)}`
     );
   };
 

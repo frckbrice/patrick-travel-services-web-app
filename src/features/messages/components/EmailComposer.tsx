@@ -161,7 +161,7 @@ export function EmailComposer({
       }
 
       const newAttachments: MessageAttachment[] = uploadedFiles.map((file) => ({
-        url: file.url,
+        url: file.ufsUrl,
         name: file.name,
         size: file.size,
         type: file.type || 'application/octet-stream',
@@ -224,9 +224,7 @@ export function EmailComposer({
               <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-blue-900 dark:text-blue-100">
-                Sending email to:
-              </h4>
+              <h4 className="font-semibold text-blue-900 dark:text-blue-100">Sending email to:</h4>
               <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mt-1">
                 {recipientName}
               </p>
@@ -317,13 +315,18 @@ export function EmailComposer({
           id="content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder={t('email.contentPlaceholder') || 'Type your message here...\n\nYou can format your message with:\n• Line breaks\n• Bullet points\n• Multiple paragraphs'}
+          placeholder={
+            t('email.contentPlaceholder') ||
+            'Type your message here...\n\nYou can format your message with:\n• Line breaks\n• Bullet points\n• Multiple paragraphs'
+          }
           className="min-h-[200px] resize-y text-base leading-relaxed"
           maxLength={5000}
         />
         <div className="flex justify-between items-center">
           <p className="text-xs text-muted-foreground">
-            {content.trim() ? `✓ ${content.split(/\s+/).filter(Boolean).length} words` : 'Message is required'}
+            {content.trim()
+              ? `✓ ${content.split(/\s+/).filter(Boolean).length} words`
+              : 'Message is required'}
           </p>
           <p className="text-xs text-muted-foreground">{content.length}/5000</p>
         </div>
@@ -331,7 +334,9 @@ export function EmailComposer({
 
       {/* Attachments */}
       <div className="space-y-3">
-        <Label className="text-sm font-semibold">{t('email.attachments') || 'Attachments'} (Optional)</Label>
+        <Label className="text-sm font-semibold">
+          {t('email.attachments') || 'Attachments'} (Optional)
+        </Label>
 
         {/* Hidden file input */}
         <input
@@ -350,8 +355,8 @@ export function EmailComposer({
               Attached Files ({attachments.length}/3)
             </p>
             {attachments.map((attachment, index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="flex items-center gap-3 p-2.5 bg-white dark:bg-slate-950 rounded-md border border-slate-200 dark:border-slate-800 shadow-sm"
               >
                 <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded">

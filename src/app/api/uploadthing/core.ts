@@ -61,12 +61,12 @@ export const ourFileRouter = {
     })
     .onUploadComplete(async ({ metadata, file }) => {
       logger.info('Image upload complete for user:', { userId: metadata.userId });
-      logger.info('File URL:', { fileUrl: file.url });
+      logger.info('File URL:', { fileUrl: file.ufsUrl });
 
       // Return data to client
       return {
         uploadedBy: metadata.uploadedBy,
-        fileUrl: file.url,
+        fileUrl: file.ufsUrl,
       };
     }),
 
@@ -86,7 +86,7 @@ export const ourFileRouter = {
     })
     .onUploadComplete(async ({ metadata, file }) => {
       console.log('Document upload complete for user:', metadata.userId);
-      console.log('File URL:', file.url);
+      console.log('File URL:', file.ufsUrl);
 
       // Document metadata should be saved via /api/documents POST endpoint
       // This keeps the upload logic separate from metadata storage
@@ -94,7 +94,7 @@ export const ourFileRouter = {
       // {
       //     fileName: file.name,
       //     originalName: file.name,
-      //     filePath: file.url,
+      //     filePath: file.ufsUrl,
       //     fileSize: file.size,
       //     mimeType: file.type,
       //     documentType: 'TYPE',
@@ -103,7 +103,7 @@ export const ourFileRouter = {
 
       return {
         uploadedBy: metadata.uploadedBy,
-        fileUrl: file.url,
+        fileUrl: file.ufsUrl,
         fileName: file.name,
         fileSize: file.size,
       };
@@ -123,7 +123,7 @@ export const ourFileRouter = {
 
       return {
         uploadedBy: metadata.uploadedBy,
-        fileUrl: file.url,
+        fileUrl: file.ufsUrl,
         fileName: file.name,
         fileSize: file.size,
       };
