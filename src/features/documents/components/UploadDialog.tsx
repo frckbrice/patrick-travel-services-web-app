@@ -52,28 +52,50 @@ const getDocTypeLabels = (t: any): Record<DocumentType, string> => ({
 });
 
 const getServiceTypeLabel = (serviceType: string, t: any): string => {
-  const labels: Record<string, string> = {
-    STUDENT_VISA: t('cases.serviceTypes.STUDENT_VISA') || 'Student Visa',
-    WORK_PERMIT: t('cases.serviceTypes.WORK_PERMIT') || 'Work Permit',
-    FAMILY_REUNIFICATION: t('cases.serviceTypes.FAMILY_REUNIFICATION') || 'Family Reunification',
-    TOURIST_VISA: t('cases.serviceTypes.TOURIST_VISA') || 'Tourist Visa',
-    BUSINESS_VISA: t('cases.serviceTypes.BUSINESS_VISA') || 'Business Visa',
-    PERMANENT_RESIDENCY: t('cases.serviceTypes.PERMANENT_RESIDENCY') || 'Permanent Residency',
+  // Default English labels as fallback
+  const defaultLabels: Record<string, string> = {
+    STUDENT_VISA: 'Student Visa',
+    WORK_PERMIT: 'Work Permit',
+    FAMILY_REUNIFICATION: 'Family Reunification',
+    TOURIST_VISA: 'Tourist Visa',
+    BUSINESS_VISA: 'Business Visa',
+    PERMANENT_RESIDENCY: 'Permanent Residency',
   };
-  return labels[serviceType] || serviceType;
+
+  // Try translation first, fall back to default label
+  const translationKey = `cases.serviceTypes.${serviceType}`;
+  const translated = t(translationKey);
+
+  // If translation returns the key itself, use default label
+  if (translated === translationKey) {
+    return defaultLabels[serviceType] || serviceType.replace(/_/g, ' ');
+  }
+
+  return translated;
 };
 
 const getCaseStatusLabel = (status: string, t: any): string => {
-  const labels: Record<string, string> = {
-    SUBMITTED: t('cases.status.SUBMITTED') || 'Submitted',
-    UNDER_REVIEW: t('cases.status.UNDER_REVIEW') || 'Under Review',
-    DOCUMENTS_REQUIRED: t('cases.status.DOCUMENTS_REQUIRED') || 'Documents Required',
-    PROCESSING: t('cases.status.PROCESSING') || 'Processing',
-    APPROVED: t('cases.status.APPROVED') || 'Approved',
-    REJECTED: t('cases.status.REJECTED') || 'Rejected',
-    CLOSED: t('cases.status.CLOSED') || 'Closed',
+  // Default English labels as fallback
+  const defaultLabels: Record<string, string> = {
+    SUBMITTED: 'Submitted',
+    UNDER_REVIEW: 'Under Review',
+    DOCUMENTS_REQUIRED: 'Documents Required',
+    PROCESSING: 'Processing',
+    APPROVED: 'Approved',
+    REJECTED: 'Rejected',
+    CLOSED: 'Closed',
   };
-  return labels[status] || status;
+
+  // Try translation first, fall back to default label
+  const translationKey = `cases.status.${status}`;
+  const translated = t(translationKey);
+
+  // If translation returns the key itself, use default label
+  if (translated === translationKey) {
+    return defaultLabels[status] || status.replace(/_/g, ' ');
+  }
+
+  return translated;
 };
 
 export interface UploadDialogProps {

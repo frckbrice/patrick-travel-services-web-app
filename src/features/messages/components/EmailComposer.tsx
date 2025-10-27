@@ -219,30 +219,60 @@ export function EmailComposer({
     setAttachments((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const getServiceTypeLabel = (serviceType: string): string => {
-    const labels: Record<string, string> = {
-      STUDENT_VISA: t('cases.serviceTypes.STUDENT_VISA') || 'Student Visa',
-      WORK_PERMIT: t('cases.serviceTypes.WORK_PERMIT') || 'Work Permit',
-      FAMILY_REUNIFICATION: t('cases.serviceTypes.FAMILY_REUNIFICATION') || 'Family Reunification',
-      TOURIST_VISA: t('cases.serviceTypes.TOURIST_VISA') || 'Tourist Visa',
-      BUSINESS_VISA: t('cases.serviceTypes.BUSINESS_VISA') || 'Business Visa',
-      PERMANENT_RESIDENCY: t('cases.serviceTypes.PERMANENT_RESIDENCY') || 'Permanent Residency',
-    };
-    return labels[serviceType] || serviceType;
-  };
+  // Helper function to get human-readable service type labels with proper fallbacks
+  const getServiceTypeLabel = useCallback(
+    (serviceType: string): string => {
+      // Default English labels as fallback
+      const defaultLabels: Record<string, string> = {
+        STUDENT_VISA: 'Student Visa',
+        WORK_PERMIT: 'Work Permit',
+        FAMILY_REUNIFICATION: 'Family Reunification',
+        TOURIST_VISA: 'Tourist Visa',
+        BUSINESS_VISA: 'Business Visa',
+        PERMANENT_RESIDENCY: 'Permanent Residency',
+      };
 
-  const getCaseStatusLabel = (status: string): string => {
-    const labels: Record<string, string> = {
-      SUBMITTED: t('cases.status.SUBMITTED') || 'Submitted',
-      UNDER_REVIEW: t('cases.status.UNDER_REVIEW') || 'Under Review',
-      DOCUMENTS_REQUIRED: t('cases.status.DOCUMENTS_REQUIRED') || 'Documents Required',
-      PROCESSING: t('cases.status.PROCESSING') || 'Processing',
-      APPROVED: t('cases.status.APPROVED') || 'Approved',
-      REJECTED: t('cases.status.REJECTED') || 'Rejected',
-      CLOSED: t('cases.status.CLOSED') || 'Closed',
-    };
-    return labels[status] || status;
-  };
+      // Try translation first, fall back to default label
+      const translationKey = `cases.serviceTypes.${serviceType}`;
+      const translated = t(translationKey);
+
+      // If translation returns the key itself, use default label
+      if (translated === translationKey) {
+        return defaultLabels[serviceType] || serviceType.replace(/_/g, ' ');
+      }
+
+      return translated;
+    },
+    [t]
+  );
+
+  // Helper function to get human-readable status labels with proper fallbacks
+  const getCaseStatusLabel = useCallback(
+    (status: string): string => {
+      // Default English labels as fallback
+      const defaultLabels: Record<string, string> = {
+        SUBMITTED: 'Submitted',
+        UNDER_REVIEW: 'Under Review',
+        DOCUMENTS_REQUIRED: 'Documents Required',
+        PROCESSING: 'Processing',
+        APPROVED: 'Approved',
+        REJECTED: 'Rejected',
+        CLOSED: 'Closed',
+      };
+
+      // Try translation first, fall back to default label
+      const translationKey = `cases.status.${status}`;
+      const translated = t(translationKey);
+
+      // If translation returns the key itself, use default label
+      if (translated === translationKey) {
+        return defaultLabels[status] || status.replace(/_/g, ' ');
+      }
+
+      return translated;
+    },
+    [t]
+  );
 
   const isFormValid = useMemo(
     () =>
@@ -264,326 +294,360 @@ export function EmailComposer({
   }, []);
 
   // Form content component (reused in both Sheet and Dialog)
-  const FormContent = () => (
-    <div className="space-y-6 px-1">
-      {/* Recipient Info Card - For Agents/Admins */}
-      {user?.role !== 'CLIENT' && (recipientName || recipientEmail) && (
-        <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-full">
-              <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-blue-900 dark:text-blue-100">Sending email to:</h4>
-              <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mt-1">
-                {recipientName}
-              </p>
-              {recipientEmail && (
-                <p className="text-xs text-blue-600 dark:text-blue-400 truncate">
-                  {recipientEmail}
+  // Memoized to prevent re-rendering and input jumping
+  const FormContent = useMemo(
+    () => (
+      <div className="space-y-6 px-1">
+        {/* Recipient Info Card - For Agents/Admins */}
+        {user?.role !== 'CLIENT' && (recipientName || recipientEmail) && (
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-full">
+                <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-semibold text-blue-900 dark:text-blue-100">
+                  Sending email to:
+                </h4>
+                <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mt-1">
+                  {recipientName}
                 </p>
-              )}
-              {caseReference && (
-                <div className="mt-2 flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-300">
-                  <Briefcase className="h-3 w-3" />
-                  <span>Case: {caseReference}</span>
-                </div>
-              )}
+                {recipientEmail && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 truncate">
+                    {recipientEmail}
+                  </p>
+                )}
+                {caseReference && (
+                  <div className="mt-2 flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-300">
+                    <Briefcase className="h-3 w-3" />
+                    <span>Case: {caseReference}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Case Selector for Clients */}
-      {user?.role === 'CLIENT' ? (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="case-select" className="text-sm font-semibold flex items-center gap-2">
-              <Briefcase className="h-4 w-4 text-primary" />
-              {t('email.selectCase') || 'Select Case'}
-              <span className="text-red-500">*</span>
-            </Label>
-            {userCases.length > 0 && (
-              <span className="text-xs text-muted-foreground">
-                {userCases.length} {userCases.length === 1 ? 'case' : 'cases'}
-              </span>
-            )}
-          </div>
-
-          {isLoadingCases ? (
-            <div className="space-y-2">
-              <SimpleSkeleton className="h-14 w-full rounded-lg" />
-              <SimpleSkeleton className="h-4 w-3/4 rounded" />
-            </div>
-          ) : isErrorLoadingCases ? (
-            <div className="space-y-3">
-              <div className="flex items-start gap-3 text-sm text-red-700 dark:text-red-300 p-4 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800">
-                <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium">Unable to load cases</p>
-                  <p className="text-xs mt-1 opacity-90">
-                    {t('email.casesLoadError') || 'Please check your connection and try again.'}
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => refetchCases()}
-                className="w-full h-10"
+        {/* Case Selector for Clients */}
+        {user?.role === 'CLIENT' ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label
+                htmlFor="case-select"
+                className="text-sm font-semibold flex items-center gap-2"
               >
-                <AlertCircle className="h-4 w-4 mr-2" />
-                {t('common.retry') || 'Retry'}
-              </Button>
+                <Briefcase className="h-4 w-4 text-primary" />
+                {t('email.selectCase') || 'Select Case'}
+                <span className="text-red-500">*</span>
+              </Label>
+              {userCases.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {userCases.length} {userCases.length === 1 ? 'case' : 'cases'}
+                </span>
+              )}
             </div>
-          ) : userCases.length === 0 ? (
-            <div className="flex items-start gap-3 text-sm text-amber-700 dark:text-amber-300 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
-              <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium">No cases found</p>
-                <p className="text-xs mt-1 opacity-90">
-                  {t('email.noCasesAvailable') ||
-                    'Please create a case first to send emails to your agent.'}
-                </p>
+
+            {isLoadingCases ? (
+              <div className="space-y-2">
+                <SimpleSkeleton className="h-14 w-full rounded-lg" />
+                <SimpleSkeleton className="h-4 w-3/4 rounded" />
               </div>
-            </div>
-          ) : (
-            <>
-              <Select value={caseId} onValueChange={handleCaseChange}>
-                <SelectTrigger
-                  id="case-select"
-                  className="h-14 hover:bg-accent/50 transition-colors border-2 focus:ring-2 focus:ring-primary/20"
-                >
-                  <SelectValue
-                    placeholder={t('email.chooseCasePlaceholder') || 'Choose a case to continue...'}
-                  >
-                    {caseId &&
-                      (() => {
-                        const selectedCase = userCases.find((c: any) => c.id === caseId);
-                        if (!selectedCase) return null;
-
-                        const statusColorMap: Record<string, string> = {
-                          SUBMITTED:
-                            'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-                          UNDER_REVIEW:
-                            'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
-                          DOCUMENTS_REQUIRED:
-                            'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
-                          PROCESSING:
-                            'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
-                          APPROVED:
-                            'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
-                          REJECTED: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
-                          CLOSED: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-                        };
-                        const statusColor =
-                          statusColorMap[selectedCase.status] ||
-                          'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
-
-                        return (
-                          <div className="flex items-center justify-between w-full pr-2">
-                            <div className="flex flex-col gap-1">
-                              <span className="font-semibold text-sm">
-                                {selectedCase.referenceNumber}
-                              </span>
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Briefcase className="h-3 w-3" />
-                                {getServiceTypeLabel(selectedCase.serviceType)}
-                              </span>
-                            </div>
-                            <span
-                              className={`text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${statusColor}`}
-                            >
-                              {getCaseStatusLabel(selectedCase.status)}
-                            </span>
-                          </div>
-                        );
-                      })()}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  {userCases.map((caseItem: any) => {
-                    const statusColorMap: Record<string, string> = {
-                      SUBMITTED: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-                      UNDER_REVIEW:
-                        'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
-                      DOCUMENTS_REQUIRED:
-                        'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
-                      PROCESSING:
-                        'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
-                      APPROVED: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
-                      REJECTED: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
-                      CLOSED: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-                    };
-                    const statusColor =
-                      statusColorMap[caseItem.status] ||
-                      'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
-
-                    return (
-                      <SelectItem
-                        key={caseItem.id}
-                        value={caseItem.id}
-                        className="py-3 cursor-pointer hover:bg-accent focus:bg-accent"
-                      >
-                        <div className="flex flex-col gap-2 w-full">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-semibold text-sm">
-                              {caseItem.referenceNumber}
-                            </span>
-                            <span
-                              className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${statusColor}`}
-                            >
-                              {getCaseStatusLabel(caseItem.status)}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Briefcase className="h-3 w-3" />
-                            <span>{getServiceTypeLabel(caseItem.serviceType)}</span>
-                          </div>
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-
-              <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800/50">
-                <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-blue-700 dark:text-blue-300">
-                  {t('email.caseHelper') ||
-                    'Your email will be sent to the agent assigned to the selected case'}
-                </p>
-              </div>
-            </>
-          )}
-        </div>
-      ) : null}
-
-      {/* Subject */}
-      <div className="space-y-2.5">
-        <Label htmlFor="subject" className="text-sm font-semibold flex items-center gap-2">
-          {t('email.subject') || 'Subject'}
-          <span className="text-red-500">*</span>
-        </Label>
-        <Input
-          id="subject"
-          value={subject}
-          onChange={handleSubjectChange}
-          placeholder={t('email.subjectPlaceholder') || 'Enter email subject...'}
-          maxLength={200}
-          className="h-12 text-base focus:ring-2 focus:ring-primary/20 transition-all"
-        />
-        <div className="flex justify-between items-center">
-          <p className="text-xs text-muted-foreground">
-            {subject.trim() ? '✓ Subject provided' : 'Subject is required'}
-          </p>
-          <p className="text-xs text-muted-foreground">{subject.length}/200</p>
-        </div>
-      </div>
-
-      {/* Message Content - Rich Text Area */}
-      <div className="space-y-2.5">
-        <Label htmlFor="content" className="text-sm font-semibold flex items-center gap-2">
-          {t('email.message') || 'Message'}
-          <span className="text-red-500">*</span>
-        </Label>
-        <Textarea
-          id="content"
-          value={content}
-          onChange={handleContentChange}
-          placeholder={
-            t('email.contentPlaceholder') ||
-            'Type your message here...\n\nYou can format your message with:\n• Line breaks\n• Bullet points\n• Multiple paragraphs'
-          }
-          className="min-h-[220px] resize-y text-base leading-relaxed focus:ring-2 focus:ring-primary/20 transition-all"
-          maxLength={5000}
-        />
-        <div className="flex justify-between items-center">
-          <p className="text-xs text-muted-foreground">
-            {content.trim()
-              ? `✓ ${content.split(/\s+/).filter(Boolean).length} words`
-              : 'Message is required'}
-          </p>
-          <p className="text-xs text-muted-foreground">{content.length}/5000</p>
-        </div>
-      </div>
-
-      {/* Attachments */}
-      <div className="space-y-3">
-        <Label className="text-sm font-semibold">
-          {t('email.attachments') || 'Attachments'} (Optional)
-        </Label>
-
-        {/* Hidden file input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*,.pdf,.doc,.docx"
-          multiple
-          className="hidden"
-          onChange={handleFileSelect}
-        />
-
-        {/* Attachment Preview */}
-        {attachments.length > 0 && (
-          <div className="space-y-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
-            <p className="text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wide">
-              Attached Files ({attachments.length}/3)
-            </p>
-            {attachments.map((attachment, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-3 p-2.5 bg-white dark:bg-slate-950 rounded-md border border-slate-200 dark:border-slate-800 shadow-sm"
-              >
-                <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded">
-                  <FileIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{attachment.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {attachment.size > 1024 * 1024
-                      ? `${(attachment.size / (1024 * 1024)).toFixed(2)} MB`
-                      : `${(attachment.size / 1024).toFixed(0)} KB`}
-                  </p>
+            ) : isErrorLoadingCases ? (
+              <div className="space-y-3">
+                <div className="flex items-start gap-3 text-sm text-red-700 dark:text-red-300 p-4 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800">
+                  <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium">Unable to load cases</p>
+                    <p className="text-xs mt-1 opacity-90">
+                      {t('email.casesLoadError') || 'Please check your connection and try again.'}
+                    </p>
+                  </div>
                 </div>
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
-                  onClick={() => handleRemoveAttachment(index)}
-                  disabled={isUploading || sendEmail.isPending}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetchCases()}
+                  className="w-full h-10"
                 >
-                  <X className="h-4 w-4" />
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  {t('common.retry') || 'Retry'}
                 </Button>
               </div>
-            ))}
-          </div>
-        )}
+            ) : userCases.length === 0 ? (
+              <div className="flex items-start gap-3 text-sm text-amber-700 dark:text-amber-300 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+                <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium">No cases found</p>
+                  <p className="text-xs mt-1 opacity-90">
+                    {t('email.noCasesAvailable') ||
+                      'Please create a case first to send emails to your agent.'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Select value={caseId} onValueChange={handleCaseChange}>
+                  <SelectTrigger
+                    id="case-select"
+                    className="h-14 hover:bg-accent/50 transition-colors border-2 focus:ring-2 focus:ring-primary/20"
+                  >
+                    <SelectValue
+                      placeholder={
+                        t('email.chooseCasePlaceholder') || 'Choose a case to continue...'
+                      }
+                    >
+                      {caseId &&
+                        (() => {
+                          const selectedCase = userCases.find((c: any) => c.id === caseId);
+                          if (!selectedCase) return null;
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading || attachments.length >= 3 || sendEmail.isPending}
-          className="w-full h-11 border-dashed border-2 hover:border-solid"
-        >
-          <Paperclip className="h-4 w-4 mr-2" />
-          {isUploading ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Uploading...
-            </>
-          ) : (
-            `${attachments.length === 0 ? 'Add' : 'Add More'} Files (${attachments.length}/3)`
+                          const statusColorMap: Record<string, string> = {
+                            SUBMITTED:
+                              'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
+                            UNDER_REVIEW:
+                              'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
+                            DOCUMENTS_REQUIRED:
+                              'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
+                            PROCESSING:
+                              'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
+                            APPROVED:
+                              'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
+                            REJECTED: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
+                            CLOSED: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+                          };
+                          const statusColor =
+                            statusColorMap[selectedCase.status] ||
+                            'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+
+                          return (
+                            <div className="flex items-center justify-between w-full pr-2">
+                              <div className="flex flex-col gap-1">
+                                <span className="font-semibold text-sm">
+                                  {selectedCase.referenceNumber}
+                                </span>
+                                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <Briefcase className="h-3 w-3" />
+                                  {getServiceTypeLabel(selectedCase.serviceType)}
+                                </span>
+                              </div>
+                              <span
+                                className={`text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${statusColor}`}
+                              >
+                                {getCaseStatusLabel(selectedCase.status)}
+                              </span>
+                            </div>
+                          );
+                        })()}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {userCases.map((caseItem: any) => {
+                      const statusColorMap: Record<string, string> = {
+                        SUBMITTED: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
+                        UNDER_REVIEW:
+                          'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
+                        DOCUMENTS_REQUIRED:
+                          'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
+                        PROCESSING:
+                          'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
+                        APPROVED:
+                          'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
+                        REJECTED: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
+                        CLOSED: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+                      };
+                      const statusColor =
+                        statusColorMap[caseItem.status] ||
+                        'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+
+                      return (
+                        <SelectItem
+                          key={caseItem.id}
+                          value={caseItem.id}
+                          className="py-3 cursor-pointer hover:bg-accent focus:bg-accent"
+                        >
+                          <div className="flex flex-col gap-2 w-full">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-semibold text-sm">
+                                {caseItem.referenceNumber}
+                              </span>
+                              <span
+                                className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${statusColor}`}
+                              >
+                                {getCaseStatusLabel(caseItem.status)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <Briefcase className="h-3 w-3" />
+                              <span>{getServiceTypeLabel(caseItem.serviceType)}</span>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+
+                <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800/50">
+                  <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    {t('email.caseHelper') ||
+                      'Your email will be sent to the agent assigned to the selected case'}
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        ) : null}
+
+        {/* Subject */}
+        <div className="space-y-2.5">
+          <Label htmlFor="subject" className="text-sm font-semibold flex items-center gap-2">
+            {t('email.subject') || 'Subject'}
+            <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="subject"
+            value={subject}
+            onChange={handleSubjectChange}
+            placeholder={t('email.subjectPlaceholder') || 'Enter email subject...'}
+            maxLength={200}
+            className="h-12 text-base focus:ring-2 focus:ring-primary/20 transition-all"
+          />
+          <div className="flex justify-between items-center">
+            <p className="text-xs text-muted-foreground">
+              {subject.trim() ? '✓ Subject provided' : 'Subject is required'}
+            </p>
+            <p className="text-xs text-muted-foreground">{subject.length}/200</p>
+          </div>
+        </div>
+
+        {/* Message Content - Rich Text Area */}
+        <div className="space-y-2.5">
+          <Label htmlFor="content" className="text-sm font-semibold flex items-center gap-2">
+            {t('email.message') || 'Message'}
+            <span className="text-red-500">*</span>
+          </Label>
+          <Textarea
+            id="content"
+            value={content}
+            onChange={handleContentChange}
+            placeholder={
+              t('email.contentPlaceholder') ||
+              'Type your message here...\n\nYou can format your message with:\n• Line breaks\n• Bullet points\n• Multiple paragraphs'
+            }
+            className="min-h-[220px] resize-y text-base leading-relaxed focus:ring-2 focus:ring-primary/20 transition-all"
+            maxLength={5000}
+          />
+          <div className="flex justify-between items-center">
+            <p className="text-xs text-muted-foreground">
+              {content.trim()
+                ? `✓ ${content.split(/\s+/).filter(Boolean).length} words`
+                : 'Message is required'}
+            </p>
+            <p className="text-xs text-muted-foreground">{content.length}/5000</p>
+          </div>
+        </div>
+
+        {/* Attachments */}
+        <div className="space-y-3">
+          <Label className="text-sm font-semibold">
+            {t('email.attachments') || 'Attachments'} (Optional)
+          </Label>
+
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,.pdf,.doc,.docx"
+            multiple
+            className="hidden"
+            onChange={handleFileSelect}
+          />
+
+          {/* Attachment Preview */}
+          {attachments.length > 0 && (
+            <div className="space-y-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+              <p className="text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                Attached Files ({attachments.length}/3)
+              </p>
+              {attachments.map((attachment, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-3 p-2.5 bg-white dark:bg-slate-950 rounded-md border border-slate-200 dark:border-slate-800 shadow-sm"
+                >
+                  <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded">
+                    <FileIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{attachment.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {attachment.size > 1024 * 1024
+                        ? `${(attachment.size / (1024 * 1024)).toFixed(2)} MB`
+                        : `${(attachment.size / 1024).toFixed(0)} KB`}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+                    onClick={() => handleRemoveAttachment(index)}
+                    disabled={isUploading || sendEmail.isPending}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
           )}
-        </Button>
-        {attachments.length === 0 && (
-          <p className="text-xs text-muted-foreground text-center">
-            Support: Images, PDF, Word documents • Max 3 files
-          </p>
-        )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading || attachments.length >= 3 || sendEmail.isPending}
+            className="w-full h-11 border-dashed border-2 hover:border-solid"
+          >
+            <Paperclip className="h-4 w-4 mr-2" />
+            {isUploading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              `${attachments.length === 0 ? 'Add' : 'Add More'} Files (${attachments.length}/3)`
+            )}
+          </Button>
+          {attachments.length === 0 && (
+            <p className="text-xs text-muted-foreground text-center">
+              Support: Images, PDF, Word documents • Max 3 files
+            </p>
+          )}
+        </div>
       </div>
-    </div>
+    ),
+    [
+      user?.role,
+      recipientName,
+      recipientEmail,
+      caseReference,
+      isLoadingCases,
+      isErrorLoadingCases,
+      userCases,
+      caseId,
+      subject,
+      content,
+      attachments,
+      isUploading,
+      sendEmail.isPending,
+      t,
+      handleCaseChange,
+      handleSubjectChange,
+      handleContentChange,
+      handleRemoveAttachment,
+      refetchCases,
+      getServiceTypeLabel,
+      getCaseStatusLabel,
+    ]
   );
 
   // Desktop: Slide-over Sheet
@@ -603,9 +667,7 @@ export function EmailComposer({
             </SheetDescription>
           </SheetHeader>
 
-          <div className="py-6 px-1">
-            <FormContent />
-          </div>
+          <div className="py-6 px-1">{FormContent}</div>
 
           <SheetFooter className="gap-3 sm:gap-3 pt-6 border-t sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 pb-6">
             <Button
@@ -658,9 +720,7 @@ export function EmailComposer({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4">
-          <FormContent />
-        </div>
+        <div className="py-4">{FormContent}</div>
 
         <DialogFooter className="gap-3 flex-col sm:flex-row pt-4 border-t">
           <Button
