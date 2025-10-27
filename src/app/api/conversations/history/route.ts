@@ -1,5 +1,6 @@
-// GET /api/conversations/history - Get conversation history for agents/admins
+// GET /api/conversations/history - Get conversation history for all authenticated users
 // Shows both email and chat message history grouped by conversation
+// Performance: Uses efficient Prisma queries with pagination and selective includes
 
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
@@ -14,8 +15,8 @@ import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
 const handler = asyncHandler(async (request: NextRequest) => {
   const req = request as AuthenticatedRequest;
 
-  if (!req.user || !['AGENT', 'ADMIN'].includes(req.user.role)) {
-    throw new ApiError(ERROR_MESSAGES.FORBIDDEN, HttpStatus.FORBIDDEN);
+  if (!req.user) {
+    throw new ApiError(ERROR_MESSAGES.UNAUTHORIZED, HttpStatus.UNAUTHORIZED);
   }
 
   const { searchParams } = new URL(request.url);

@@ -14,6 +14,7 @@ import { sendPushNotificationToUser } from '@/lib/notifications/expo-push.servic
 import { sendEmail } from '@/lib/notifications/email.service';
 import { initializeFirebaseChat, sendWelcomeMessage } from '@/lib/firebase/chat.service';
 import { getAgentCaseAssignmentEmailTemplate } from '@/lib/notifications/email-templates';
+import { adminAuth } from '@/lib/firebase/firebase-admin';
 
 const handler = asyncHandler(
   async (request: NextRequest, context: { params: Promise<{ id: string }> }) => {
@@ -135,6 +136,34 @@ const handler = asyncHandler(
         caseId: params.id,
       });
 
+      // Get Firebase UIDs for client and agent (needed for Firebase rules)
+      // This must be done BEFORE the Promise.all to get the UIDs
+      let clientFirebaseUid = '';
+      let agentFirebaseUid = '';
+      try {
+        if (!adminAuth) {
+          throw new Error('Firebase Admin not initialized');
+        }
+        const clientFirebaseUser = await adminAuth.getUserByEmail(caseData.client.email);
+        clientFirebaseUid = clientFirebaseUser.uid;
+
+        const agentFirebaseUser = await adminAuth.getUserByEmail(caseData.assignedAgent!.email);
+        agentFirebaseUid = agentFirebaseUser.uid;
+
+        // Initialize Firebase chat conversation
+        await initializeFirebaseChat(
+          params.id,
+          caseData.referenceNumber,
+          clientFirebaseUid, // Use Firebase UID, not PostgreSQL ID
+          clientFullName,
+          agentFirebaseUid, // Use Firebase UID, not PostgreSQL ID
+          agentFullName
+        );
+      } catch (firebaseError) {
+        logger.error('Failed to get Firebase UIDs for chat initialization', firebaseError);
+        // Continue without chat initialization - non-critical
+      }
+
       await Promise.all([
         // 1. Notify the AGENT (web dashboard)
         createRealtimeNotification(agentId, {
@@ -188,24 +217,23 @@ const handler = asyncHandler(
           html: agentEmailTemplate.html,
         }),
 
-        // 7. Initialize Firebase chat conversation
-        initializeFirebaseChat(
-          params.id,
-          caseData.referenceNumber,
-          caseData.clientId,
-          clientFullName,
-          agentId,
-          agentFullName
-        ),
-
-        // 8. Optional: Send automatic welcome message from agent
-        sendWelcomeMessage(
-          params.id,
-          agentId,
-          agentFullName,
-          clientFullName,
-          caseData.referenceNumber
-        ),
+        // 7. Optional: Send automatic welcome message from agent
+        // Use Firebase UIDs for welcome message
+        ...(clientFirebaseUid && agentFirebaseUid
+          ? [
+              sendWelcomeMessage(
+                params.id,
+                agentFirebaseUid, // Use Firebase UID
+                agentFullName,
+                clientFullName,
+                caseData.referenceNumber
+              ),
+            ]
+          : [
+              Promise.resolve(
+                logger.warn('Skipping welcome message - Firebase UIDs not available')
+              ),
+            ]),
       ]);
 
       logger.info('All assignment notifications sent successfully', {

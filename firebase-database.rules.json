@@ -1,33 +1,25 @@
 {
   "rules": {
     ".read": false,
-    ".write": false,
+    ".write": "auth != null",
 
     "chats": {
-      "$caseId": {
-        // Rules for reading messages
-        ".read": "auth != null && (
-          data.child('metadata/participants/clientId').val() == auth.uid ||
-          data.child('metadata/participants/agentId').val() == auth.uid
-        )",
-
-        // Rules for writing messages
-        ".write": "auth != null && (
-          data.child('metadata/participants/clientId').val() == auth.uid ||
-          data.child('metadata/participants/agentId').val() == auth.uid
-        )",
-
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$chatRoomId": {
+        ".read": false,
+        ".write": false,
         "messages": {
           "$messageId": {
-            ".validate": "newData.hasChildren(['senderId', 'senderName', 'content', 'sentAt', 'caseId']) &&
-              newData.child('senderId').val() == auth.uid &&
-              newData.child('caseId').val() == $caseId"
+            ".read": "auth != null && (data.child('senderId').val() == auth.uid || !root.child('chats/' + $chatRoomId + '/metadata').exists() || root.child('chats/' + $chatRoomId + '/metadata/participants/clientId').val() == auth.uid || root.child('chats/' + $chatRoomId + '/metadata/participants/agentId').val() == auth.uid)",
+            ".write": "auth != null && newData.child('senderId').val() == auth.uid",
+            ".validate": "newData.hasChildren(['senderId', 'senderName', 'content', 'sentAt']) && newData.child('senderId').val() == auth.uid && newData.child('content').isString()"
           }
         },
-
         "metadata": {
-          ".validate": "newData.hasChildren(['participants', 'caseId']) &&
-            newData.child('caseId').val() == $caseId"
+          ".read": "auth != null && (!data.exists() || data.child('participants/clientId').val() == auth.uid || data.child('participants/agentId').val() == auth.uid)",
+          ".write": "auth != null && (!data.exists() || data.child('participants/clientId').val() == auth.uid || data.child('participants/agentId').val() == auth.uid)",
+          ".validate": "newData.val() == null || (newData.hasChild('participants') && newData.child('participants').hasChildren(['clientId', 'clientName', 'agentId', 'agentName']))"
         }
       }
     },

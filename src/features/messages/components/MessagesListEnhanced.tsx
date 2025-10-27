@@ -2,9 +2,11 @@
 
 // Enhanced messages list component with full chat functionality
 
-import { useState, useRef, useEffect, useMemo, memo } from 'react';
+import { useState, useRef, useEffect, useMemo, memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/features/auth/store';
+import { auth } from '@/lib/firebase/firebase-client';
+import { onAuthStateChanged } from 'firebase/auth';
 import {
   MessageSquare,
   Send,
@@ -69,12 +71,37 @@ export function MessagesList({
   const [isUploading, setIsUploading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [emailComposerOpen, setEmailComposerOpen] = useState(false);
+
+  // Refs
   const endRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cleanupTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const lastConversationsRef = useRef<Conversation[]>([]);
+  const switchedVirtualRooms = useRef<Set<string>>(new Set());
+  const autoSelectedRef = useRef(false);
 
   // Fix hydration mismatch - only render time-dependent content on client
   useEffect(() => {
     setIsMounted(true);
+
+    // Cleanup any remaining timers on unmount
+    return () => {
+      cleanupTimersRef.current.forEach((timer) => clearTimeout(timer));
+      cleanupTimersRef.current.clear();
+    };
+  }, []);
+
+  // Track Firebase UID (may change on auth state changes)
+  const [firebaseUserId, setFirebaseUserId] = useState<string | null>(
+    () => auth.currentUser?.uid || null
+  );
+
+  // Update Firebase UID when auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setFirebaseUserId(user?.uid || null);
+    });
+    return unsubscribe;
   }, []);
 
   // Handle preselected client - open email composer or select chat
@@ -92,7 +119,34 @@ export function MessagesList({
   const { chatRooms: apiConversations, isLoading: isLoadingConversations } = useRealtimeChatRooms();
 
   // REAL-TIME: Get messages for selected room (replaces polling)
-  const { messages: apiMessages, isLoading: isLoadingMessages } = useRealtimeMessages(selected);
+  // If selected is a virtual room, check if real Firebase room exists for this participant
+  const realChatRoomId = useMemo(() => {
+    if (!selected) return null;
+
+    // If it's a virtual room, try to find the real Firebase room
+    if (selected.startsWith('virtual-')) {
+      const participantId = selected.replace('virtual-', '');
+      const realRoom = apiConversations?.find((room) => {
+        const participantIds = Object.keys(room.participants || {});
+        return participantIds.includes(participantId);
+      });
+
+      console.log(
+        `[Room Mapping] Virtual room ${selected.substring(0, 8)}... -> Real room ${realRoom?.id?.substring(0, 8) || 'null'}...`,
+        {
+          participantId: participantId.substring(0, 8) + '...',
+          apiConversationsCount: apiConversations?.length || 0,
+        }
+      );
+
+      return realRoom?.id || null;
+    }
+
+    return selected;
+  }, [selected, apiConversations]);
+
+  const { messages: apiMessages, isLoading: isLoadingMessages } =
+    useRealtimeMessages(realChatRoomId);
 
   // REAL-TIME: Get typing status and control typing indicator
   const { startTyping, stopTyping } = useTypingStatus(selected);
@@ -101,16 +155,15 @@ export function MessagesList({
   const sendMessageMutation = useSendMessage();
 
   // User lookup for participant names (performance-optimized with caching)
-  // Pass apiMessages so CLIENT users can extract participant info from message metadata
   const { getUserInfo, isLoading: isLoadingUsers } = useUserLookup(apiMessages);
 
-  // Get participant IDs for presence tracking
+  // Get participant IDs for presence tracking (memoized)
   const participantIds = useMemo(() => {
-    if (!apiConversations) return [];
+    if (!apiConversations || !firebaseUserId) return [];
     return apiConversations
       .flatMap((room) => Object.keys(room.participants || {}))
-      .filter((id) => id !== user?.id);
-  }, [apiConversations, user?.id]);
+      .filter((id) => id !== firebaseUserId);
+  }, [apiConversations, firebaseUserId]);
 
   // REAL-TIME: Track online status of all participants
   const { presences } = useMultipleUserPresence(participantIds);
@@ -118,8 +171,10 @@ export function MessagesList({
   // REAL-TIME: Track typing indicators for selected chat
   const { typingUsers } = useTypingIndicators(selected);
 
-  // Transform ChatRoom to Conversation format for UI
+  // Transform ChatRoom to Conversation format for UI (fully memoized)
   const conversations = useMemo(() => {
+    if (!firebaseUserId) return [];
+
     const conversationList: Conversation[] = [];
 
     // Add existing Firebase chat rooms
@@ -129,25 +184,37 @@ export function MessagesList({
         .map((room) => {
           // Get the other participant (not current user)
           const otherParticipantId = Object.keys(room.participants || {}).find(
-            (id) => id !== user?.id
+            (id) => id !== firebaseUserId
           );
           const unreadCount = user?.id && room.unreadCount ? room.unreadCount[user.id] || 0 : 0;
 
-          // Lookup user info for participant (performance-optimized)
+          // Lookup user info for participant
           const participantInfo = getUserInfo(otherParticipantId);
-          const participantName = participantInfo?.fullName || 'Unknown User';
-          const participantRole = participantInfo?.role || 'User';
+
+          // Find existing conversation to preserve info during async lookup
+          const existingConversation = lastConversationsRef.current.find(
+            (c) => c.id === room.id || c.participantId === otherParticipantId
+          );
+
+          const participantName =
+            participantInfo?.fullName || existingConversation?.participantName || 'Unknown User';
+          const participantRole =
+            participantInfo?.role || existingConversation?.participantRole || 'User';
+          const participantEmail = participantInfo?.email || existingConversation?.participantEmail;
 
           return {
             id: room.id,
             participantId: otherParticipantId || '',
             participantName,
+            participantEmail,
             participantRole,
             lastMessage: room.lastMessage || '',
             lastMessageTime: room.lastMessageAt
               ? new Date(room.lastMessageAt).toISOString()
               : new Date().toISOString(),
             unreadCount,
+            caseId: room.caseId || room.id,
+            participantFirebaseId: otherParticipantId, // Store Firebase ID for matching
           } as Conversation;
         });
 
@@ -161,23 +228,40 @@ export function MessagesList({
       );
 
       if (!existsInList) {
-        // Create virtual conversation for preselected client
+        const preselectedInfo = getUserInfo(preselectedClientId);
+        const preselectedEmail = preselectedInfo?.email;
+
         conversationList.unshift({
-          id: `virtual-${preselectedClientId}`, // Virtual ID, will be replaced when chat room is created
+          id: `virtual-${preselectedClientId}`,
           participantId: preselectedClientId,
           participantName: preselectedClientName,
+          participantEmail: preselectedEmail,
           participantRole: 'CLIENT',
           lastMessage: 'Ready to start conversation',
           lastMessageTime: new Date().toISOString(),
           unreadCount: 0,
+          caseId: caseReference,
         } as Conversation);
       }
     }
 
-    return conversationList;
-  }, [apiConversations, user?.id, getUserInfo, preselectedClientId, preselectedClientName]);
+    // Update the last known conversations for fallback
+    if (conversationList.length > 0) {
+      lastConversationsRef.current = conversationList;
+    }
 
-  // Transform API messages to UI format and merge with optimistic messages
+    return conversationList;
+  }, [
+    apiConversations,
+    firebaseUserId,
+    user?.id,
+    getUserInfo,
+    preselectedClientId,
+    preselectedClientName,
+    caseReference,
+  ]);
+
+  // Transform API messages to UI format and merge with optimistic messages (optimized)
   const messages = useMemo(() => {
     if (!selected) return [];
 
@@ -200,16 +284,47 @@ export function MessagesList({
       transformedMessages.push(...transformed);
     }
 
-    // Merge optimistic messages (only ones not yet in Firebase)
-    const apiMessageIds = new Set(transformedMessages.map((m) => m.id));
-    const pendingOptimistic = optimisticMessages.filter((m) => !apiMessageIds.has(m.id));
-    transformedMessages.push(...pendingOptimistic);
+    // Merge optimistic messages efficiently
+    // Use content + senderId to match messages (more reliable than timestamp)
+    const apiMessageKeys = new Set(transformedMessages.map((m) => `${m.content}-${m.senderId}`));
+    const pendingOptimistic = optimisticMessages.filter((m) => {
+      const messageKey = `${m.content}-${m.senderId}`;
+      return !apiMessageKeys.has(messageKey);
+    });
 
-    // Sort by time
-    return transformedMessages.sort(
-      (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
-    );
+    // Debug logging
+    if (transformedMessages.length > 0 || optimisticMessages.length > 0) {
+      console.log(
+        `[Messages] Room ${selected?.substring(0, 8)}... - API: ${transformedMessages.length}, Optimistic: ${optimisticMessages.length}, Pending: ${pendingOptimistic.length}`
+      );
+      if (transformedMessages.length > 0) {
+        console.log(`[Messages] Latest API message:`, {
+          id: transformedMessages[transformedMessages.length - 1].id?.substring(0, 8) + '...',
+          senderId:
+            transformedMessages[transformedMessages.length - 1].senderId?.substring(0, 8) + '...',
+          content:
+            transformedMessages[transformedMessages.length - 1].content?.substring(0, 20) + '...',
+        });
+      }
+    }
+
+    // Combine and sort once
+    const allMessages = [...transformedMessages, ...pendingOptimistic];
+    return allMessages.sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
   }, [selected, apiMessages, optimisticMessages]);
+
+  // Memoize selected conversation to avoid repeated finds
+  // Use lastConversationsRef as fallback to prevent null during async updates
+  const selectedConversation = useMemo(() => {
+    const found = conversations.find((c) => c.id === selected);
+
+    // If not found in current conversations, check lastConversationsRef
+    if (!found && selected) {
+      return lastConversationsRef.current.find((c) => c.id === selected);
+    }
+
+    return found;
+  }, [conversations, selected]);
 
   // Filter conversations by search query
   const filteredConversations = useMemo(() => {
@@ -227,31 +342,89 @@ export function MessagesList({
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Auto-select conversation based on preselected client or first available
+  // Auto-select conversation based on preselected client or first available (only once)
   useEffect(() => {
+    if (autoSelectedRef.current) return; // Already auto-selected once
     if (conversations.length === 0) return;
 
-    // PRIORITY: If we have a preselected client from URL, always select that conversation
     if (preselectedClientId) {
       const targetConversation = conversations.find(
         (conv) => conv.participantId === preselectedClientId
       );
 
-      if (targetConversation && targetConversation.id !== selected) {
-        console.log('[Auto-select] Selecting preselected client conversation:', {
-          conversationId: targetConversation.id,
-          clientId: preselectedClientId,
-          clientName: targetConversation.participantName,
+      if (targetConversation) {
+        logger.debug('[Auto-select] Selecting preselected client conversation', {
+          conversationId: targetConversation.id.substring(0, 8) + '...',
           isNew: targetConversation.id.startsWith('virtual-'),
         });
         setSelected(targetConversation.id);
+        autoSelectedRef.current = true;
       }
     } else if (!selected) {
       // No preselection, select first conversation
-      console.log('[Auto-select] No preselection - selecting first conversation');
+      logger.debug('[Auto-select] No preselection - selecting first conversation');
       setSelected(conversations[0].id);
+      autoSelectedRef.current = true;
     }
   }, [conversations, preselectedClientId, selected]);
+
+  // Auto-switch from virtual room to real Firebase room when it's created (only once per room)
+  useEffect(() => {
+    if (!selected || !selected.startsWith('virtual-')) return;
+
+    // Already switched this virtual room? Skip to prevent repeated switches
+    if (switchedVirtualRooms.current.has(selected)) return;
+
+    const participantId = selected.replace('virtual-', '');
+
+    console.log('[Auto-switch] Checking for real room', {
+      virtualRoom: selected.substring(0, 8) + '...',
+      participantId: participantId.substring(0, 8) + '...',
+      apiConversationsCount: apiConversations?.length || 0,
+    });
+
+    if (!apiConversations || apiConversations.length === 0) {
+      console.log('[Auto-switch] No conversations available yet');
+      return;
+    }
+
+    const realRoom = apiConversations.find((room) => {
+      const participantIds = Object.keys(room.participants || {});
+      const matches = participantIds.some((id) => id === participantId);
+      console.log('[Auto-switch] Checking room', {
+        roomId: room.id?.substring(0, 8) + '...',
+        participantIds: participantIds.map((id) => id.substring(0, 8) + '...'),
+        searchingFor: participantId.substring(0, 8) + '...',
+        matches,
+      });
+      return matches;
+    });
+
+    if (realRoom && realRoom.id && realRoom.id !== selected) {
+      console.log('[Auto-switch] ⚡ Switching from virtual to real Firebase room', {
+        from: selected.substring(0, 8) + '...',
+        to: realRoom.id.substring(0, 8) + '...',
+      });
+
+      // Mark this virtual room as switched to prevent repeated switches
+      switchedVirtualRooms.current.add(selected);
+
+      // Optional: merge optimistic messages from virtual room into real room
+      setOptimisticMessages((prev) =>
+        prev.map((msg) => ({
+          ...msg,
+          roomId: realRoom.id, // Update room ID for context
+        }))
+      );
+
+      // Switch to real room
+      setSelected(realRoom.id);
+    } else {
+      console.log('[Auto-switch] No real room found yet', {
+        foundRoom: realRoom?.id?.substring(0, 8) + '...' || 'null',
+      });
+    }
+  }, [selected, apiConversations]);
 
   const formatTime = (date: string) => {
     // Avoid hydration mismatch - don't render time on server
@@ -269,65 +442,126 @@ export function MessagesList({
     return d.toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' });
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || !selected || !user) return;
+  // Retry failed message (optimized callback)
+  const handleRetryMessage = useCallback(
+    async (msg: Message) => {
+      if (!selected || !user || !selectedConversation) return;
 
-    // Stop typing indicator when sending
+      const recipientInfo = getUserInfo(selectedConversation.participantId);
+
+      try {
+        await sendMessageMutation.mutateAsync({
+          recipientId: selectedConversation.participantId,
+          recipientName: selectedConversation.participantName,
+          recipientEmail: recipientInfo?.email || '',
+          content: msg.content,
+          attachments: msg.attachments,
+          caseId: selectedConversation.caseId,
+        });
+
+        setOptimisticMessages((prev) => prev.filter((m) => m.id !== msg.id));
+      } catch (error: any) {
+        toast.error(error?.message || 'Failed to retry message');
+      }
+    },
+    [selected, user, sendMessageMutation, selectedConversation, getUserInfo]
+  );
+
+  // Optimized send handler with proper cleanup
+  const handleSend = useCallback(async () => {
+    if (!input.trim() || !selected || !user || !selectedConversation) return;
+
     stopTyping();
 
-    // Find the selected conversation to get recipient info
-    const selectedConv = conversations.find((c) => c.id === selected);
-    if (!selectedConv) {
-      toast.error('Unable to send message: conversation not found');
-      return;
-    }
-
-    // Get recipient info for proper message sending
-    const recipientInfo = getUserInfo(selectedConv.participantId);
-
-    // Store the message content
+    const recipientInfo = getUserInfo(selectedConversation.participantId);
     const messageContent = input.trim();
+    const messageAttachments = [...attachments];
 
-    // Clear input immediately for better UX
+    // Clear UI immediately
     setInput('');
+    setAttachments([]);
 
-    // OPTIMISTIC UPDATE: Add message to UI immediately
-    const optimisticMessage: Message = {
-      id: `temp-${Date.now()}`,
-      senderId: user.id,
+    // Create optimistic message using Firebase UID for consistency
+    const optimisticId = `temp-${Date.now()}`;
+    const optimisticMessage = {
+      id: optimisticId,
+      senderId: firebaseUserId || user.id, // Use Firebase UID if available, fallback to PostgreSQL ID
       senderName: `${user.firstName} ${user.lastName}`.trim(),
+      recipientId: selectedConversation.participantId,
+      recipientName: selectedConversation.participantName,
       content: messageContent,
       sentAt: new Date().toISOString(),
-      attachments: attachments.length > 0 ? attachments : undefined,
+      isRead: false,
+      attachments: messageAttachments.length > 0 ? messageAttachments : undefined,
+      status: 'sending' as const,
+      caseId: selectedConversation.caseId,
     };
 
-    // Add to optimistic messages array
     setOptimisticMessages((prev) => [...prev, optimisticMessage]);
 
-    try {
-      // Send through API mutation - error handling is done in the mutation
-      await sendMessageMutation.mutateAsync({
-        recipientId: selectedConv.participantId,
-        recipientName: selectedConv.participantName,
+    // Cleanup timer management - only remove successfully sent messages
+    const scheduleCleanup = (timeout: number) => {
+      const timer = setTimeout(() => {
+        // Only remove messages that are successfully sent
+        // Keep failed messages so user can retry
+        setOptimisticMessages((prev) =>
+          prev.filter((msg) => {
+            if (msg.id === optimisticId) {
+              // Keep if status is 'sending' or 'failed' (not yet sent or failed)
+              return msg.status !== 'sent';
+            }
+            return true;
+          })
+        );
+        cleanupTimersRef.current.delete(optimisticId);
+      }, timeout);
+      cleanupTimersRef.current.set(optimisticId, timer);
+    };
+
+    // Send in background
+    sendMessageMutation
+      .mutateAsync({
+        recipientId: selectedConversation.participantId,
+        recipientName: selectedConversation.participantName,
         recipientEmail: recipientInfo?.email || '',
         content: messageContent,
-        attachments: attachments.length > 0 ? attachments : undefined,
+        attachments: messageAttachments.length > 0 ? messageAttachments : undefined,
+        caseId: selectedConversation.caseId,
+      })
+      .then(() => {
+        // Don't immediately clean up - let Firebase real-time listener handle it
+        // Just mark as sent and let the natural flow replace it
+        setOptimisticMessages((prev) =>
+          prev.map((msg) => (msg.id === optimisticId ? { ...msg, status: 'sent' as const } : msg))
+        );
+        // Increase cleanup time to give Firebase listener more time
+        scheduleCleanup(5000);
+      })
+      .catch((error: any) => {
+        setOptimisticMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === optimisticId
+              ? { ...msg, status: 'failed' as const, errorMessage: error?.message }
+              : msg
+          )
+        );
+        setInput(messageContent);
+        setAttachments(messageAttachments);
+        toast.error(error?.message || 'Failed to send message. Click the failed message to retry.');
+
+        // Don't schedule cleanup for failed messages - let them stay in UI
+        // This way user can retry by clicking on the failed message
       });
-
-      // Clear attachments after successful send
-      setAttachments([]);
-
-      // Success! Firebase real-time listener will pick it up and replace optimistic message
-      // Clean up optimistic message after a delay (Firebase should have it by then)
-      setTimeout(() => {
-        setOptimisticMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessage.id));
-      }, 2000);
-    } catch (error) {
-      // Remove optimistic message on error
-      setOptimisticMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessage.id));
-      // Error toast is shown by mutation
-    }
-  };
+  }, [
+    input,
+    selected,
+    user,
+    stopTyping,
+    selectedConversation,
+    getUserInfo,
+    attachments,
+    sendMessageMutation,
+  ]);
 
   // Handle file selection
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -380,35 +614,38 @@ export function MessagesList({
     }
   };
 
-  // Remove attachment
-  const handleRemoveAttachment = (index: number) => {
+  // Remove attachment (memoized)
+  const handleRemoveAttachment = useCallback((index: number) => {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
-  };
+  }, []);
 
-  // Trigger file input click
-  const handleAttachmentClick = () => {
+  // Trigger file input click (memoized)
+  const handleAttachmentClick = useCallback(() => {
     fileInputRef.current?.click();
-  };
-
-  const selectedConversation = conversations.find((c) => c.id === selected);
+  }, []);
 
   // PROGRESSIVE UI: Show layout immediately, populate with data as it loads
   const isFirstLoad = (isLoadingConversations || isLoadingUsers) && conversations.length === 0;
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
-          <p className="text-muted-foreground mt-2">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+        <div className="flex-1">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Messages</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-2">
             {user?.role === 'CLIENT'
               ? 'Communicate with your immigration advisor'
               : 'Manage conversations with your clients'}
           </p>
         </div>
-        <Button variant="outline" onClick={() => setEmailComposerOpen(true)} className="gap-2">
+        <Button
+          variant="outline"
+          onClick={() => setEmailComposerOpen(true)}
+          className="gap-2 w-full sm:w-auto"
+        >
           <Mail className="h-4 w-4" />
-          Send Email
+          <span className="hidden sm:inline">Send Email</span>
+          <span className="sm:hidden">Email</span>
         </Button>
       </div>
 
@@ -422,9 +659,9 @@ export function MessagesList({
         caseReference={caseReference}
       />
 
-      <div className="grid lg:grid-cols-3 gap-4 h-[calc(100vh-16rem)]">
-        {/* Conversations */}
-        <Card className="lg:col-span-1 overflow-hidden flex flex-col">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-14rem)] sm:h-[calc(100vh-16rem)]">
+        {/* Conversations - Hidden on mobile */}
+        <Card className="hidden lg:flex lg:col-span-1 overflow-hidden flex-col">
           <CardHeader className="border-b">
             <CardTitle className="text-base">Conversations</CardTitle>
             <div className="relative mt-2">
@@ -518,7 +755,7 @@ export function MessagesList({
         </Card>
 
         {/* Chat */}
-        <Card className="lg:col-span-2 overflow-hidden flex flex-col">
+        <Card className="col-span-1 lg:col-span-2 overflow-hidden flex flex-col">
           {selected && selectedConversation ? (
             <>
               <CardHeader className="border-b">
@@ -576,7 +813,12 @@ export function MessagesList({
                 ) : (
                   <>
                     {messages.map((msg) => {
-                      const isOwn = user ? msg.senderId === user.id : false;
+                      // Use Firebase UID for comparison when available, fallback to PostgreSQL ID
+                      const isOwn = firebaseUserId
+                        ? msg.senderId === firebaseUserId
+                        : user
+                          ? msg.senderId === user.id
+                          : false;
                       const hasAttachments = msg.attachments && msg.attachments.length > 0;
 
                       return (
@@ -711,17 +953,44 @@ export function MessagesList({
                               </div>
                             )}
 
-                            {isMounted && (
-                              <p
-                                className={cn(
-                                  'text-xs',
-                                  isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                                )}
-                                suppressHydrationWarning
-                              >
-                                {formatTime(msg.sentAt)}
-                              </p>
-                            )}
+                            <div className="flex items-center justify-between gap-2">
+                              {isMounted && (
+                                <p
+                                  className={cn(
+                                    'text-xs',
+                                    isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                                  )}
+                                  suppressHydrationWarning
+                                >
+                                  {formatTime(msg.sentAt)}
+                                </p>
+                              )}
+
+                              {/* Status indicators */}
+                              {isOwn && msg.status && (
+                                <div className="flex items-center gap-1">
+                                  {msg.status === 'sending' && (
+                                    <div className="flex items-center gap-1">
+                                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current opacity-50" />
+                                      <span className="text-xs opacity-70">Sending...</span>
+                                    </div>
+                                  )}
+                                  {msg.status === 'sent' && (
+                                    <span className="text-xs opacity-70">✓ Sent</span>
+                                  )}
+                                  {msg.status === 'failed' && (
+                                    <button
+                                      onClick={() => handleRetryMessage(msg)}
+                                      className="flex items-center gap-1 text-xs hover:underline cursor-pointer"
+                                      title="Click to retry sending this message"
+                                    >
+                                      <X className="h-3 w-3 text-red-400" />
+                                      Failed - Click to retry
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
@@ -757,7 +1026,7 @@ export function MessagesList({
                   </>
                 )}
               </CardContent>
-              <div className="border-t p-4">
+              <div className="border-t p-3 sm:p-4 bg-background">
                 {/* Attachment Preview */}
                 {attachments.length > 0 && (
                   <div className="mb-3 flex flex-wrap gap-2">
@@ -771,7 +1040,9 @@ export function MessagesList({
                         ) : (
                           <FileIcon className="h-4 w-4 text-muted-foreground" />
                         )}
-                        <span className="truncate max-w-[150px]">{attachment.name}</span>
+                        <span className="truncate max-w-[100px] sm:max-w-[150px]">
+                          {attachment.name}
+                        </span>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -785,7 +1056,7 @@ export function MessagesList({
                   </div>
                 )}
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                   {/* Hidden file input */}
                   <input
                     ref={fileInputRef}
@@ -802,6 +1073,7 @@ export function MessagesList({
                     onClick={handleAttachmentClick}
                     disabled={isUploading || attachments.length >= 3}
                     title={isUploading ? 'Uploading...' : 'Attach file'}
+                    className="flex-shrink-0 h-9 w-9"
                   >
                     <Paperclip className={cn('h-4 w-4', isUploading && 'animate-pulse')} />
                   </Button>
@@ -818,18 +1090,16 @@ export function MessagesList({
                         stopTyping();
                       }
                     }}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
                     onBlur={stopTyping}
-                    disabled={sendMessageMutation.isPending || isUploading}
+                    className="flex-1 min-w-0 text-sm sm:text-base"
                   />
 
                   <Button
                     onClick={handleSend}
-                    disabled={
-                      (!input.trim() && attachments.length === 0) ||
-                      sendMessageMutation.isPending ||
-                      isUploading
-                    }
+                    disabled={(!input.trim() && attachments.length === 0) || isUploading}
+                    title="Send message"
+                    className="flex-shrink-0 h-9 w-9"
                   >
                     <Send className="h-4 w-4" />
                   </Button>

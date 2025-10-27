@@ -1,9 +1,10 @@
 // Firebase Chat Service for Backend
 // Initializes and manages Firebase Realtime Database chat conversations
 
-import { ref, set, update, get } from 'firebase/database';
+import { ref, set, update, get, push } from 'firebase/database';
 import { database } from './firebase-client';
 import { logger } from '@/lib/utils/logger';
+import { setLogLevel } from 'firebase/app';
 
 export interface ChatParticipants {
   clientId: string;
@@ -23,13 +24,16 @@ export interface ChatMetadata {
 /**
  * Initialize a Firebase chat conversation when a case is assigned to an agent
  * This creates the chat room structure in Firebase Realtime Database
+ *
+ * NOTE: clientId and agentId should be Firebase UIDs, not PostgreSQL IDs
+ * This is required for Firebase security rules to work correctly
  */
 export async function initializeFirebaseChat(
   caseId: string,
   caseReference: string,
-  clientId: string,
+  clientId: string, // Should be Firebase UID
   clientName: string,
-  agentId: string,
+  agentId: string, // Should be Firebase UID
   agentName: string
 ): Promise<void> {
   try {
@@ -96,7 +100,7 @@ export async function initializeFirebaseChat(
  */
 export async function sendWelcomeMessage(
   caseId: string,
-  agentId: string,
+  agentId: string, // Should be Firebase UID
   agentName: string,
   clientName: string,
   caseReference: string
@@ -107,11 +111,10 @@ export async function sendWelcomeMessage(
 
     const welcomeMessage = {
       caseId,
-      senderId: agentId,
+      senderId: agentId, // Using Firebase UID
       senderName: agentName,
-      senderRole: 'AGENT',
-      message: `Hello ${clientName.split(' ')[0]}, I'm ${agentName}, your advisor for case ${caseReference}. I've reviewed your case and I'm here to help. Feel free to ask any questions!`,
-      timestamp: Date.now(),
+      content: `Hello ${clientName.split(' ')[0]}, I'm ${agentName}, your advisor for case ${caseReference}. I've reviewed your case and I'm here to help. Feel free to ask any questions!`,
+      sentAt: Date.now(),
       isRead: false,
     };
 
@@ -120,7 +123,7 @@ export async function sendWelcomeMessage(
     // Update conversation metadata
     const metadataRef = ref(database, `chats/${caseId}/metadata`);
     await update(metadataRef, {
-      lastMessage: welcomeMessage.message.substring(0, 100),
+      lastMessage: welcomeMessage.content.substring(0, 100),
       lastMessageTime: Date.now(),
     });
 
@@ -179,9 +182,11 @@ export interface SendMessageParams {
   senderId: string;
   senderName: string;
   senderEmail: string;
+  senderRole?: 'AGENT' | 'CLIENT'; // Role of the sender
   recipientId: string;
   recipientName: string;
   recipientEmail: string;
+  recipientRole?: 'AGENT' | 'CLIENT'; // Role of the recipient
   content: string;
   caseId?: string;
   subject?: string;
@@ -190,12 +195,33 @@ export interface SendMessageParams {
 
 export async function sendMessage(params: SendMessageParams): Promise<string> {
   try {
+    logger.info('sendMessage called with params', {
+      hasCaseId: !!params.caseId,
+      senderId: params.senderId.substring(0, 8) + '...',
+      recipientId: params.recipientId.substring(0, 8) + '...',
+      contentLength: params.content.length,
+    });
+
+    // Debug Firebase auth state
+    const { auth } = await import('./firebase-client');
+    logger.info('Firebase auth state', {
+      currentUser: auth.currentUser?.uid ? auth.currentUser.uid.substring(0, 8) + '...' : 'null',
+      email: auth.currentUser?.email || 'null',
+    });
+
+    setLogLevel('debug');
     // Determine chat room ID (use caseId if available, otherwise create from participant IDs)
     const chatRoomId = params.caseId || [params.senderId, params.recipientId].sort().join('-');
-    
+
+    logger.info('Chat room ID determined', { chatRoomId: chatRoomId.substring(0, 12) + '...' });
+
     const timestamp = Date.now();
-    const messageId = `${timestamp}-${Math.random().toString(36).substr(2, 9)}`;
-    const messageRef = ref(database, `chats/${chatRoomId}/messages/${messageId}`);
+
+    // Use push() to generate unique IDs automatically - prevents collisions
+    const messagesRef = ref(database, `chats/${chatRoomId}/messages`);
+    const newMessageRef = push(messagesRef);
+    const messageId = newMessageRef.key!;
+    const messageRef = newMessageRef;
 
     const message = {
       id: messageId,
@@ -203,41 +229,141 @@ export async function sendMessage(params: SendMessageParams): Promise<string> {
       senderName: params.senderName,
       content: params.content,
       sentAt: timestamp,
+      caseId: params.caseId || chatRoomId, // REQUIRED by Firebase rules
       attachments: params.attachments || [],
     };
 
-    await set(messageRef, message);
-
-    // Update chat room metadata
-    const metadataRef = ref(database, `chats/${chatRoomId}/metadata`);
-    await update(metadataRef, {
-      lastMessage: params.content.substring(0, 100),
-      lastMessageAt: timestamp,
-      participants: {
-        [params.senderId]: {
-          id: params.senderId,
-          name: params.senderName,
-          email: params.senderEmail,
-        },
-        [params.recipientId]: {
-          id: params.recipientId,
-          name: params.recipientName,
-          email: params.recipientEmail,
-        },
-      },
+    logger.info('Attempting to write message to Firebase', {
+      path: `chats/${chatRoomId}/messages/${messageId}`,
     });
 
-    logger.info('Message sent via Firebase', { chatRoomId, messageId });
+    // CRITICAL: Ensure metadata exists before writing message
+    // Firebase read rules require metadata to check permissions
+    const metadataRef = ref(database, `chats/${chatRoomId}/metadata`);
+    const existingMetadata = await get(metadataRef);
+
+    if (!existingMetadata.exists()) {
+      logger.info('Creating chat room metadata');
+      // Create full metadata structure that Firebase rules expect
+      // Determine roles based on provided role information or fallback to alphabetical ordering
+      let clientId: string;
+      let clientName: string;
+      let agentId: string;
+      let agentName: string;
+
+      if (params.senderRole && params.recipientRole) {
+        // Use explicit roles if provided
+        if (params.senderRole === 'CLIENT') {
+          clientId = params.senderId;
+          clientName = params.senderName;
+          agentId = params.recipientId;
+          agentName = params.recipientName;
+        } else {
+          clientId = params.recipientId;
+          clientName = params.recipientName;
+          agentId = params.senderId;
+          agentName = params.senderName;
+        }
+      } else {
+        // Fallback: Order alphabetically (original approach)
+        const orderedIds = [params.senderId, params.recipientId].sort();
+        clientId = orderedIds[0];
+        clientName = orderedIds[0] === params.senderId ? params.senderName : params.recipientName;
+        agentId = orderedIds[1];
+        agentName = orderedIds[1] === params.senderId ? params.senderName : params.recipientName;
+      }
+
+      const metadataData = {
+        participants: {
+          clientId,
+          clientName,
+          agentId,
+          agentName,
+        },
+        createdAt: timestamp,
+        lastMessage: params.content.substring(0, 100),
+        lastMessageTime: timestamp,
+      };
+
+      logger.info('Creating metadata with participants', {
+        clientId: clientId.substring(0, 8) + '...',
+        clientName,
+        agentId: agentId.substring(0, 8) + '...',
+        agentName,
+        chatRoomId: chatRoomId.substring(0, 12) + '...',
+      });
+
+      try {
+        await set(metadataRef, metadataData);
+        logger.info('Chat room metadata created successfully');
+      } catch (metadataError: any) {
+        logger.error('Failed to create metadata', {
+          error: metadataError?.message,
+          code: metadataError?.code,
+          chatRoomId: chatRoomId.substring(0, 12) + '...',
+        });
+        throw metadataError;
+      }
+    } else {
+      // Update metadata with new last message
+      logger.info('Updating chat room metadata');
+      const currentData = existingMetadata.val();
+      try {
+        // Need to include participants in update for Firebase rules to pass
+        await update(metadataRef, {
+          participants: currentData.participants,
+          lastMessage: params.content.substring(0, 100),
+          lastMessageTime: timestamp,
+        });
+        logger.info('Chat room metadata updated successfully');
+      } catch (metaUpdateError: any) {
+        // This is non-critical - message can still be written
+        logger.warn('Metadata update failed (non-critical)', {
+          error: metaUpdateError?.message,
+        });
+      }
+    }
+
+    // Now write the message
+    logger.info('Writing message to Firebase');
+
+    try {
+      await set(messageRef, message);
+      logger.info('Message successfully written to Firebase', { messageId });
+    } catch (writeError: any) {
+      logger.error('Failed to write message to Firebase', {
+        error: writeError?.message,
+        code: writeError?.code,
+        stack: writeError?.stack,
+        chatRoomId: chatRoomId.substring(0, 12) + '...',
+        messageId,
+        senderId: params.senderId.substring(0, 8) + '...',
+      });
+      throw writeError;
+    }
+
+    logger.info('Message sent via Firebase successfully', {
+      chatRoomId: chatRoomId.substring(0, 12) + '...',
+      messageId,
+    });
     return messageId;
-  } catch (error) {
-    logger.error('Failed to send message', error);
+  } catch (error: any) {
+    logger.error('Failed to send message to Firebase', {
+      error: error?.message,
+      code: error?.code,
+      chatRoomId:
+        params.caseId ||
+        [params.senderId, params.recipientId].sort().join('-').substring(0, 12) + '...',
+    });
     throw error;
   }
 }
 
 export interface ChatRoom {
   id?: string;
-  participants: Record<string, boolean> | Record<string, { id: string; name: string; email: string }>;
+  participants:
+    | Record<string, boolean>
+    | Record<string, { id: string; name: string; email: string }>;
   caseId?: string;
   lastMessage?: string;
   lastMessageAt?: number;

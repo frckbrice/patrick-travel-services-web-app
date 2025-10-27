@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
       logger.info('Password reset link generated', {
         userId: userRecord.uid,
-        email: email
+        email: email,
       });
 
       // Firebase Admin SDK automatically sends the email

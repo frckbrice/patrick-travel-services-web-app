@@ -23,10 +23,10 @@ function MessagesPageSkeleton() {
 
 export default async function MessagesPage({ searchParams }: MessagesPageProps) {
   const params = await searchParams;
-  
+
   return (
     <Suspense fallback={<MessagesPageSkeleton />}>
-      <MessagesPageWithTabs 
+      <MessagesPageWithTabs
         preselectedClientId={params.clientId}
         preselectedClientName={params.clientName}
         preselectedClientEmail={params.clientEmail}

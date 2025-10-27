@@ -222,7 +222,8 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
       return;
     }
     // Navigate to messages page with client parameters
-    const clientName = `${caseData.client.firstName || ''} ${caseData.client.lastName || ''}`.trim();
+    const clientName =
+      `${caseData.client.firstName || ''} ${caseData.client.lastName || ''}`.trim();
     router.push(
       `/dashboard/messages?clientId=${caseData.clientId}&clientName=${encodeURIComponent(clientName)}&clientEmail=${encodeURIComponent(caseData.client.email)}&caseRef=${encodeURIComponent(caseData.referenceNumber)}`
     );
@@ -234,7 +235,8 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
       return;
     }
     // Navigate to messages page with email mode and client parameters
-    const clientName = `${caseData.client.firstName || ''} ${caseData.client.lastName || ''}`.trim();
+    const clientName =
+      `${caseData.client.firstName || ''} ${caseData.client.lastName || ''}`.trim();
     router.push(
       `/dashboard/messages?mode=email&clientId=${caseData.clientId}&clientName=${encodeURIComponent(clientName)}&clientEmail=${encodeURIComponent(caseData.client.email)}&caseRef=${encodeURIComponent(caseData.referenceNumber)}`
     );
@@ -470,7 +472,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                   />
                   <InfoRow icon={Mail} label="Email" value={caseData.client?.email || 'N/A'} />
                   <InfoRow icon={Phone} label="Phone" value={caseData.client?.phone || 'N/A'} />
-                  
+
                   {/* Message/Email Client Actions - Only for Agents/Admins */}
                   {isAgent && caseData.client && (
                     <>
@@ -496,7 +498,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                               <p>Start a real-time chat with this client</p>
                             </TooltipContent>
                           </Tooltip>
-                          
+
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button

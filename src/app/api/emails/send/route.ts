@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
-import { NotificationType } from '@prisma/client';
+import { NotificationType, MessageType } from '@prisma/client';
 import { sendUserEmail } from '@/lib/notifications/email.service';
 import { logger } from '@/lib/utils/logger';
 import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
@@ -151,11 +151,9 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
       caseId: caseId || null,
       subject,
       content,
-      attachments: {
-        messageType: 'EMAIL',
-        emailThreadId,
-        files: attachments || [],
-      },
+      messageType: MessageType.EMAIL,
+      emailThreadId,
+      attachments: attachments || [],
       isRead: false,
       sentAt: new Date(),
     },
