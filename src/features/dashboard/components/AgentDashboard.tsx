@@ -35,18 +35,36 @@ export const AgentDashboard = memo(function AgentDashboard() {
   );
 
   const cases: Case[] = casesData?.cases || [];
-  const assignedCases = user?.id ? cases.filter((c: Case) => c.assignedAgentId === user.id) : [];
+
+  // For ADMIN: show all cases. For AGENT: show only assigned cases
+  const assignedCases = useMemo(() => {
+    if (!user?.id || !cases.length) return [];
+
+    // ADMIN sees all cases in the system
+    if (user.role === 'ADMIN') {
+      return cases;
+    }
+
+    // AGENT sees only their assigned cases
+    return cases.filter((c: Case) => {
+      const assignedId = c.assignedAgentId;
+      return assignedId && assignedId === user.id;
+    });
+  }, [cases, user?.id, user?.role]);
 
   // IMPORTANT: All hooks must be called BEFORE any conditional returns
   const activeAssigned = useMemo(() => {
-    return assignedCases.filter(
-      (c: Case) => !['APPROVED', 'REJECTED', 'CLOSED'].includes(c.status)
-    );
+    return assignedCases.filter((c: Case) => {
+      const status = String(c.status || '').toUpperCase();
+      return !['APPROVED', 'REJECTED', 'CLOSED'].includes(status);
+    });
   }, [assignedCases]);
 
   const completedThisMonth = useMemo(() => {
     return assignedCases.filter((c: Case) => {
-      if (c.status !== 'APPROVED') return false;
+      // Check status more robustly
+      const status = String(c.status || '').toUpperCase();
+      if (status !== 'APPROVED') return false;
 
       // Use dedicated completion timestamp: completedAt or approvedAt, fallback to lastUpdated
       const completionTimestamp = c.completedAt || c.approvedAt || c.lastUpdated;
@@ -113,17 +131,21 @@ export const AgentDashboard = memo(function AgentDashboard() {
     }
   }, [assignedCases]);
 
-  const stats = useMemo(
-    () => ({
+  const stats = useMemo(() => {
+    const pendingReviewCount = assignedCases.filter((c: Case) => {
+      const status = String(c.status || '').toUpperCase();
+      return status === 'UNDER_REVIEW' || status === 'UNDERREVIEW';
+    }).length;
+
+    return {
       assignedCases: assignedCases.length,
       activeCases: activeAssigned.length,
       completedThisMonth: completedThisMonth.length,
-      pendingReview: assignedCases.filter((c: Case) => c.status === 'UNDER_REVIEW').length,
+      pendingReview: pendingReviewCount,
       documentsToVerify,
       responseTime,
-    }),
-    [assignedCases, activeAssigned, completedThisMonth, documentsToVerify, responseTime]
-  );
+    };
+  }, [assignedCases, activeAssigned, completedThisMonth, documentsToVerify, responseTime]);
 
   // PERFORMANCE: Only show skeleton if NO data is cached (first load)
   // NOW safe to do conditional returns after all hooks have been called
@@ -131,121 +153,129 @@ export const AgentDashboard = memo(function AgentDashboard() {
   if (isFirstLoad) return <AgentDashboardSkeleton />;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       <div>
-        <h1 className="text-3xl font-bold">Welcome back, {user?.firstName}!</h1>
-        <p className="text-muted-foreground mt-2">Here is your agent dashboard overview</p>
+        <h1 className="text-2xl font-bold">Welcome back, {user?.firstName}!</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {user?.role === 'ADMIN' ? 'Dashboard overview' : 'Your cases overview'}
+        </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Assigned Cases</CardTitle>
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.assignedCases}</div>
-            <p className="text-xs text-muted-foreground">{stats.activeCases} active</p>
-          </CardContent>
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground">
+              {user?.role === 'ADMIN' ? 'All Cases' : 'Assigned Cases'}
+            </span>
+            <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold">{stats.assignedCases}</span>
+            <span className="text-xs text-muted-foreground">{stats.activeCases} active</span>
+          </div>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pendingReview}</div>
-            <p className="text-xs text-muted-foreground">Require attention</p>
-          </CardContent>
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground">
+              {user?.role === 'ADMIN' ? 'Under Review' : 'Pending Review'}
+            </span>
+            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold">{stats.pendingReview}</span>
+            <span className="text-xs text-muted-foreground">Require attention</span>
+          </div>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completed (This Month)</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.completedThisMonth}</div>
-            <p className="text-xs text-muted-foreground">Successfully closed</p>
-          </CardContent>
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground">Completed</span>
+            <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold">{stats.completedThisMonth}</span>
+            <span className="text-xs text-muted-foreground">This month</span>
+          </div>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Response Time</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.responseTime}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.responseTime === 'N/A' ? 'No data available' : 'Average across all cases'}
-            </p>
-          </CardContent>
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground">Response Time</span>
+            <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold">{stats.responseTime}</span>
+            <span className="text-xs text-muted-foreground">Average</span>
+          </div>
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Recent Cases</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          <div className="p-4 pb-3 border-b">
+            <CardTitle className="text-sm font-semibold">Recent Cases</CardTitle>
+          </div>
+          <div className="p-3 space-y-2">
             {activeAssigned.slice(0, 5).map((c: Case) => (
-              <div key={c.id} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Briefcase className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium">{c.referenceNumber}</p>
-                    <p className="text-xs text-muted-foreground">
+              <div key={c.id} className="flex items-center justify-between py-1.5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Briefcase className="h-4 w-4 text-primary flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{c.referenceNumber}</p>
+                    <p className="text-xs text-muted-foreground truncate">
                       {c.client?.firstName} {c.client?.lastName}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">{c.status.replace(/_/g, ' ')}</Badge>
-                  <Button asChild size="sm" variant="outline">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Badge variant="outline" className="text-xs">
+                    {c.status.replace(/_/g, ' ')}
+                  </Badge>
+                  <Button asChild size="sm" variant="outline" className="h-7 text-xs">
                     <Link href={`/dashboard/cases/${c.id}`}>Review</Link>
                   </Button>
                 </div>
               </div>
             ))}
             {activeAssigned.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                <Briefcase className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                <p>No active cases assigned</p>
+              <div className="text-center py-6 text-muted-foreground">
+                <Briefcase className="mx-auto h-8 w-8 mb-2 opacity-50" />
+                <p className="text-sm">
+                  {user?.role === 'ADMIN' ? 'No active cases' : 'No active cases assigned'}
+                </p>
               </div>
             )}
-          </CardContent>
+          </div>
         </Card>
 
         <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Button asChild className="w-full justify-start" variant="outline">
+          <div className="p-4 pb-3 border-b">
+            <CardTitle className="text-sm font-semibold">Quick Actions</CardTitle>
+          </div>
+          <div className="p-3 space-y-1.5">
+            <Button asChild className="w-full justify-start h-8 text-sm" variant="outline">
               <Link href="/dashboard/cases">
-                <Briefcase className="mr-2 h-4 w-4" />
+                <Briefcase className="mr-2 h-3.5 w-3.5" />
                 {user?.role === 'ADMIN' ? 'All Cases' : 'My Cases'}
               </Link>
             </Button>
-            <Button asChild className="w-full justify-start" variant="outline">
+            <Button asChild className="w-full justify-start h-8 text-sm" variant="outline">
               <Link href="/dashboard/documents">
-                <FileCheck className="mr-2 h-4 w-4" />
+                <FileCheck className="mr-2 h-3.5 w-3.5" />
                 {user?.role === 'ADMIN' ? 'All Documents' : 'Review Documents'}
               </Link>
             </Button>
-            <Button asChild className="w-full justify-start" variant="outline">
+            <Button asChild className="w-full justify-start h-8 text-sm" variant="outline">
               <Link href="/dashboard/clients">
-                <Users className="mr-2 h-4 w-4" />
+                <Users className="mr-2 h-3.5 w-3.5" />
                 {user?.role === 'ADMIN' ? 'All Clients' : 'My Clients'}
               </Link>
             </Button>
-            <Button asChild className="w-full justify-start" variant="outline">
+            <Button asChild className="w-full justify-start h-8 text-sm" variant="outline">
               <Link href="/dashboard/messages">
-                <AlertCircle className="mr-2 h-4 w-4" />
+                <AlertCircle className="mr-2 h-3.5 w-3.5" />
                 {user?.role === 'ADMIN' ? 'All Messages' : 'Urgent Messages'}
               </Link>
             </Button>
-          </CardContent>
+          </div>
         </Card>
       </div>
     </div>

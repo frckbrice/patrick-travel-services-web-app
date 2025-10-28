@@ -11,6 +11,9 @@ import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
 import { createRealtimeNotification } from '@/lib/firebase/notifications.service';
+import { sendPushNotificationToUser } from '@/lib/notifications/expo-push.service';
+import { sendEmail } from '@/lib/notifications/email.service';
+import { escapeHtml } from '@/lib/utils/helpers';
 
 // GET /api/notifications - Get user notifications with server-side filtering, sorting, pagination
 const getHandler = asyncHandler(async (request: NextRequest) => {
@@ -174,8 +177,61 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
     });
   });
 
-  // TODO: Send push notification to mobile device
-  // TODO: Send email notification if enabled
+  // Send push notification to mobile device (fire-and-forget)
+  sendPushNotificationToUser(userId, {
+    title: notification.title,
+    body: notification.message,
+    data: {
+      type: notification.type,
+      notificationId: notification.id,
+      caseId: notification.caseId || undefined,
+      actionUrl: notification.actionUrl || undefined,
+    },
+  }).catch((error) => {
+    logger.warn('Failed to send push notification', { error, userId });
+  });
+
+  // Send email notification if enabled (fire-and-forget)
+  // Check user's email notification preference
+  prisma.systemSetting
+    .findUnique({
+      where: {
+        key: `user:${userId}:emailNotifications`,
+      },
+    })
+    .then((emailSetting) => {
+      // Default to true if no preference is set
+      const emailEnabled = emailSetting?.value !== 'false';
+
+      if (emailEnabled) {
+        // Get user email
+        return prisma.user.findUnique({
+          where: { id: userId },
+          select: { email: true },
+        });
+      }
+      return null;
+    })
+    .then((user) => {
+      if (user) {
+        // Send email notification
+        return sendEmail({
+          to: user.email,
+          subject: escapeHtml(notification.title),
+          html: `
+            <h2>${escapeHtml(notification.title)}</h2>
+            <p>${escapeHtml(notification.message)}</p>
+            ${notification.actionUrl ? `<a href="${process.env.NEXT_PUBLIC_APP_URL}${escapeHtml(notification.actionUrl)}">View Details</a>` : ''}
+            <br><br>
+            <p>Best regards,<br>Patrick Travel Services</p>
+          `,
+        });
+      }
+      return Promise.resolve();
+    })
+    .catch((error) => {
+      logger.warn('Failed to send email notification', { error, userId });
+    });
 
   logger.info('Notification created', {
     notificationId: notification.id,

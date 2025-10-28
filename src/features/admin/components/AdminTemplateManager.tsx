@@ -60,6 +60,8 @@ export function AdminTemplateManager() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<DocumentTemplate | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   // Form state
@@ -92,6 +94,23 @@ export function AdminTemplateManager() {
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error || 'Failed to create template');
+    },
+  });
+
+  const updateTemplate = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const response = await apiClient.put(`/api/templates/${id}`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Template updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['admin-templates'] });
+      handleReset();
+      setEditDialogOpen(false);
+      setEditingTemplate(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to update template');
     },
   });
 
@@ -143,34 +162,87 @@ export function AdminTemplateManager() {
     }
   };
 
+  const handleEdit = (template: DocumentTemplate) => {
+    setEditingTemplate(template);
+    setName(template.name);
+    setDescription(template.description);
+    setServiceType(template.serviceType || 'all');
+    setCategory(template.category);
+    setIsRequired(template.isRequired);
+    setVersion(template.version || '');
+    if (template.fileUrl && !template.fileUrl.startsWith('/templates/')) {
+      // If file already exists, show it
+      setUploadedFile({
+        url: template.fileUrl,
+        name: template.fileName,
+        size: template.fileSize,
+        type: template.mimeType,
+      });
+    }
+    setEditDialogOpen(true);
+  };
+
   const handleSubmit = async () => {
-    if (!name || !uploadedFile || !category) {
-      toast.error('Please fill all required fields and upload a file');
+    if (!name || !category) {
+      toast.error('Please fill all required fields');
       return;
     }
 
-    await createTemplate.mutateAsync({
-      name,
-      description,
-      serviceType: serviceType && serviceType !== 'all' ? serviceType : null,
-      fileUrl: uploadedFile.url,
-      fileName: uploadedFile.name,
-      fileSize: uploadedFile.size,
-      mimeType: uploadedFile.type,
-      category,
-      isRequired,
-      version: version || null,
-    });
+    // If editing, use existing file if no new file uploaded
+    const fileData = uploadedFile || {
+      url: editingTemplate?.fileUrl,
+      name: editingTemplate?.fileName,
+      size: editingTemplate?.fileSize || 0,
+      type: editingTemplate?.mimeType,
+    };
+
+    if (editingTemplate) {
+      // Update existing template
+      await updateTemplate.mutateAsync({
+        id: editingTemplate.id,
+        data: {
+          name,
+          description,
+          serviceType: serviceType && serviceType !== 'all' ? serviceType : null,
+          fileUrl: fileData.url,
+          fileName: fileData.name,
+          fileSize: fileData.size,
+          mimeType: fileData.type,
+          category,
+          isRequired,
+          version: version || null,
+        },
+      });
+    } else {
+      // Create new template
+      if (!uploadedFile) {
+        toast.error('Please upload a file');
+        return;
+      }
+      await createTemplate.mutateAsync({
+        name,
+        description,
+        serviceType: serviceType && serviceType !== 'all' ? serviceType : null,
+        fileUrl: fileData.url,
+        fileName: fileData.name,
+        fileSize: fileData.size,
+        mimeType: fileData.type,
+        category,
+        isRequired,
+        version: version || null,
+      });
+    }
   };
 
   const handleReset = () => {
     setName('');
     setDescription('');
-    setServiceType('');
+    setServiceType('all');
     setCategory('FORM');
     setIsRequired(false);
     setVersion('');
     setUploadedFile(null);
+    setEditingTemplate(null);
   };
 
   const templates = data || [];
@@ -263,6 +335,21 @@ export function AdminTemplateManager() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(template)}
+                              >
+                                <Upload className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Edit / Upload File</p>
+                            </TooltipContent>
+                          </Tooltip>
+
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
@@ -457,6 +544,164 @@ export function AdminTemplateManager() {
                   </>
                 ) : (
                   'Create Template'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Template</DialogTitle>
+              <DialogDescription>Update template information and upload new file</DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-template-name">Template Name *</Label>
+                <Input
+                  id="edit-template-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g., Student Visa Application Form"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea
+                  id="edit-description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Brief description of this template..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-service-type">Service Type</Label>
+                  <Select value={serviceType} onValueChange={setServiceType}>
+                    <SelectTrigger id="edit-service-type">
+                      <SelectValue placeholder="Select service (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">General (All Services)</SelectItem>
+                      <SelectItem value="STUDENT_VISA">Student Visa</SelectItem>
+                      <SelectItem value="WORK_PERMIT">Work Permit</SelectItem>
+                      <SelectItem value="FAMILY_REUNIFICATION">Family Reunification</SelectItem>
+                      <SelectItem value="TOURIST_VISA">Tourist Visa</SelectItem>
+                      <SelectItem value="BUSINESS_VISA">Business Visa</SelectItem>
+                      <SelectItem value="PERMANENT_RESIDENCY">Permanent Residency</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-category">Category *</Label>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger id="edit-category">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="FORM">Form</SelectItem>
+                      <SelectItem value="GUIDE">Guide</SelectItem>
+                      <SelectItem value="SAMPLE">Sample</SelectItem>
+                      <SelectItem value="CHECKLIST">Checklist</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-version">Version (optional)</Label>
+                  <Input
+                    id="edit-version"
+                    value={version}
+                    onChange={(e) => setVersion(e.target.value)}
+                    placeholder="e.g., 2.1"
+                  />
+                </div>
+
+                <div className="flex items-center space-x-2 pt-8">
+                  <input
+                    type="checkbox"
+                    id="edit-is-required"
+                    checked={isRequired}
+                    onChange={(e) => setIsRequired(e.target.checked)}
+                    className="h-4 w-4"
+                  />
+                  <Label htmlFor="edit-is-required" className="cursor-pointer">
+                    Required document
+                  </Label>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Upload New File (optional)</Label>
+                {uploadedFile ? (
+                  <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{uploadedFile.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(uploadedFile.size / 1024).toFixed(0)} KB
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => setUploadedFile(null)}>
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <Input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xlsx"
+                      onChange={handleFileUpload}
+                      className="max-w-xs mx-auto"
+                      disabled={isUploading}
+                    />
+                    <p className="text-xs text-muted-foreground mt-2">
+                      PDF, DOC, DOCX, XLSX • Max 16MB
+                    </p>
+                    {editingTemplate?.fileUrl &&
+                      !editingTemplate.fileUrl.startsWith('/templates/') && (
+                        <p className="text-xs text-green-600 mt-2">
+                          Current file: {editingTemplate.fileName} (will be replaced)
+                        </p>
+                      )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  handleReset();
+                  setEditDialogOpen(false);
+                  setEditingTemplate(null);
+                }}
+                disabled={updateTemplate.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={!name || !category || updateTemplate.isPending || isUploading}
+              >
+                {updateTemplate.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  'Update Template'
                 )}
               </Button>
             </DialogFooter>

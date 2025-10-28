@@ -33,6 +33,7 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
       description: true,
       serviceType: true,
       fileName: true,
+      fileUrl: true,
       fileSize: true,
       mimeType: true,
       category: true,

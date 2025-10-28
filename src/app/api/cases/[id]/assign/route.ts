@@ -2,7 +2,7 @@
 
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
-import { ERROR_MESSAGES } from '@/lib/constants';
+import { ERROR_MESSAGES, NOTIFICATION_ACTION_URLS } from '@/lib/constants';
 import { logger } from '@/lib/utils/logger';
 import { successResponse } from '@/lib/utils/api-response';
 import { asyncHandler, ApiError, HttpStatus } from '@/lib/utils/error-handler';
@@ -16,14 +16,21 @@ import { initializeFirebaseChat, sendWelcomeMessage } from '@/lib/firebase/chat.
 import { getAgentCaseAssignmentEmailTemplate } from '@/lib/notifications/email-templates';
 import { adminAuth } from '@/lib/firebase/firebase-admin';
 
+// PATCH /api/cases/[id]/assign - Assign case to agent
+// ADMIN ONLY: Agents cannot assign cases to themselves or others
 const handler = asyncHandler(
   async (request: NextRequest, context: { params: Promise<{ id: string }> }) => {
     const params = await context.params;
 
     const req = request as AuthenticatedRequest;
 
+    // SECURITY: Only ADMIN users can assign cases
+    // Agents receive case assignments but cannot create or modify assignments
     if (!req.user || req.user.role !== 'ADMIN') {
-      throw new ApiError('Only administrators can assign cases', HttpStatus.FORBIDDEN);
+      throw new ApiError(
+        'Only administrators can assign cases. Agents receive assignments but cannot create them.',
+        HttpStatus.FORBIDDEN
+      );
     }
 
     const body = await request.json();
@@ -170,7 +177,7 @@ const handler = asyncHandler(
           type: 'CASE_ASSIGNED',
           title: 'New Case Assigned',
           message: `Case ${caseData.referenceNumber} has been assigned to you`,
-          actionUrl: `/dashboard/cases/${params.id}`,
+          actionUrl: NOTIFICATION_ACTION_URLS.CASE_DETAILS(params.id),
         }),
 
         // 2. Notify the CLIENT (web dashboard)
@@ -178,7 +185,7 @@ const handler = asyncHandler(
           type: 'CASE_ASSIGNED',
           title: 'Case Assigned!',
           message: `Your case ${caseData.referenceNumber} has been assigned to ${agentFullName}`,
-          actionUrl: `/case/${params.id}`,
+          actionUrl: NOTIFICATION_ACTION_URLS.CASE_DETAILS(params.id),
         }),
 
         // 3. Send mobile push notification to CLIENT

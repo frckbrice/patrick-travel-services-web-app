@@ -76,20 +76,41 @@ export function TemplatesLibrary() {
     setDownloadingId(template.id);
 
     try {
-      // Track download
+      logger.info('Starting template download', {
+        templateId: template.id,
+        fileName: template.fileName,
+      });
+
+      // Check if template has a valid file URL
+      if (!template.fileUrl || template.fileUrl.startsWith('/templates/')) {
+        toast.error(t('templates.fileNotAvailable') || 'Template file is not yet uploaded');
+        logger.warn('Template file not uploaded', {
+          templateId: template.id,
+          fileUrl: template.fileUrl,
+        });
+        return;
+      }
+
+      // Track download (increments download count)
       await apiClient.get(`/api/templates/${template.id}`);
 
-      // Download file
+      // Download file by redirecting to file URL
       const link = document.createElement('a');
-      link.href = template.fileUrl || `/templates/${template.fileName}`;
+      link.href = template.fileUrl;
       link.download = template.fileName;
+      link.target = '_blank';
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
 
-      toast.success(t('templates.downloaded') || 'Template downloaded');
-      logger.info('Template downloaded', { templateId: template.id });
+      toast.success(t('templates.downloaded') || 'Template downloaded successfully');
+      logger.info('Template downloaded successfully', {
+        templateId: template.id,
+        fileName: template.fileName,
+      });
     } catch (error) {
-      toast.error(t('templates.downloadFailed') || 'Failed to download template');
       logger.error('Template download error', error);
+      toast.error(t('templates.downloadFailed') || 'Failed to download template');
     } finally {
       setDownloadingId(null);
     }
@@ -97,12 +118,12 @@ export function TemplatesLibrary() {
 
   const getServiceTypeLabel = (serviceType: string): string => {
     const labels: Record<string, string> = {
-      STUDENT_VISA: t('cases.serviceTypes.STUDENT_VISA') || 'Student Visa',
-      WORK_PERMIT: t('cases.serviceTypes.WORK_PERMIT') || 'Work Permit',
-      FAMILY_REUNIFICATION: t('cases.serviceTypes.FAMILY_REUNIFICATION') || 'Family Reunification',
-      TOURIST_VISA: t('cases.serviceTypes.TOURIST_VISA') || 'Tourist Visa',
-      BUSINESS_VISA: t('cases.serviceTypes.BUSINESS_VISA') || 'Business Visa',
-      PERMANENT_RESIDENCY: t('cases.serviceTypes.PERMANENT_RESIDENCY') || 'Permanent Residency',
+      STUDENT_VISA: t('cases.serviceLabels.STUDENT_VISA') || 'Student Visa',
+      WORK_PERMIT: t('cases.serviceLabels.WORK_PERMIT') || 'Work Permit',
+      FAMILY_REUNIFICATION: t('cases.serviceLabels.FAMILY_REUNIFICATION') || 'Family Reunification',
+      TOURIST_VISA: t('cases.serviceLabels.TOURIST_VISA') || 'Tourist Visa',
+      BUSINESS_VISA: t('cases.serviceLabels.BUSINESS_VISA') || 'Business Visa',
+      PERMANENT_RESIDENCY: t('cases.serviceLabels.PERMANENT_RESIDENCY') || 'Permanent Residency',
     };
     return labels[serviceType] || serviceType;
   };
@@ -144,22 +165,22 @@ export function TemplatesLibrary() {
               <SelectContent>
                 <SelectItem value="all">{t('templates.allServices') || 'All Services'}</SelectItem>
                 <SelectItem value="STUDENT_VISA">
-                  {t('cases.serviceTypes.STUDENT_VISA') || 'Student Visa'}
+                  {t('cases.serviceLabels.STUDENT_VISA') || 'Student Visa'}
                 </SelectItem>
                 <SelectItem value="WORK_PERMIT">
-                  {t('cases.serviceTypes.WORK_PERMIT') || 'Work Permit'}
+                  {t('cases.serviceLabels.WORK_PERMIT') || 'Work Permit'}
                 </SelectItem>
                 <SelectItem value="FAMILY_REUNIFICATION">
-                  {t('cases.serviceTypes.FAMILY_REUNIFICATION') || 'Family Reunification'}
+                  {t('cases.serviceLabels.FAMILY_REUNIFICATION') || 'Family Reunification'}
                 </SelectItem>
                 <SelectItem value="TOURIST_VISA">
-                  {t('cases.serviceTypes.TOURIST_VISA') || 'Tourist Visa'}
+                  {t('cases.serviceLabels.TOURIST_VISA') || 'Tourist Visa'}
                 </SelectItem>
                 <SelectItem value="BUSINESS_VISA">
-                  {t('cases.serviceTypes.BUSINESS_VISA') || 'Business Visa'}
+                  {t('cases.serviceLabels.BUSINESS_VISA') || 'Business Visa'}
                 </SelectItem>
                 <SelectItem value="PERMANENT_RESIDENCY">
-                  {t('cases.serviceTypes.PERMANENT_RESIDENCY') || 'Permanent Residency'}
+                  {t('cases.serviceLabels.PERMANENT_RESIDENCY') || 'Permanent Residency'}
                 </SelectItem>
               </SelectContent>
             </Select>

@@ -157,6 +157,28 @@ export const SUCCESS_MESSAGES = {
   DELETED: 'Deleted successfully',
 };
 
+// Notification action URLs - centralized constants for consistency
+export const NOTIFICATION_ACTION_URLS = {
+  // Case-related notifications
+  CASE_DETAILS: (id: string) => `/dashboard/cases/${id}`,
+  CASE_SUBMISSION: (id: string) => `/dashboard/cases/${id}`,
+  CASE_ASSIGNED: (id: string) => `/dashboard/cases/${id}`,
+  CASE_STATUS_UPDATE: (id: string) => `/dashboard/cases/${id}`,
+  CASE_UNASSIGNED: '/dashboard/cases',
+
+  // Document-related notifications
+  DOCUMENTS_PAGE: '/dashboard/documents',
+
+  // Message-related notifications
+  MESSAGES_PAGE: '/dashboard/messages',
+  MESSAGE_WITH_CASE: (caseId: string) => `/dashboard/messages?caseId=${caseId}`,
+
+  // Dashboard notifications
+  DASHBOARD: '/dashboard',
+  CASES_LIST: '/dashboard/cases',
+  CASES_MY_CASES: '/dashboard/cases?filter=my-cases',
+};
+
 export const ROUTES = {
   // Web Routes
   WEB: {

@@ -1,18 +1,20 @@
 {
   "rules": {
-    ".read": false,
+    ".read": "auth != null",
     ".write": "auth != null",
 
     "chats": {
       ".read": "auth != null",
       ".write": "auth != null",
       "$chatRoomId": {
-        ".read": false,
-        ".write": false,
+        ".read": "auth != null && (root.child('chats/' + $chatRoomId + '/metadata/participants/clientId').val() == auth.uid || root.child('chats/' + $chatRoomId + '/metadata/participants/agentId').val() == auth.uid)",
+        ".write": "auth != null && (root.child('chats/' + $chatRoomId + '/metadata/participants/clientId').val() == auth.uid || root.child('chats/' + $chatRoomId + '/metadata/participants/agentId').val() == auth.uid)",
         "messages": {
+          ".read": "auth != null && (root.child('chats/' + $chatRoomId + '/metadata/participants/clientId').val() == auth.uid || root.child('chats/' + $chatRoomId + '/metadata/participants/agentId').val() == auth.uid)",
+          ".write": "auth != null && (root.child('chats/' + $chatRoomId + '/metadata/participants/clientId').val() == auth.uid || root.child('chats/' + $chatRoomId + '/metadata/participants/agentId').val() == auth.uid)",
           "$messageId": {
-            ".read": "auth != null && (data.child('senderId').val() == auth.uid || !root.child('chats/' + $chatRoomId + '/metadata').exists() || root.child('chats/' + $chatRoomId + '/metadata/participants/clientId').val() == auth.uid || root.child('chats/' + $chatRoomId + '/metadata/participants/agentId').val() == auth.uid)",
-            ".write": "auth != null && newData.child('senderId').val() == auth.uid",
+            ".read": "auth != null && (root.child('chats/' + $chatRoomId + '/metadata/participants/clientId').val() == auth.uid || root.child('chats/' + $chatRoomId + '/metadata/participants/agentId').val() == auth.uid)",
+            ".write": "auth != null && (newData.child('senderId').val() == auth.uid || (root.child('chats/' + $chatRoomId + '/metadata/participants/clientId').val() == auth.uid || root.child('chats/' + $chatRoomId + '/metadata/participants/agentId').val() == auth.uid))",
             ".validate": "newData.hasChildren(['senderId', 'senderName', 'content', 'sentAt']) && newData.child('senderId').val() == auth.uid && newData.child('content').isString()"
           }
         },
@@ -24,6 +26,16 @@
       }
     },
 
+    "userChats": {
+      "$userId": {
+        ".read": "auth != null && auth.uid == $userId",
+        ".write": "auth != null && auth.uid == $userId",
+        "$chatRoomId": {
+          ".read": "auth != null && auth.uid == $userId",
+          ".write": "auth != null && auth.uid == $userId"
+        }
+      }
+    },
     "presence": {
       "$userId": {
         ".read": true,
@@ -34,7 +46,7 @@
 
     "typing": {
       "$chatRoomId": {
-        ".read": true,
+        ".read": "auth != null && (root.child('chats/' + $chatRoomId + '/metadata/participants/clientId').val() == auth.uid || root.child('chats/' + $chatRoomId + '/metadata/participants/agentId').val() == auth.uid)",
         "$userId": {
           ".write": "auth != null && auth.uid == $userId",
           ".validate": "newData.hasChildren(['userId', 'isTyping', 'timestamp'])"

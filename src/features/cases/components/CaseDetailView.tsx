@@ -51,6 +51,7 @@ import {
   Save,
   Flag,
   Eye,
+  Download,
   UserPlus,
   RefreshCw,
   Send,
@@ -186,6 +187,99 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
     } catch (error) {
       toast.error(getErrorMessage(error));
       logger.error('Failed to reject document', error, { docId, caseId, reason });
+    }
+  };
+
+  const handleViewDocument = (doc: Document) => {
+    try {
+      logger.info('Attempting to view document (case)', {
+        filePath: doc.filePath,
+        documentId: doc.id,
+      });
+
+      if (!doc.filePath) {
+        logger.error('Document filePath is empty (case)', { documentId: doc.id });
+        toast.error('Invalid document URL');
+        return;
+      }
+
+      let fileUrl = doc.filePath;
+
+      // If it's not a full URL, add https://
+      if (!fileUrl.startsWith('http://') && !fileUrl.startsWith('https://')) {
+        logger.warn('Document filePath is not a full URL (case), adding https://', {
+          filePath: doc.filePath,
+        });
+        fileUrl = `https://${fileUrl}`;
+      }
+
+      const url = new URL(fileUrl);
+      const trustedDomains = ['utfs.io', 'uploadthing.com', 'ufs.sh'];
+      const isTrusted = trustedDomains.some(
+        (domain) => url.hostname === domain || url.hostname.endsWith('.' + domain)
+      );
+
+      if (!isTrusted) {
+        logger.warn('Document URL is not from trusted domain (case)', {
+          hostname: url.hostname,
+          fileUrl,
+        });
+        toast.error('Invalid document URL');
+        return;
+      }
+
+      logger.info('Opening document in new tab (case)', { fileUrl });
+      window.open(fileUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      logger.error('Failed to open document (case)', error, {
+        filePath: doc.filePath,
+        documentId: doc.id,
+      });
+      toast.error('Invalid document URL');
+    }
+  };
+
+  const handleDownloadDocument = async (doc: Document) => {
+    try {
+      logger.info('Starting document download (case)', {
+        filePath: doc.filePath,
+        documentId: doc.id,
+        originalName: doc.originalName,
+      });
+
+      // Fetch the file as a blob
+      const response = await fetch(doc.filePath);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+
+      // Create a local blob URL
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      // Create a temporary link element and trigger download
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = doc.originalName || 'document';
+      document.body.appendChild(link);
+      link.click();
+
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+
+      logger.info('Document downloaded successfully (case)', {
+        documentId: doc.id,
+        originalName: doc.originalName,
+      });
+    } catch (error) {
+      logger.error('Failed to download document (case)', error, {
+        documentId: doc.id,
+        filePath: doc.filePath,
+      });
+      toast.error('Failed to download document');
     }
   };
 
@@ -553,20 +647,36 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                             {doc.status}
                           </Badge>
                           <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => window.open(doc.filePath, '_blank')}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>View Document</p>
-                              </TooltipContent>
-                            </Tooltip>
+                            <div className="flex gap-2">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleViewDocument(doc)}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>View Document</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDownloadDocument(doc)}
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Download Document</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
                           </TooltipProvider>
                           {isAgent && doc.status === 'PENDING' && (
                             <TooltipProvider>

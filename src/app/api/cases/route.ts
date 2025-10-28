@@ -3,7 +3,12 @@
 
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
-import { ERROR_MESSAGES, SUCCESS_MESSAGES, PAGINATION } from '@/lib/constants';
+import {
+  ERROR_MESSAGES,
+  SUCCESS_MESSAGES,
+  PAGINATION,
+  NOTIFICATION_ACTION_URLS,
+} from '@/lib/constants';
 import { logger } from '@/lib/utils/logger';
 import { successResponse } from '@/lib/utils/api-response';
 import { asyncHandler, ApiError, HttpStatus } from '@/lib/utils/error-handler';
@@ -24,10 +29,20 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
   }
 
   const { searchParams } = new URL(request.url);
-  const status = searchParams.get('status');
-  const userId = searchParams.get('userId');
+
+  // Pagination parameters
   const pageParam = searchParams.get('page');
   const limitParam = searchParams.get('limit');
+
+  // Filter parameters
+  const status = searchParams.get('status');
+  const serviceType = searchParams.get('serviceType');
+  const assignedAgentId = searchParams.get('assignedAgentId');
+  const priority = searchParams.get('priority');
+  const startDate = searchParams.get('startDate');
+  const endDate = searchParams.get('endDate');
+  const search = searchParams.get('search');
+  const isAssigned = searchParams.get('isAssigned'); // 'true' or 'false' string
 
   // Validate and parse page
   const page = pageParam ? Math.max(1, parseInt(pageParam, 10) || 1) : 1;
@@ -54,43 +69,108 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
       userId: req.user.userId,
       clientId: where.clientId,
     });
-  } else if (req.user.role === 'AGENT' && userId) {
-    // Agents can filter by userId
-    where.clientId = userId;
+  } else if (req.user.role === 'AGENT') {
+    // Agents can only see their assigned cases
+    where.assignedAgentId = req.user.userId;
   }
 
-  if (status) {
+  // Apply server-side filters
+  if (status && status !== 'all' && status !== 'active') {
     where.status = status;
   }
 
-  const [cases, total] = await Promise.all([
-    prisma.case.findMany({
-      where,
-      include: {
-        client: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-          },
-        },
-        assignedAgent: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
+  if (serviceType && serviceType !== 'all') {
+    where.serviceType = serviceType;
+  }
+
+  if (assignedAgentId) {
+    if (assignedAgentId === 'unassigned') {
+      where.assignedAgentId = null;
+    } else {
+      where.assignedAgentId = assignedAgentId;
+    }
+  }
+
+  if (priority && priority !== 'all') {
+    where.priority = priority;
+  }
+
+  if (isAssigned === 'true') {
+    where.assignedAgentId = { not: null };
+  } else if (isAssigned === 'false') {
+    where.assignedAgentId = null;
+  }
+
+  // Date range filter
+  if (startDate || endDate) {
+    where.submissionDate = {};
+    if (startDate) {
+      where.submissionDate.gte = new Date(startDate);
+    }
+    if (endDate) {
+      where.submissionDate.lte = new Date(endDate);
+    }
+  }
+
+  // Search filter (by reference number or client name via relation)
+  const searchCondition = search && search.trim() !== '';
+  const includeClause = {
+    client: {
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
       },
+    },
+    assignedAgent: {
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+      },
+    },
+  };
+
+  let cases;
+  let total;
+
+  if (searchCondition) {
+    // Search requires fetching all matching cases first, then paginating
+    const searchTerm = search.trim();
+    const allCases = await prisma.case.findMany({
+      where,
+      include: includeClause,
       orderBy: { submissionDate: 'desc' },
-      skip,
-      take: limit,
-    }),
-    prisma.case.count({ where }),
-  ]);
+    });
+
+    // Client-side filtering for search
+    const filteredCases = allCases.filter((c) => {
+      const matchesReference = c.referenceNumber.toLowerCase().includes(searchTerm.toLowerCase());
+      const clientName = `${c.client.firstName || ''} ${c.client.lastName || ''}`.toLowerCase();
+      const matchesClientName = clientName.includes(searchTerm.toLowerCase());
+      return matchesReference || matchesClientName;
+    });
+
+    total = filteredCases.length;
+
+    // Paginate the filtered results
+    cases = filteredCases.slice(skip, skip + limit);
+  } else {
+    // No search term - use database query directly
+    [cases, total] = await Promise.all([
+      prisma.case.findMany({
+        where,
+        include: includeClause,
+        orderBy: { submissionDate: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.case.count({ where }),
+    ]);
+  }
 
   logger.info('Cases retrieved', {
     userId: req.user.userId,
@@ -98,7 +178,8 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
     count: cases.length,
     total,
     filter: where,
-    caseIds: cases.map((c) => c.id),
+    page,
+    limit,
   });
 
   return successResponse(
@@ -203,7 +284,7 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
         type: 'CASE_STATUS_UPDATE',
         title: 'Case Submitted',
         message: `Your case ${referenceNumber} has been successfully submitted`,
-        actionUrl: `/case/${newCase.id}`,
+        actionUrl: NOTIFICATION_ACTION_URLS.CASE_SUBMISSION(newCase.id),
       }),
     ];
 
@@ -215,7 +296,7 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
           type: 'CASE_STATUS_UPDATE',
           title: 'New Case Submitted',
           message: `${clientFullName} submitted case ${referenceNumber}`,
-          actionUrl: `/dashboard/admin/cases/${newCase.id}`,
+          actionUrl: NOTIFICATION_ACTION_URLS.CASE_DETAILS(newCase.id),
         }),
 
         // Send mobile push notification to admin

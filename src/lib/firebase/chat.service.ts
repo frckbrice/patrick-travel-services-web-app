@@ -77,6 +77,22 @@ export async function initializeFirebaseChat(
 
       await set(conversationRef, chatMetadata);
 
+      // 🆕 Create userChats index entries
+      await Promise.all([
+        set(ref(database, `userChats/${agentId}/${caseId}`), {
+          chatId: caseId,
+          participantName: clientName,
+          lastMessage: null,
+          lastMessageTime: null,
+        }),
+        set(ref(database, `userChats/${clientId}/${caseId}`), {
+          chatId: caseId,
+          participantName: agentName,
+          lastMessage: null,
+          lastMessageTime: null,
+        }),
+      ]);
+
       logger.info('Firebase chat initialized', {
         caseId,
         clientId,
@@ -161,15 +177,39 @@ export async function updateChatAgent(
 /**
  * Delete a chat conversation
  * Should only be called when a case is permanently deleted
+ * Automatically cleans up userChats entries for both participants
  */
 export async function deleteFirebaseChat(caseId: string): Promise<void> {
   try {
     const chatRef = ref(database, `chats/${caseId}`);
+    const metadataRef = ref(database, `chats/${caseId}/metadata`);
+
+    // 1) Get participants so we know which userChats to remove
+    const metadataSnap = await get(metadataRef);
+    if (!metadataSnap.exists()) {
+      logger.warn('Chat metadata not found, skipping userChats cleanup', { caseId });
+      await set(chatRef, null);
+      return;
+    }
+
+    const participants = metadataSnap.val()?.participants;
+    const { agentId, clientId } = participants || {};
+
+    // 2) Remove chat node
     await set(chatRef, null);
 
-    logger.info('Firebase chat deleted', { caseId });
+    // 3) Remove entries from userChats for both participants
+    if (agentId && clientId) {
+      await Promise.all([
+        set(ref(database, `userChats/${agentId}/${caseId}`), null),
+        set(ref(database, `userChats/${clientId}/${caseId}`), null),
+      ]);
+      logger.info('Firebase chat and userChats entries deleted', { caseId, agentId, clientId });
+    } else {
+      logger.warn('Missing participant IDs during deletion', { caseId, participants });
+    }
   } catch (error) {
-    logger.error('Failed to delete Firebase chat', error);
+    logger.error('Failed to delete Firebase chat or clean up userChats', error, { caseId });
     throw error;
   }
 }
@@ -229,6 +269,7 @@ export async function sendMessage(params: SendMessageParams): Promise<string> {
       senderName: params.senderName,
       content: params.content,
       sentAt: timestamp,
+      isRead: false, // Default to unread
       caseId: params.caseId || chatRoomId, // REQUIRED by Firebase rules
       attachments: params.attachments || [],
     };
@@ -295,6 +336,22 @@ export async function sendMessage(params: SendMessageParams): Promise<string> {
 
       try {
         await set(metadataRef, metadataData);
+
+        // 🆕 Ensure userChats index is created
+        await Promise.all([
+          set(ref(database, `userChats/${agentId}/${chatRoomId}`), {
+            chatId: chatRoomId,
+            participantName: clientName,
+            lastMessage: params.content.substring(0, 100),
+            lastMessageTime: timestamp,
+          }),
+          set(ref(database, `userChats/${clientId}/${chatRoomId}`), {
+            chatId: chatRoomId,
+            participantName: agentName,
+            lastMessage: params.content.substring(0, 100),
+            lastMessageTime: timestamp,
+          }),
+        ]);
         logger.info('Chat room metadata created successfully');
       } catch (metadataError: any) {
         logger.error('Failed to create metadata', {
@@ -315,6 +372,18 @@ export async function sendMessage(params: SendMessageParams): Promise<string> {
           lastMessage: params.content.substring(0, 100),
           lastMessageTime: timestamp,
         });
+
+        // 🆕 Update both participants’ userChats entries
+        await Promise.all([
+          update(ref(database, `userChats/${currentData.participants.agentId}/${chatRoomId}`), {
+            lastMessage: params.content.substring(0, 100),
+            lastMessageTime: timestamp,
+          }),
+          update(ref(database, `userChats/${currentData.participants.clientId}/${chatRoomId}`), {
+            lastMessage: params.content.substring(0, 100),
+            lastMessageTime: timestamp,
+          }),
+        ]);
         logger.info('Chat room metadata updated successfully');
       } catch (metaUpdateError: any) {
         // This is non-critical - message can still be written
@@ -382,5 +451,55 @@ export interface ChatMessage {
   recipientEmail?: string;
   content: string;
   sentAt: number;
+  isRead?: boolean;
   attachments?: any[];
+}
+
+/**
+ * Mark messages as read for a specific user in a chat
+ * Client-side function to mark all unread messages as read
+ */
+export async function markMessagesAsRead(chatId: string, userId: string): Promise<void> {
+  try {
+    const messagesRef = ref(database, `chats/${chatId}/messages`);
+    const snapshot = await get(messagesRef);
+
+    if (!snapshot.exists()) {
+      logger.info('No messages found to mark as read', { chatId });
+      return;
+    }
+
+    const updatePromises: Promise<void>[] = [];
+
+    snapshot.forEach((msgSnap) => {
+      const msg = msgSnap.val();
+      // Only mark messages as read if they weren't sent by the current user and aren't already read
+      if (msg.senderId !== userId && !msg.isRead) {
+        const messageRef = ref(database, `chats/${chatId}/messages/${msgSnap.key}`);
+        updatePromises.push(
+          update(messageRef, { isRead: true }).catch((err) => {
+            if (err.code !== 'PERMISSION_DENIED') {
+              logger.error('Failed to mark message as read', err, {
+                chatId,
+                messageId: msgSnap.key,
+                userId,
+              });
+            }
+          })
+        );
+      }
+    });
+
+    if (updatePromises.length > 0) {
+      await Promise.all(updatePromises);
+      logger.info('Messages marked as read', {
+        chatId,
+        userId,
+        count: updatePromises.length,
+      });
+    }
+  } catch (error) {
+    logger.error('Failed to mark messages as read', error, { chatId, userId });
+    throw error;
+  }
 }

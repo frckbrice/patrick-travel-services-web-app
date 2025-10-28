@@ -10,15 +10,33 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-// GET /api/templates/[id] - Get template details and increment download count
+// GET /api/templates/[id] - Get template details (tracks view, not download)
 const getHandler = asyncHandler(async (request: NextRequest, context: RouteContext) => {
   const { id } = await context.params;
 
   if (!id) {
     throw new ApiError('Template ID is required', HttpStatus.BAD_REQUEST);
   }
+
   const template = await prisma.documentTemplate.findUnique({
     where: { id },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      serviceType: true,
+      fileName: true,
+      fileUrl: true,
+      fileSize: true,
+      mimeType: true,
+      category: true,
+      isRequired: true,
+      isActive: true,
+      downloadCount: true,
+      version: true,
+      createdAt: true,
+      updatedAt: true,
+    },
   });
 
   if (!template) {
@@ -29,17 +47,7 @@ const getHandler = asyncHandler(async (request: NextRequest, context: RouteConte
     throw new ApiError('Template is not available', HttpStatus.FORBIDDEN);
   }
 
-  // Increment download count
-  await prisma.documentTemplate.update({
-    where: { id },
-    data: {
-      downloadCount: {
-        increment: 1,
-      },
-    },
-  });
-
-  logger.info('Template downloaded', { templateId: id, name: template.name });
+  logger.info('Template viewed', { templateId: id, name: template.name });
 
   return NextResponse.json({
     success: true,
@@ -47,8 +55,8 @@ const getHandler = asyncHandler(async (request: NextRequest, context: RouteConte
   });
 });
 
-// PATCH /api/templates/[id] - Update template (ADMIN only)
-const patchHandler = asyncHandler(async (request: NextRequest, context: RouteContext) => {
+// PUT/PATCH /api/templates/[id] - Update template (ADMIN only)
+const updateHandler = asyncHandler(async (request: NextRequest, context: RouteContext) => {
   const req = request as AuthenticatedRequest;
   const { id } = await context.params;
 
@@ -98,8 +106,12 @@ const deleteHandler = asyncHandler(async (request: NextRequest, context: RouteCo
 
 export const GET = withCorsMiddleware(withRateLimit(getHandler, RateLimitPresets.STANDARD));
 
+export const PUT = withCorsMiddleware(
+  withRateLimit(authenticateToken(updateHandler), RateLimitPresets.STANDARD)
+);
+
 export const PATCH = withCorsMiddleware(
-  withRateLimit(authenticateToken(patchHandler), RateLimitPresets.STANDARD)
+  withRateLimit(authenticateToken(updateHandler), RateLimitPresets.STANDARD)
 );
 
 export const DELETE = withCorsMiddleware(
