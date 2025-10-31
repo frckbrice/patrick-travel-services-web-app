@@ -60,7 +60,7 @@ export interface ArchiveMessageInput {
 
 export interface SendEmailInput {
   recipientId?: string; // Optional for clients (auto-determined from case)
-  caseId?: string; // Required for clients, optional for agents
+  caseId: string; // CRITICAL: Required for all emails to ensure all emails are bound to a case
   subject: string;
   content: string;
   attachments?: MessageAttachment[];

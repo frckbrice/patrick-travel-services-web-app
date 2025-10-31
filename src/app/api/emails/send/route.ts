@@ -28,6 +28,11 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
     throw new ApiError('Message content is required', HttpStatus.BAD_REQUEST);
   }
 
+  // CRITICAL: ALL emails must have a caseId
+  if (!caseId) {
+    throw new ApiError('Case selection is required for sending emails', HttpStatus.BAD_REQUEST);
+  }
+
   // Determine recipient based on user role
   let finalRecipientId = recipientId;
   let recipientEmail = '';
@@ -35,10 +40,7 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
   let caseRef = '';
 
   if (req.user.role === 'CLIENT') {
-    // Client sending email - must have a caseId
-    if (!caseId) {
-      throw new ApiError('Case selection is required for sending emails', HttpStatus.BAD_REQUEST);
-    }
+    // Client sending email
 
     // Get the case and its assigned agent (optimized query)
     const caseRecord = await prisma.case.findUnique({
@@ -92,6 +94,21 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
       throw new ApiError('Recipient is required', HttpStatus.BAD_REQUEST);
     }
 
+    // Verify case exists and get reference number
+    const caseData = await prisma.case.findUnique({
+      where: { id: caseId },
+      select: { 
+        id: true,
+        referenceNumber: true,
+      },
+    });
+
+    if (!caseData) {
+      throw new ApiError('Case not found', HttpStatus.NOT_FOUND);
+    }
+
+    caseRef = caseData.referenceNumber;
+
     // Optimized query - only fetch needed fields
     const recipient = await prisma.user.findUnique({
       where: { id: recipientId },
@@ -110,17 +127,6 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
     recipientEmail = recipient.email;
     recipientName = `${recipient.firstName} ${recipient.lastName}`;
     finalRecipientId = recipient.id;
-
-    // If caseId provided, get reference number
-    if (caseId) {
-      const caseData = await prisma.case.findUnique({
-        where: { id: caseId },
-        select: { referenceNumber: true },
-      });
-      if (caseData) {
-        caseRef = caseData.referenceNumber;
-      }
-    }
   }
 
   // Generate unique thread ID for reply tracking
@@ -148,7 +154,7 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
     data: {
       senderId: req.user.userId,
       recipientId: finalRecipientId,
-      caseId: caseId || null,
+      caseId: caseId, // caseId is now required and validated above
       subject,
       content,
       messageType: MessageType.EMAIL,
@@ -193,7 +199,7 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
     await prisma.notification.create({
       data: {
         userId: finalRecipientId,
-        caseId: caseId || null,
+        caseId: caseId, // caseId is now required for all emails
         type: NotificationType.NEW_EMAIL,
         title: `New email from ${senderName}`,
         message: `Subject: ${subject.substring(0, 100)}${subject.length > 100 ? '...' : ''}`,

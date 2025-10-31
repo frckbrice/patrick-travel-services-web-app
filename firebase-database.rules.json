@@ -1,27 +1,28 @@
 {
   "rules": {
-    ".read": "auth != null",
+    ".read": false,
     ".write": "auth != null",
 
     "chats": {
       ".read": "auth != null",
       ".write": "auth != null",
+
       "$chatRoomId": {
         ".read": "auth != null && (root.child('chats/' + $chatRoomId + '/metadata/participants/clientId').val() == auth.uid || root.child('chats/' + $chatRoomId + '/metadata/participants/agentId').val() == auth.uid)",
         ".write": "auth != null && (root.child('chats/' + $chatRoomId + '/metadata/participants/clientId').val() == auth.uid || root.child('chats/' + $chatRoomId + '/metadata/participants/agentId').val() == auth.uid)",
+
         "messages": {
-          ".read": "auth != null && (root.child('chats/' + $chatRoomId + '/metadata/participants/clientId').val() == auth.uid || root.child('chats/' + $chatRoomId + '/metadata/participants/agentId').val() == auth.uid)",
-          ".write": "auth != null && (root.child('chats/' + $chatRoomId + '/metadata/participants/clientId').val() == auth.uid || root.child('chats/' + $chatRoomId + '/metadata/participants/agentId').val() == auth.uid)",
           "$messageId": {
             ".read": "auth != null && (root.child('chats/' + $chatRoomId + '/metadata/participants/clientId').val() == auth.uid || root.child('chats/' + $chatRoomId + '/metadata/participants/agentId').val() == auth.uid)",
-            ".write": "auth != null && (newData.child('senderId').val() == auth.uid || (root.child('chats/' + $chatRoomId + '/metadata/participants/clientId').val() == auth.uid || root.child('chats/' + $chatRoomId + '/metadata/participants/agentId').val() == auth.uid))",
-            ".validate": "newData.hasChildren(['senderId', 'senderName', 'content', 'sentAt']) && newData.child('senderId').val() == auth.uid && newData.child('content').isString()"
+            ".write": "auth != null && (root.child('chats/' + $chatRoomId + '/metadata/participants/clientId').val() == auth.uid || root.child('chats/' + $chatRoomId + '/metadata/participants/agentId').val() == auth.uid)",
+            ".validate": "newData.hasChildren(['senderId', 'senderName', 'content', 'sentAt']) && newData.child('content').isString()"
           }
         },
+
         "metadata": {
           ".read": "auth != null && (!data.exists() || data.child('participants/clientId').val() == auth.uid || data.child('participants/agentId').val() == auth.uid)",
           ".write": "auth != null && (!data.exists() || data.child('participants/clientId').val() == auth.uid || data.child('participants/agentId').val() == auth.uid)",
-          ".validate": "newData.val() == null || (newData.hasChild('participants') && newData.child('participants').hasChildren(['clientId', 'clientName', 'agentId', 'agentName']))"
+          ".validate": "newData.val() == null || ((data.exists() && data.child('participants').exists() && (data.child('participants/clientId').val() == auth.uid || data.child('participants/agentId').val() == auth.uid)) || (newData.hasChild('participants') && newData.child('participants').hasChildren(['clientId', 'clientName', 'agentId', 'agentName']) && (newData.child('participants/clientId').val() == auth.uid || newData.child('participants/agentId').val() == auth.uid)))"
         }
       }
     },
@@ -36,6 +37,7 @@
         }
       }
     },
+
     "presence": {
       "$userId": {
         ".read": true,
