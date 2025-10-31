@@ -836,10 +836,20 @@ export function MessagesList({
                           </Avatar>
                           <div
                             className={cn(
-                              'max-w-[70%] rounded-lg p-3 space-y-2',
+                              'relative max-w-[70%] rounded-lg p-3 space-y-2',
                               isOwn ? 'bg-primary text-primary-foreground' : 'bg-muted'
                             )}
                           >
+                            {/* Bubble Tail */}
+                            <span
+                              aria-hidden
+                              className={cn(
+                                'absolute bottom-2 w-0 h-0',
+                                isOwn
+                                  ? '-right-2 border-y-8 border-y-transparent border-l-8 border-l-primary'
+                                  : '-left-2 border-y-8 border-y-transparent border-r-8 border-r-muted'
+                              )}
+                            />
                             {msg.content && (
                               <p className="text-sm whitespace-pre-wrap break-words">
                                 {msg.content}
