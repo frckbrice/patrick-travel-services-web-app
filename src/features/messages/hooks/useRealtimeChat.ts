@@ -291,19 +291,25 @@ export function useRealtimeMessages(chatRoomId: string | null) {
       setIsLoading(false);
 
       // PERFORMANCE: Throttle read-marking to at most once per 2s
+      // Get Firebase UID for comparing with message senderIds (which are Firebase UIDs)
+      const firebaseUser = auth.currentUser;
+      const firebaseUserId = firebaseUser?.uid;
+
       const now = Date.now();
       if (
-        user?.id &&
+        firebaseUserId &&
         chatRoomId &&
         newMessages.length > 0 &&
         now - lastMarkedRef.current > 2000 &&
         // Only trigger if there exists at least one unread message not from current user
-        newMessages.some((m) => m.senderId !== user.id && !m.isRead)
+        // COMPARE: senderId is Firebase UID, so compare against Firebase UID, not PostgreSQL ID
+        newMessages.some((m) => m.senderId !== firebaseUserId && !m.isRead)
       ) {
         lastMarkedRef.current = now;
         // Best-effort; don't await to avoid UI jank
         import('@/lib/firebase/chat.service').then(({ markMessagesAsRead }) => {
-          markMessagesAsRead(chatRoomId, user.id).catch(() => {
+          // CRITICAL: Pass Firebase UID, not PostgreSQL ID
+          markMessagesAsRead(chatRoomId, firebaseUserId).catch(() => {
             // Silently ignore; rules enforce permissions
           });
         });

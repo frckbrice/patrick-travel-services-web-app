@@ -462,7 +462,7 @@ export async function sendMessage(params: SendMessageParams): Promise<string> {
       content: params.content,
       sentAt: timestamp,
       isRead: false, // Default to unread
-      caseId: params.caseId || chatRoomId, // REQUIRED by Firebase rules
+      caseId: params.caseId, // Optional: for context filtering
       attachments: params.attachments || [],
     };
 
