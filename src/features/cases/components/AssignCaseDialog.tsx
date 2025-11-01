@@ -26,7 +26,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { UserCheck, AlertCircle, CheckCircle, TrendingUp } from 'lucide-react';
+import { UserCheck, AlertCircle, CheckCircle, TrendingUp, RefreshCw } from 'lucide-react';
 import { getInitials } from '@/lib/utils/helpers';
 import { toast } from 'sonner';
 
@@ -336,8 +336,17 @@ export function AssignCaseDialog({
               !selectedAgentId || assignCase.isPending || !selectedAgent?.metrics.isAvailable
             }
           >
-            <UserCheck className="mr-2 h-4 w-4" />
-            {assignCase.isPending ? 'Assigning...' : 'Assign Case'}
+            {assignCase.isPending ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Assigning...
+              </>
+            ) : (
+              <>
+                <UserCheck className="mr-2 h-4 w-4" />
+                Assign Case
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

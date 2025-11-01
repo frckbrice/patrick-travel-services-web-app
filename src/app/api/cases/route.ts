@@ -20,6 +20,13 @@ import { sendPushNotificationToUser } from '@/lib/notifications/expo-push.servic
 import { createRealtimeNotification } from '@/lib/firebase/notifications.service.server';
 import { getCaseSubmissionConfirmationEmailTemplate } from '@/lib/notifications/email-templates';
 
+// Terminal case statuses (end states - these are NOT considered active)
+const TERMINAL_STATUSES: ('APPROVED' | 'REJECTED' | 'CLOSED')[] = [
+  'APPROVED',
+  'REJECTED',
+  'CLOSED',
+];
+
 // GET /api/cases - List all cases (with filters)
 const getHandler = asyncHandler(async (request: NextRequest) => {
   const req = request as AuthenticatedRequest;
@@ -75,8 +82,14 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
   }
 
   // Apply server-side filters
-  if (status && status !== 'all' && status !== 'active') {
-    where.status = status;
+  if (status && status !== 'all') {
+    if (status === 'active') {
+      // Active cases are those NOT in terminal status (APPROVED, REJECTED, CLOSED)
+      where.status = { notIn: TERMINAL_STATUSES };
+    } else {
+      // Specific status filter
+      where.status = status;
+    }
   }
 
   if (serviceType && serviceType !== 'all') {

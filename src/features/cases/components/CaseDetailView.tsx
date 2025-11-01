@@ -437,11 +437,28 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button variant="outline" onClick={() => setStatusDialogOpen(false)}>
+                      <Button
+                        variant="outline"
+                        onClick={() => setStatusDialogOpen(false)}
+                        disabled={updateCaseStatus.isPending}
+                      >
                         Cancel
                       </Button>
-                      <Button onClick={handleStatusUpdate} disabled={!newStatus}>
-                        Update Status
+                      <Button
+                        onClick={handleStatusUpdate}
+                        disabled={!newStatus || updateCaseStatus.isPending}
+                      >
+                        {updateCaseStatus.isPending ? (
+                          <>
+                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                            Updating...
+                          </>
+                        ) : (
+                          <>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Update Status
+                          </>
+                        )}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -500,15 +517,26 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                   setRejectReason('');
                   setSelectedDocId('');
                 }}
+                disabled={rejectDocument.isPending}
               >
                 Cancel
               </Button>
               <Button
                 variant="destructive"
                 onClick={() => handleRejectDocument(selectedDocId, rejectReason)}
-                disabled={!rejectReason.trim()}
+                disabled={!rejectReason.trim() || rejectDocument.isPending}
               >
-                Reject Document
+                {rejectDocument.isPending ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Rejecting...
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Reject Document
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -686,9 +714,19 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                                     variant="default"
                                     size="sm"
                                     onClick={() => handleApproveDocument(doc.id)}
+                                    disabled={approveDocument.isPending}
                                   >
-                                    <CheckCircle className="mr-1 h-4 w-4" />
-                                    Approve
+                                    {approveDocument.isPending ? (
+                                      <>
+                                        <RefreshCw className="mr-1 h-4 w-4 animate-spin" />
+                                        Approving...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <CheckCircle className="mr-1 h-4 w-4" />
+                                        Approve
+                                      </>
+                                    )}
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>

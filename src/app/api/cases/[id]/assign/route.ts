@@ -50,10 +50,31 @@ const handler = asyncHandler(
       throw new ApiError('Invalid agent ID', HttpStatus.BAD_REQUEST);
     }
 
-    // Verify case exists and is in a valid state
+    // Verify case exists and check current assignment
     const existingCase = await prisma.case.findUnique({
       where: { id: params.id },
-      select: { id: true, status: true },
+      select: {
+        id: true,
+        status: true,
+        assignedAgentId: true,
+        referenceNumber: true,
+        assignedAgent: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        client: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
     });
 
     if (!existingCase) {
@@ -62,6 +83,49 @@ const handler = asyncHandler(
 
     if (existingCase.status === 'CLOSED') {
       throw new ApiError('Cannot assign closed cases', HttpStatus.BAD_REQUEST);
+    }
+
+    // Check for duplicate assignment
+    if (existingCase.assignedAgentId) {
+      if (existingCase.assignedAgentId === agentId) {
+        // Case is already assigned to the same agent
+        throw new ApiError(
+          `This case is already assigned to ${agent.firstName} ${agent.lastName}. No action needed.`,
+          HttpStatus.CONFLICT
+        );
+      } else {
+        // Case is assigned to a different agent - notify admin immediately
+        const currentAgentName = existingCase.assignedAgent
+          ? `${existingCase.assignedAgent.firstName} ${existingCase.assignedAgent.lastName}`
+          : 'Unknown Agent';
+
+        logger.warn('ADMIN_ACTION: Duplicate assignment attempt prevented', {
+          action: 'CASE_ASSIGN_DUPLICATE',
+          caseId: params.id,
+          caseReference: existingCase.referenceNumber,
+          currentAgentId: existingCase.assignedAgentId,
+          currentAgentName,
+          attemptedAgentId: agentId,
+          attemptedAgentName: `${agent.firstName} ${agent.lastName}`,
+          adminId: req.user.userId,
+          timestamp: new Date().toISOString(),
+        });
+
+        // Send immediate notification to admin about duplicate assignment attempt
+        createRealtimeNotification(req.user.userId, {
+          type: 'SYSTEM_ANNOUNCEMENT',
+          title: '⚠️ Duplicate Assignment Prevented',
+          message: `Case ${existingCase.referenceNumber} is already assigned to ${currentAgentName}. You attempted to assign it to ${agent.firstName} ${agent.lastName}. Please use Transfer instead.`,
+          actionUrl: NOTIFICATION_ACTION_URLS.CASE_DETAILS(params.id),
+        }).catch((error) => {
+          logger.error('Failed to send duplicate assignment notification to admin', error);
+        });
+
+        throw new ApiError(
+          `This case is already assigned to ${currentAgentName}. Please transfer the case instead of reassigning it.`,
+          HttpStatus.CONFLICT
+        );
+      }
     }
 
     const caseData = await prisma.case.update({
@@ -101,16 +165,32 @@ const handler = asyncHandler(
       },
     });
 
-    // Send notifications to BOTH agent and client
-    try {
-      const agentFullName = `${agent.firstName} ${agent.lastName}`;
-      const clientFullName = `${caseData.client.firstName} ${caseData.client.lastName}`;
+    // Comprehensive logging for ADMIN action (do this before async notifications)
+    logger.info('ADMIN_ACTION: Case assigned', {
+      action: 'CASE_ASSIGN',
+      caseId: params.id,
+      caseReference: caseData.referenceNumber,
+      agentId,
+      agentName: `${agent.firstName} ${agent.lastName}`,
+      adminId: req.user.userId,
+      clientId: caseData.client.id,
+      clientName: `${caseData.client.firstName} ${caseData.client.lastName}`,
+      timestamp: new Date().toISOString(),
+    });
 
-      // Get email templates
-      const clientEmailTemplate = {
-        to: caseData.client.email,
-        subject: `Case ${caseData.referenceNumber} - Advisor Assigned`,
-        html: `
+    // Send notifications to BOTH agent and client
+    // FIRE-AND-FORGET: Don't await these operations to avoid timeout issues
+    // The assignment is complete, notifications are best-effort background tasks
+    (async () => {
+      try {
+        const agentFullName = `${agent.firstName} ${agent.lastName}`;
+        const clientFullName = `${caseData.client.firstName} ${caseData.client.lastName}`;
+
+        // Get email templates
+        const clientEmailTemplate = {
+          to: caseData.client.email,
+          subject: `Case ${caseData.referenceNumber} - Advisor Assigned`,
+          html: `
           <h2>Your Case Has Been Assigned!</h2>
           <p>Dear ${clientFullName},</p>
           <p>Great news! Your immigration case <strong>${caseData.referenceNumber}</strong> has been assigned to one of our experienced advisors.</p>
@@ -132,146 +212,135 @@ const handler = asyncHandler(
             Patrick Travel Services Team
           </p>
         `,
-      };
+        };
 
-      const agentEmailTemplate = getAgentCaseAssignmentEmailTemplate({
-        agentName: agentFullName,
-        caseReference: caseData.referenceNumber,
-        clientName: clientFullName,
-        serviceType: caseData.serviceType,
-        priority: caseData.priority,
-        caseId: params.id,
-      });
+        const agentEmailTemplate = getAgentCaseAssignmentEmailTemplate({
+          agentName: agentFullName,
+          caseReference: caseData.referenceNumber,
+          clientName: clientFullName,
+          serviceType: caseData.serviceType,
+          priority: caseData.priority,
+          caseId: params.id,
+        });
 
-      // Get Firebase UIDs for client and agent (needed for Firebase rules)
-      // This must be done BEFORE the Promise.all to get the UIDs
-      let clientFirebaseUid = '';
-      let agentFirebaseUid = '';
-      try {
-        if (!adminAuth) {
-          throw new Error('Firebase Admin not initialized');
+        // Get Firebase UIDs for client and agent (needed for Firebase rules)
+        // This must be done BEFORE the Promise.all to get the UIDs
+        let clientFirebaseUid = '';
+        let agentFirebaseUid = '';
+        try {
+          if (!adminAuth) {
+            throw new Error('Firebase Admin not initialized');
+          }
+          const clientFirebaseUser = await adminAuth.getUserByEmail(caseData.client.email);
+          clientFirebaseUid = clientFirebaseUser.uid;
+
+          const agentFirebaseUser = await adminAuth.getUserByEmail(caseData.assignedAgent!.email);
+          agentFirebaseUid = agentFirebaseUser.uid;
+
+          // Initialize Firebase chat conversation
+          await initializeFirebaseChat(
+            params.id,
+            caseData.referenceNumber,
+            clientFirebaseUid, // Use Firebase UID, not PostgreSQL ID
+            clientFullName,
+            agentFirebaseUid, // Use Firebase UID, not PostgreSQL ID
+            agentFullName
+          );
+        } catch (firebaseError) {
+          logger.error('Failed to get Firebase UIDs for chat initialization', firebaseError);
+          // Continue without chat initialization - non-critical
         }
-        const clientFirebaseUser = await adminAuth.getUserByEmail(caseData.client.email);
-        clientFirebaseUid = clientFirebaseUser.uid;
 
-        const agentFirebaseUser = await adminAuth.getUserByEmail(caseData.assignedAgent!.email);
-        agentFirebaseUid = agentFirebaseUser.uid;
+        await Promise.all([
+          // 1. Notify the AGENT (web dashboard)
+          createRealtimeNotification(agentId, {
+            type: 'CASE_ASSIGNED',
+            title: 'New Case Assigned',
+            message: `Case ${caseData.referenceNumber} has been assigned to you`,
+            actionUrl: NOTIFICATION_ACTION_URLS.CASE_DETAILS(params.id),
+          }),
 
-        // Initialize Firebase chat conversation
-        await initializeFirebaseChat(
-          params.id,
-          caseData.referenceNumber,
-          clientFirebaseUid, // Use Firebase UID, not PostgreSQL ID
-          clientFullName,
-          agentFirebaseUid, // Use Firebase UID, not PostgreSQL ID
-          agentFullName
-        );
-      } catch (firebaseError) {
-        logger.error('Failed to get Firebase UIDs for chat initialization', firebaseError);
-        // Continue without chat initialization - non-critical
+          // 2. Notify the CLIENT (web dashboard)
+          createRealtimeNotification(caseData.clientId, {
+            type: 'CASE_ASSIGNED',
+            title: 'Case Assigned!',
+            message: `Your case ${caseData.referenceNumber} has been assigned to ${agentFullName}`,
+            actionUrl: NOTIFICATION_ACTION_URLS.CASE_DETAILS(params.id),
+          }),
+
+          // 3. Send mobile push notification to CLIENT
+          sendPushNotificationToUser(caseData.clientId, {
+            title: '👤 Case Assigned!',
+            body: `Your case ${caseData.referenceNumber} has been assigned to ${agentFullName}. They will contact you soon.`,
+            data: {
+              type: 'CASE_ASSIGNED',
+              caseId: params.id,
+              caseRef: caseData.referenceNumber,
+              agentId: agentId,
+              agentName: agentFullName,
+            },
+          }),
+
+          // 4. Send mobile push notification to AGENT
+          sendPushNotificationToUser(agentId, {
+            title: '🎯 New Case Assigned',
+            body: `Case ${caseData.referenceNumber} from ${clientFullName} has been assigned to you. Priority: ${caseData.priority}`,
+            data: {
+              type: 'CASE_ASSIGNED',
+              caseId: params.id,
+              caseRef: caseData.referenceNumber,
+              clientId: caseData.clientId,
+              clientName: clientFullName,
+            },
+          }),
+
+          // 5. Send email to CLIENT
+          sendEmail(clientEmailTemplate),
+
+          // 6. Send email to AGENT
+          sendEmail({
+            to: caseData.assignedAgent!.email,
+            subject: agentEmailTemplate.subject,
+            html: agentEmailTemplate.html,
+          }),
+
+          // 7. Optional: Send automatic welcome message from agent
+          // Use Firebase UIDs for welcome message
+          ...(clientFirebaseUid && agentFirebaseUid
+            ? [
+                sendWelcomeMessage(
+                  params.id,
+                  agentFirebaseUid, // Use Firebase UID
+                  agentFullName,
+                  clientFullName,
+                  caseData.referenceNumber
+                ),
+              ]
+            : [
+                Promise.resolve(
+                  logger.warn('Skipping welcome message - Firebase UIDs not available')
+                ),
+              ]),
+        ]);
+
+        logger.info('All assignment notifications sent successfully', {
+          caseId: params.id,
+          clientId: caseData.clientId,
+          agentId,
+          clientEmail: caseData.client.email,
+        });
+      } catch (error) {
+        logger.error('Failed to send assignment notifications', error, {
+          caseId: params.id,
+          clientId: caseData.clientId,
+          agentId,
+        });
+        // Notifications failed but assignment is already complete
       }
+    })();
 
-      await Promise.all([
-        // 1. Notify the AGENT (web dashboard)
-        createRealtimeNotification(agentId, {
-          type: 'CASE_ASSIGNED',
-          title: 'New Case Assigned',
-          message: `Case ${caseData.referenceNumber} has been assigned to you`,
-          actionUrl: NOTIFICATION_ACTION_URLS.CASE_DETAILS(params.id),
-        }),
-
-        // 2. Notify the CLIENT (web dashboard)
-        createRealtimeNotification(caseData.clientId, {
-          type: 'CASE_ASSIGNED',
-          title: 'Case Assigned!',
-          message: `Your case ${caseData.referenceNumber} has been assigned to ${agentFullName}`,
-          actionUrl: NOTIFICATION_ACTION_URLS.CASE_DETAILS(params.id),
-        }),
-
-        // 3. Send mobile push notification to CLIENT
-        sendPushNotificationToUser(caseData.clientId, {
-          title: '👤 Case Assigned!',
-          body: `Your case ${caseData.referenceNumber} has been assigned to ${agentFullName}. They will contact you soon.`,
-          data: {
-            type: 'CASE_ASSIGNED',
-            caseId: params.id,
-            caseRef: caseData.referenceNumber,
-            agentId: agentId,
-            agentName: agentFullName,
-          },
-        }),
-
-        // 4. Send mobile push notification to AGENT
-        sendPushNotificationToUser(agentId, {
-          title: '🎯 New Case Assigned',
-          body: `Case ${caseData.referenceNumber} from ${clientFullName} has been assigned to you. Priority: ${caseData.priority}`,
-          data: {
-            type: 'CASE_ASSIGNED',
-            caseId: params.id,
-            caseRef: caseData.referenceNumber,
-            clientId: caseData.clientId,
-            clientName: clientFullName,
-          },
-        }),
-
-        // 5. Send email to CLIENT
-        sendEmail(clientEmailTemplate),
-
-        // 6. Send email to AGENT
-        sendEmail({
-          to: caseData.assignedAgent!.email,
-          subject: agentEmailTemplate.subject,
-          html: agentEmailTemplate.html,
-        }),
-
-        // 7. Optional: Send automatic welcome message from agent
-        // Use Firebase UIDs for welcome message
-        ...(clientFirebaseUid && agentFirebaseUid
-          ? [
-              sendWelcomeMessage(
-                params.id,
-                agentFirebaseUid, // Use Firebase UID
-                agentFullName,
-                clientFullName,
-                caseData.referenceNumber
-              ),
-            ]
-          : [
-              Promise.resolve(
-                logger.warn('Skipping welcome message - Firebase UIDs not available')
-              ),
-            ]),
-      ]);
-
-      logger.info('All assignment notifications sent successfully', {
-        caseId: params.id,
-        clientId: caseData.clientId,
-        agentId,
-        clientEmail: caseData.client.email,
-      });
-    } catch (error) {
-      logger.error('Failed to send assignment notifications', error, {
-        caseId: params.id,
-        clientId: caseData.clientId,
-        agentId,
-      });
-      // Don't fail the assignment if notifications fail
-      // The assignment is complete, notifications are best-effort
-    }
-
-    // Comprehensive logging for ADMIN action
-    logger.info('ADMIN_ACTION: Case assigned', {
-      action: 'CASE_ASSIGN',
-      caseId: params.id,
-      caseReference: caseData.referenceNumber,
-      agentId,
-      agentName: `${agent.firstName} ${agent.lastName}`,
-      adminId: req.user.userId,
-      clientId: caseData.client.id,
-      clientName: `${caseData.client.firstName} ${caseData.client.lastName}`,
-      timestamp: new Date().toISOString(),
-    });
-
+    // Return immediately - don't wait for notifications to complete
+    // This prevents timeout errors on the client while notifications are sent in background
     return successResponse({ case: caseData }, 'Case assigned successfully');
   }
 );

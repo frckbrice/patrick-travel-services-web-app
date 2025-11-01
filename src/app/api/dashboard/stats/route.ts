@@ -70,24 +70,27 @@ const handler = asyncHandler(async (request: NextRequest) => {
       pendingDocuments,
     });
   } else if (role === 'AGENT') {
-    // Agent statistics - their assigned cases
-    const [totalCases, activeCases, completedCases, assignedCases] = await Promise.all([
-      // Total cases (all cases visible to agent)
-      prisma.case.count({}),
+    // Agent statistics - their assigned cases only
+    const agentWhere = { assignedAgentId: userId };
 
-      // Active cases (not in terminal status)
+    const [totalCases, activeCases, completedCases] = await Promise.all([
+      // Total cases assigned to this agent
+      prisma.case.count({ where: agentWhere }),
+
+      // Active cases assigned to this agent (not in terminal status)
       prisma.case.count({
-        where: { status: { notIn: TERMINAL_STATUSES } },
+        where: {
+          ...agentWhere,
+          status: { notIn: TERMINAL_STATUSES },
+        },
       }),
 
-      // Completed cases
+      // Completed cases assigned to this agent
       prisma.case.count({
-        where: { status: CASE_STATUS_APPROVED },
-      }),
-
-      // Assigned cases to this agent
-      prisma.case.count({
-        where: { assignedAgentId: userId },
+        where: {
+          ...agentWhere,
+          status: CASE_STATUS_APPROVED,
+        },
       }),
     ]);
 
@@ -95,7 +98,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
       totalCases,
       activeCases,
       completedCases,
-      assignedCases,
+      assignedCases: totalCases, // Same as totalCases for agents
     });
   } else if (role === 'ADMIN') {
     // Admin statistics - all cases in system
