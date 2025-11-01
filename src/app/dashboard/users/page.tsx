@@ -1,10 +1,12 @@
 import { Suspense } from 'react';
-import { UsersListEnhanced } from '@/features/users/components/UsersListEnhanced';
-import DashboardLoading from '../loading';
+import {
+  UsersListEnhanced,
+  UsersListSkeleton,
+} from '@/features/users/components/UsersListEnhanced';
 
 export default function UsersPage() {
   return (
-    <Suspense fallback={<DashboardLoading />}>
+    <Suspense fallback={<UsersListSkeleton />}>
       <UsersListEnhanced />
     </Suspense>
   );

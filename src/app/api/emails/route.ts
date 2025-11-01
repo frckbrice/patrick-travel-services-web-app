@@ -18,10 +18,11 @@ const handler = asyncHandler(async (req: NextRequest) => {
   const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
   const skip = (page - 1) * limit;
 
-  // Fetch emails (sent or received by user)
+  // Fetch emails (sent or received by user) - only EMAIL type messages
   const [emails, total] = await Promise.all([
     prisma.message.findMany({
       where: {
+        messageType: 'EMAIL', // Only get EMAIL type messages
         OR: [{ senderId: request.user.userId }, { recipientId: request.user.userId }],
       },
       include: {
@@ -57,6 +58,7 @@ const handler = asyncHandler(async (req: NextRequest) => {
     }),
     prisma.message.count({
       where: {
+        messageType: 'EMAIL', // Only count EMAIL type messages
         OR: [{ senderId: request.user.userId }, { recipientId: request.user.userId }],
       },
     }),

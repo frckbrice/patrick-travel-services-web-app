@@ -3,7 +3,7 @@
 
 import { prisma } from '@/lib/db/prisma';
 import { logger } from '@/lib/utils/logger';
-import { createRealtimeNotification } from '@/lib/firebase/notifications.service';
+import { createRealtimeNotification } from '@/lib/firebase/notifications.service.server';
 
 export interface CreateNotificationParams {
   userId: string;

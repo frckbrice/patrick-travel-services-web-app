@@ -10,6 +10,9 @@ import { asyncHandler, ApiError, HttpStatus } from '@/lib/utils/error-handler';
 import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
+import { UTApi } from 'uploadthing/server';
+
+const utapi = new UTApi();
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -90,12 +93,49 @@ const deleteHandler = asyncHandler(async (request: NextRequest, context: RouteCo
     throw new ApiError(ERROR_MESSAGES.FORBIDDEN, HttpStatus.FORBIDDEN);
   }
 
+  // Delete file from UploadThing before deleting from database
+  try {
+    // Extract file key from the filePath (UploadThing URL)
+    const url = new URL(document.filePath);
+
+    // Validate hostname is from trusted UploadThing domains
+    if (url.hostname.includes('uploadthing') || url.hostname.includes('utfs.io')) {
+      // Extract file key from pathname (last segment, ignoring query/search)
+      const pathSegments = url.pathname.split('/').filter(Boolean);
+      const fileKey = pathSegments[pathSegments.length - 1];
+
+      if (fileKey) {
+        const deleteResult = await utapi.deleteFiles([fileKey]);
+
+        if (deleteResult.success) {
+          logger.info('Deleted file from UploadThing', {
+            documentId: id,
+            fileKey,
+            userId: req.user.userId,
+          });
+        } else {
+          logger.error('Failed to delete file from UploadThing', deleteResult);
+        }
+      }
+    } else {
+      logger.warn('Skipping file deletion - file path is not from trusted UploadThing domain', {
+        documentId: id,
+        hostname: url.hostname,
+      });
+    }
+  } catch (fileDeleteError) {
+    // Log error but don't fail the request - we still want to delete the DB record
+    logger.error('Error deleting file from UploadThing', {
+      error: fileDeleteError,
+      documentId: id,
+      userId: req.user.userId,
+    });
+  }
+
+  // Delete from database
   await prisma.document.delete({
     where: { id },
   });
-
-  // TODO: Delete file from UploadThing
-  // This requires implementing UploadThing file deletion
 
   logger.info('Document deleted', { documentId: id, userId: req.user.userId });
 

@@ -17,7 +17,7 @@ import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
 import { sendEmail } from '@/lib/notifications/email.service';
 import { sendPushNotificationToUser } from '@/lib/notifications/expo-push.service';
-import { createRealtimeNotification } from '@/lib/firebase/notifications.service';
+import { createRealtimeNotification } from '@/lib/firebase/notifications.service.server';
 import { getCaseSubmissionConfirmationEmailTemplate } from '@/lib/notifications/email-templates';
 
 // GET /api/cases - List all cases (with filters)

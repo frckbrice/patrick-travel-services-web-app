@@ -10,7 +10,7 @@ import { asyncHandler, ApiError, HttpStatus } from '@/lib/utils/error-handler';
 import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
-import { createRealtimeNotification } from '@/lib/firebase/notifications.service';
+import { createRealtimeNotification } from '@/lib/firebase/notifications.service.server';
 import { sendPushNotificationToUser } from '@/lib/notifications/expo-push.service';
 
 // POST /api/cases/bulk - Bulk operations on cases

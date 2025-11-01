@@ -16,12 +16,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from 'sonner';
-import { logger } from '@/lib/utils/logger';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { DocumentCard } from './DocumentCard';
 import { UploadDialog } from './UploadDialog';
 import { SimpleSkeleton, SkeletonText, SkeletonCard } from '@/components/ui/simple-skeleton';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
+import { logger } from '@/lib/utils/logger';
 
 export function DocumentsList() {
   const { t } = useTranslation();
@@ -29,6 +30,10 @@ export function DocumentsList() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [uploadOpen, setUploadOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Confirmation dialog state
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null);
 
   const { data, isLoading, error, refetch } = useDocuments({});
   const createDocument = useCreateDocument();
@@ -278,17 +283,25 @@ export function DocumentsList() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm(t('documents.deleteConfirm'))) return;
+  const handleDelete = async (document: Document) => {
+    setDocumentToDelete(document);
+    setConfirmDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!documentToDelete) return;
 
     try {
-      logger.info('Attempting to delete document', { documentId: id });
-      await deleteDocument.mutateAsync(id);
+      logger.info('Attempting to delete document', { documentId: documentToDelete.id });
+      await deleteDocument.mutateAsync(documentToDelete.id);
       // Mutation already refetches and shows toast via onSuccess/onError callbacks
-      logger.info('Document deleted successfully', { documentId: id });
+      logger.info('Document deleted successfully', { documentId: documentToDelete.id });
     } catch (error) {
-      logger.error('Failed to delete document', error, { documentId: id });
+      logger.error('Failed to delete document', error, { documentId: documentToDelete.id });
       // Mutation already shows error toast via onError callback
+    } finally {
+      setConfirmDialogOpen(false);
+      setDocumentToDelete(null);
     }
   };
 
@@ -370,7 +383,7 @@ export function DocumentsList() {
               document={document}
               onView={() => handleView(document)}
               onDownload={() => handleDownload(document)}
-              onDelete={() => handleDelete(document.id)}
+              onDelete={() => handleDelete(document)}
               showDelete={isClient && document.status !== 'APPROVED'}
               isDeleting={deleteDocument.isPending}
               showCaseInfo={!isClient}
@@ -378,6 +391,19 @@ export function DocumentsList() {
           ))}
         </div>
       )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={confirmDialogOpen}
+        onOpenChange={setConfirmDialogOpen}
+        onConfirm={handleConfirmDelete}
+        title="Delete Document"
+        description={`Are you sure you want to delete "${documentToDelete?.originalName}"? This action cannot be undone.`}
+        confirmText="Delete Document"
+        cancelText="Cancel"
+        variant="destructive"
+        isLoading={deleteDocument.isPending}
+      />
     </div>
   );
 }

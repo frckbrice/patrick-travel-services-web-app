@@ -263,6 +263,7 @@ export function useRealtimeMessages(chatRoomId: string | null) {
   const [isLoading, setIsLoading] = useState(true);
   const [useMockData, setUseMockData] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastMarkedRef = useRef<number>(0);
 
   useEffect(() => {
     if (!chatRoomId) {
@@ -288,6 +289,25 @@ export function useRealtimeMessages(chatRoomId: string | null) {
       setMessages(newMessages);
       setUseMockData(false);
       setIsLoading(false);
+
+      // PERFORMANCE: Throttle read-marking to at most once per 2s
+      const now = Date.now();
+      if (
+        user?.id &&
+        chatRoomId &&
+        newMessages.length > 0 &&
+        now - lastMarkedRef.current > 2000 &&
+        // Only trigger if there exists at least one unread message not from current user
+        newMessages.some((m) => m.senderId !== user.id && !m.isRead)
+      ) {
+        lastMarkedRef.current = now;
+        // Best-effort; don't await to avoid UI jank
+        import('@/lib/firebase/chat.service').then(({ markMessagesAsRead }) => {
+          markMessagesAsRead(chatRoomId, user.id).catch(() => {
+            // Silently ignore; rules enforce permissions
+          });
+        });
+      }
     });
 
     return () => {

@@ -11,6 +11,7 @@ import { apiClient } from '@/lib/utils/axios';
 import type { SendMessageInput, SendEmailInput } from '../types';
 import { MESSAGES_KEY } from './queries';
 import { auth } from '@/lib/firebase/firebase-client';
+import { markMessageAsRead, markAllMessagesAsRead } from '@/lib/firebase/message-status.service';
 
 // Send message mutation - DIRECT FIREBASE (no API)
 // Mobile apps use the same Firebase SDK and chat.service functions
@@ -211,5 +212,99 @@ export function useSendEmail() {
       logger.error('Failed to send email', error);
     },
     retry: false,
+  });
+}
+
+// Mark message as read mutation - Firebase + PostgreSQL sync
+export function useMarkMessageRead() {
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+
+  return useMutation({
+    mutationFn: async (data: { messageId: string; chatRoomId: string; firebaseId?: string }) => {
+      logger.info('Marking message as read', {
+        messageId: data.messageId,
+        firebaseId: data.firebaseId,
+      });
+
+      // Update PostgreSQL via API
+      const response = await apiClient.put(`/api/chat/messages/${data.messageId}/read`);
+
+      // Firebase sync is handled by the server-side API route
+      // No need to duplicate it here
+
+      return response.data.data;
+    },
+    onSuccess: (data, variables) => {
+      logger.info('Message marked as read successfully', {
+        messageId: variables.messageId,
+        readAt: data.readAt,
+      });
+
+      // Invalidate chat queries
+      queryClient.invalidateQueries({ queryKey: [MESSAGES_KEY] });
+      queryClient.invalidateQueries({ queryKey: ['chat-history'] });
+      queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+
+      toast.success('Message marked as read');
+    },
+    onError: (error: any, variables) => {
+      logger.error('Failed to mark message as read', {
+        messageId: variables.messageId,
+        error: error?.response?.data?.message || error?.message,
+      });
+
+      const errorMessage = error?.response?.data?.message || 'Failed to mark message as read';
+      toast.error(errorMessage);
+    },
+  });
+}
+
+// Mark multiple messages as read mutation
+export function useMarkMessagesRead() {
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+
+  return useMutation({
+    mutationFn: async (data: { messageIds: string[]; chatRoomId?: string }) => {
+      logger.info('Marking messages as read in bulk', {
+        messageCount: data.messageIds.length,
+        chatRoomId: data.chatRoomId,
+      });
+
+      // Update PostgreSQL via API
+      const response = await apiClient.put('/api/chat/messages/mark-read', {
+        messageIds: data.messageIds,
+        chatRoomId: data.chatRoomId,
+      });
+
+      // Firebase sync is handled by the server-side API route
+      // No need to duplicate it here
+
+      return response.data.data;
+    },
+    onSuccess: (data, variables) => {
+      logger.info('Messages marked as read successfully', {
+        count: data.count,
+        messageIds: data.messageIds,
+        readAt: data.readAt,
+      });
+
+      // Invalidate chat queries
+      queryClient.invalidateQueries({ queryKey: [MESSAGES_KEY] });
+      queryClient.invalidateQueries({ queryKey: ['chat-history'] });
+      queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+
+      toast.success(`${data.count} message(s) marked as read`);
+    },
+    onError: (error: any, variables) => {
+      logger.error('Failed to mark messages as read', {
+        messageCount: variables.messageIds.length,
+        error: error?.response?.data?.message || error?.message,
+      });
+
+      const errorMessage = error?.response?.data?.message || 'Failed to mark messages as read';
+      toast.error(errorMessage);
+    },
   });
 }

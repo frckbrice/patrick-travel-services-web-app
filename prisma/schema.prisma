@@ -33,9 +33,11 @@ model User {
   lastDataExport       DateTime?
   privacyAcceptedAt    DateTime?
   termsAcceptedAt      DateTime?
+  firebaseId           String?            @unique
   activityLogs         ActivityLog[]
   assignedCases        Case[]             @relation("AgentCases")
   cases                Case[]             @relation("ClientCases")
+  destinationsCreated  Destination[]      @relation("DestinationsCreated")
   documents            Document[]
   templatesCreated     DocumentTemplate[] @relation("TemplatesCreated")
   inviteCodesCreated   InviteCode[]       @relation("CreatedInviteCodes")
@@ -47,7 +49,6 @@ model User {
   transferredFrom      TransferHistory[]  @relation("TransferFrom")
   transferredTo        TransferHistory[]  @relation("TransferTo")
   transfersInitiated   TransferHistory[]  @relation("TransferInitiator")
-  destinationsCreated  Destination[]      @relation("DestinationsCreated")
 
   @@index([email])
   @@index([role])
@@ -58,7 +59,6 @@ model Case {
   referenceNumber     String            @unique
   clientId            String
   assignedAgentId     String?
-  destinationId       String?
   serviceType         ServiceType
   status              CaseStatus        @default(SUBMITTED)
   priority            Priority          @default(NORMAL)
@@ -66,6 +66,7 @@ model Case {
   lastUpdated         DateTime          @updatedAt
   internalNotes       String?
   estimatedCompletion DateTime?
+  destinationId       String?
   assignedAgent       User?             @relation("AgentCases", fields: [assignedAgentId], references: [id])
   client              User              @relation("ClientCases", fields: [clientId], references: [id])
   destination         Destination?      @relation(fields: [destinationId], references: [id])
@@ -361,6 +362,25 @@ model Contact {
   @@index([createdAt])
 }
 
+model Destination {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  code         String   @unique
+  flagEmoji    String
+  description  String?
+  isActive     Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdById  String?
+  cases        Case[]
+  createdBy    User?    @relation("DestinationsCreated", fields: [createdById], references: [id])
+
+  @@index([isActive])
+  @@index([displayOrder])
+  @@index([code])
+}
+
 enum Role {
   CLIENT
   AGENT
@@ -441,24 +461,4 @@ enum ContactStatus {
   REVIEWED
   RESPONDED
   CLOSED
-}
-
-// Destination Model - Travel destinations managed by admins
-model Destination {
-  id           String   @id @default(uuid())
-  name         String   @unique
-  code         String   @unique // ISO country code (e.g., USA, FR, JP)
-  flagEmoji    String // Flag emoji for visual appeal (e.g., 🇺🇸, 🇫🇷, 🇯🇵)
-  description  String?
-  isActive     Boolean  @default(true)
-  displayOrder Int      @default(0) // For custom ordering in dropdowns
-  cases        Case[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  createdById  String?
-  createdBy    User?    @relation("DestinationsCreated", fields: [createdById], references: [id])
-
-  @@index([isActive])
-  @@index([displayOrder])
-  @@index([code])
 }

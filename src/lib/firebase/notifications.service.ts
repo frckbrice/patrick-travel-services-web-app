@@ -1,4 +1,5 @@
-// Firebase Realtime Database service for real-time notifications
+// Firebase Realtime Database service for CLIENT-SIDE real-time notifications
+// For server-side notification creation, use notifications.service.server.ts
 
 import { ref, onValue, push, set, off, get } from 'firebase/database';
 import { database } from './firebase-client';
@@ -66,47 +67,9 @@ export function subscribeToUserNotifications(
   return () => off(notificationsRef, 'value', callback);
 }
 
-// Create notification in Firebase Realtime Database
-export async function createRealtimeNotification(
-  userId: string,
-  notification: Omit<RealtimeNotification, 'id' | 'userId' | 'createdAt' | 'isRead'>
-): Promise<string> {
-  try {
-    const notificationsRef = ref(database, `notifications/${userId}`);
-    const newNotificationRef = push(notificationsRef);
-
-    const notificationData: Omit<RealtimeNotification, 'id'> = {
-      userId,
-      ...notification,
-      createdAt: new Date().toISOString(),
-      isRead: false,
-    };
-
-    await set(newNotificationRef, notificationData);
-
-    // Check if key generation failed
-    if (!newNotificationRef.key) {
-      throw new Error(
-        `Firebase failed to generate notification key. ` +
-          `Path: notifications/${userId}, ` +
-          `Payload: ${JSON.stringify(notificationData)}, ` +
-          `Type: ${notification.type}, ` +
-          `Title: ${notification.title}`
-      );
-    }
-
-    logger.info('Realtime notification created', {
-      userId,
-      type: notification.type,
-      notificationId: newNotificationRef.key,
-    });
-
-    return newNotificationRef.key;
-  } catch (error) {
-    logger.error('Failed to create realtime notification', error);
-    throw error;
-  }
-}
+// Note: createRealtimeNotification has been moved to notifications.service.server.ts
+// to avoid bundling Firebase Admin SDK in client-side code
+// Import it from '@/lib/firebase/notifications.service.server' in API routes only
 
 // Mark notification as read in Firebase
 export async function markNotificationAsRead(

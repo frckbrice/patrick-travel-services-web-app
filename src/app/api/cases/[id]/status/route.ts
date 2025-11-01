@@ -10,7 +10,7 @@ import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
 import { sendCaseStatusEmail } from '@/lib/notifications/email.service';
-import { createRealtimeNotification } from '@/lib/firebase/notifications.service';
+import { createRealtimeNotification } from '@/lib/firebase/notifications.service.server';
 
 const handler = asyncHandler(
   async (request: NextRequest, context: { params: Promise<{ id: string }> }) => {

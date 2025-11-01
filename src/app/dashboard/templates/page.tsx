@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { AdminTemplateManager } from '@/features/admin/components/AdminTemplateManager';
+import { useRouter } from 'next/navigation';
+import {
+  AdminTemplateManager,
+  AdminTemplateManagerSkeleton,
+} from '@/features/admin/components/AdminTemplateManager';
 import { useAuthStore } from '@/features/auth/store';
 
 export default function TemplatesPage() {
@@ -16,9 +19,9 @@ export default function TemplatesPage() {
     }
   }, [user?.role, isLoading, router]);
 
-  // Show nothing while checking or redirecting
+  // Show skeleton while checking or redirecting
   if (isLoading || user?.role !== 'ADMIN') {
-    return null;
+    return <AdminTemplateManagerSkeleton />;
   }
 
   return <AdminTemplateManager />;

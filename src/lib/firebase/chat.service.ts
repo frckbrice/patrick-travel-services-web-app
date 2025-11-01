@@ -5,6 +5,24 @@ import { ref, set, update, get, push } from 'firebase/database';
 import { database } from './firebase-client';
 import { logger } from '@/lib/utils/logger';
 import { setLogLevel } from 'firebase/app';
+import { prisma } from '@/lib/db/prisma';
+
+/**
+ * Convert PostgreSQL user ID to Firebase UID
+ * This is needed because userChats requires Firebase UIDs for security rules
+ */
+async function getFirebaseUidFromPostgresId(postgresId: string): Promise<string | null> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: postgresId },
+      select: { firebaseId: true },
+    });
+    return user?.firebaseId || null;
+  } catch (error) {
+    logger.error('Failed to get Firebase UID from PostgreSQL ID', error, { postgresId });
+    return null;
+  }
+}
 
 export interface ChatParticipants {
   clientId: string;
@@ -78,20 +96,37 @@ export async function initializeFirebaseChat(
       await set(conversationRef, chatMetadata);
 
       // 🆕 Create userChats index entries
-      await Promise.all([
-        set(ref(database, `userChats/${agentId}/${caseId}`), {
-          chatId: caseId,
-          participantName: clientName,
-          lastMessage: null,
-          lastMessageTime: null,
-        }),
-        set(ref(database, `userChats/${clientId}/${caseId}`), {
-          chatId: caseId,
-          participantName: agentName,
-          lastMessage: null,
-          lastMessageTime: null,
-        }),
-      ]);
+      // Convert PostgreSQL IDs to Firebase UIDs for userChats access
+      const agentFirebaseUid = await getFirebaseUidFromPostgresId(agentId);
+      const clientFirebaseUid = await getFirebaseUidFromPostgresId(clientId);
+
+      if (agentFirebaseUid && clientFirebaseUid) {
+        await Promise.all([
+          set(ref(database, `userChats/${agentFirebaseUid}/${caseId}`), {
+            chatId: caseId,
+            participantName: clientName,
+            lastMessage: null,
+            lastMessageTime: null,
+          }),
+          set(ref(database, `userChats/${clientFirebaseUid}/${caseId}`), {
+            chatId: caseId,
+            participantName: agentName,
+            lastMessage: null,
+            lastMessageTime: null,
+          }),
+        ]);
+        logger.info('userChats entries created during initialization');
+      } else {
+        logger.warn(
+          'Could not create userChats entries during initialization - missing Firebase UIDs',
+          {
+            agentId: agentId.substring(0, 8) + '...',
+            clientId: clientId.substring(0, 8) + '...',
+            agentFirebaseUid: agentFirebaseUid?.substring(0, 8) + '...' || 'null',
+            clientFirebaseUid: clientFirebaseUid?.substring(0, 8) + '...' || 'null',
+          }
+        );
+      }
 
       logger.info('Firebase chat initialized', {
         caseId,
@@ -200,11 +235,25 @@ export async function deleteFirebaseChat(caseId: string): Promise<void> {
 
     // 3) Remove entries from userChats for both participants
     if (agentId && clientId) {
-      await Promise.all([
-        set(ref(database, `userChats/${agentId}/${caseId}`), null),
-        set(ref(database, `userChats/${clientId}/${caseId}`), null),
-      ]);
-      logger.info('Firebase chat and userChats entries deleted', { caseId, agentId, clientId });
+      // Convert PostgreSQL IDs to Firebase UIDs for userChats access
+      const agentFirebaseUid = await getFirebaseUidFromPostgresId(agentId);
+      const clientFirebaseUid = await getFirebaseUidFromPostgresId(clientId);
+
+      if (agentFirebaseUid && clientFirebaseUid) {
+        await Promise.all([
+          set(ref(database, `userChats/${agentFirebaseUid}/${caseId}`), null),
+          set(ref(database, `userChats/${clientFirebaseUid}/${caseId}`), null),
+        ]);
+        logger.info('Firebase chat and userChats entries deleted', { caseId, agentId, clientId });
+      } else {
+        logger.warn('Could not delete userChats entries - missing Firebase UIDs', {
+          caseId,
+          agentId: agentId.substring(0, 8) + '...',
+          clientId: clientId.substring(0, 8) + '...',
+          agentFirebaseUid: agentFirebaseUid?.substring(0, 8) + '...' || 'null',
+          clientFirebaseUid: clientFirebaseUid?.substring(0, 8) + '...' || 'null',
+        });
+      }
     } else {
       logger.warn('Missing participant IDs during deletion', { caseId, participants });
     }
@@ -338,20 +387,34 @@ export async function sendMessage(params: SendMessageParams): Promise<string> {
         await set(metadataRef, metadataData);
 
         // 🆕 Ensure userChats index is created
-        await Promise.all([
-          set(ref(database, `userChats/${agentId}/${chatRoomId}`), {
-            chatId: chatRoomId,
-            participantName: clientName,
-            lastMessage: params.content.substring(0, 100),
-            lastMessageTime: timestamp,
-          }),
-          set(ref(database, `userChats/${clientId}/${chatRoomId}`), {
-            chatId: chatRoomId,
-            participantName: agentName,
-            lastMessage: params.content.substring(0, 100),
-            lastMessageTime: timestamp,
-          }),
-        ]);
+        // Convert PostgreSQL IDs to Firebase UIDs for userChats access
+        const agentFirebaseUid = await getFirebaseUidFromPostgresId(agentId);
+        const clientFirebaseUid = await getFirebaseUidFromPostgresId(clientId);
+
+        if (agentFirebaseUid && clientFirebaseUid) {
+          await Promise.all([
+            set(ref(database, `userChats/${agentFirebaseUid}/${chatRoomId}`), {
+              chatId: chatRoomId,
+              participantName: clientName,
+              lastMessage: params.content.substring(0, 100),
+              lastMessageTime: timestamp,
+            }),
+            set(ref(database, `userChats/${clientFirebaseUid}/${chatRoomId}`), {
+              chatId: chatRoomId,
+              participantName: agentName,
+              lastMessage: params.content.substring(0, 100),
+              lastMessageTime: timestamp,
+            }),
+          ]);
+          logger.info('userChats entries created successfully');
+        } else {
+          logger.warn('Could not create userChats entries - missing Firebase UIDs', {
+            agentId: agentId.substring(0, 8) + '...',
+            clientId: clientId.substring(0, 8) + '...',
+            agentFirebaseUid: agentFirebaseUid?.substring(0, 8) + '...' || 'null',
+            clientFirebaseUid: clientFirebaseUid?.substring(0, 8) + '...' || 'null',
+          });
+        }
         logger.info('Chat room metadata created successfully');
       } catch (metadataError: any) {
         logger.error('Failed to create metadata', {
@@ -373,17 +436,35 @@ export async function sendMessage(params: SendMessageParams): Promise<string> {
           lastMessageTime: timestamp,
         });
 
-        // 🆕 Update both participants’ userChats entries
-        await Promise.all([
-          update(ref(database, `userChats/${currentData.participants.agentId}/${chatRoomId}`), {
-            lastMessage: params.content.substring(0, 100),
-            lastMessageTime: timestamp,
-          }),
-          update(ref(database, `userChats/${currentData.participants.clientId}/${chatRoomId}`), {
-            lastMessage: params.content.substring(0, 100),
-            lastMessageTime: timestamp,
-          }),
-        ]);
+        // 🆕 Update both participants' userChats entries
+        // Convert PostgreSQL IDs to Firebase UIDs for userChats access
+        const agentFirebaseUid = await getFirebaseUidFromPostgresId(
+          currentData.participants.agentId
+        );
+        const clientFirebaseUid = await getFirebaseUidFromPostgresId(
+          currentData.participants.clientId
+        );
+
+        if (agentFirebaseUid && clientFirebaseUid) {
+          await Promise.all([
+            update(ref(database, `userChats/${agentFirebaseUid}/${chatRoomId}`), {
+              lastMessage: params.content.substring(0, 100),
+              lastMessageTime: timestamp,
+            }),
+            update(ref(database, `userChats/${clientFirebaseUid}/${chatRoomId}`), {
+              lastMessage: params.content.substring(0, 100),
+              lastMessageTime: timestamp,
+            }),
+          ]);
+          logger.info('userChats entries updated successfully');
+        } else {
+          logger.warn('Could not update userChats entries - missing Firebase UIDs', {
+            agentId: currentData.participants.agentId?.substring(0, 8) + '...',
+            clientId: currentData.participants.clientId?.substring(0, 8) + '...',
+            agentFirebaseUid: agentFirebaseUid?.substring(0, 8) + '...' || 'null',
+            clientFirebaseUid: clientFirebaseUid?.substring(0, 8) + '...' || 'null',
+          });
+        }
         logger.info('Chat room metadata updated successfully');
       } catch (metaUpdateError: any) {
         // This is non-critical - message can still be written

@@ -1,10 +1,9 @@
 import { Suspense } from 'react';
-import { ClientsList } from '@/features/clients/components/ClientsList';
-import DashboardLoading from '../loading';
+import { ClientsList, ClientsListSkeleton } from '@/features/clients/components/ClientsList';
 
 export default function ClientsPage() {
   return (
-    <Suspense fallback={<DashboardLoading />}>
+    <Suspense fallback={<ClientsListSkeleton />}>
       <ClientsList />
     </Suspense>
   );

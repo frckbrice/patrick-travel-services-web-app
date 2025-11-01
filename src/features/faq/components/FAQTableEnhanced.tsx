@@ -22,6 +22,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -112,9 +113,19 @@ export function FAQTableEnhanced({ data, onEdit, onDelete, categories }: FAQTabl
         header: 'Question',
         cell: ({ row }) => {
           const question = row.original.question;
+          const isCreating = row.original.id.startsWith('temp-');
           return (
             <div className="max-w-md">
-              <p className="font-medium line-clamp-2">{question}</p>
+              <p
+                className={`font-medium line-clamp-2 flex items-center gap-2 ${isCreating ? 'opacity-70' : ''}`}
+              >
+                {question}
+                {isCreating && (
+                  <Badge variant="outline" className="text-xs animate-pulse">
+                    Creating...
+                  </Badge>
+                )}
+              </p>
             </div>
           );
         },

@@ -1,10 +1,12 @@
 import { Suspense } from 'react';
-import { AuditLogsListEnhanced } from '@/features/audit/components/AuditLogsListEnhanced';
-import DashboardLoading from '../loading';
+import {
+  AuditLogsListEnhanced,
+  AuditLogsListSkeleton,
+} from '@/features/audit/components/AuditLogsListEnhanced';
 
 export default function AuditLogsPage() {
   return (
-    <Suspense fallback={<DashboardLoading />}>
+    <Suspense fallback={<AuditLogsListSkeleton />}>
       <AuditLogsListEnhanced />
     </Suspense>
   );

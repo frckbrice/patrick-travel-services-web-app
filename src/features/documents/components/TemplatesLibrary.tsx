@@ -28,6 +28,7 @@ interface DocumentTemplate {
   mimeType: string;
   category: string;
   isRequired: boolean;
+  isActive: boolean;
   downloadCount: number;
   version?: string;
   fileUrl?: string;
@@ -81,6 +82,16 @@ export function TemplatesLibrary() {
         fileName: template.fileName,
       });
 
+      // Check if template is active (defensive programming)
+      if (!template.isActive) {
+        toast.error(t('templates.notAvailable') || 'This template is no longer available');
+        logger.warn('Attempted to download inactive template', {
+          templateId: template.id,
+          fileName: template.fileName,
+        });
+        return;
+      }
+
       // Check if template has a valid file URL
       if (!template.fileUrl || template.fileUrl.startsWith('/templates/')) {
         toast.error(t('templates.fileNotAvailable') || 'Template file is not yet uploaded');
@@ -108,9 +119,16 @@ export function TemplatesLibrary() {
         templateId: template.id,
         fileName: template.fileName,
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Template download error', error);
-      toast.error(t('templates.downloadFailed') || 'Failed to download template');
+
+      if (error.response?.status === 403) {
+        toast.error(t('templates.notAvailable') || 'This template is no longer available');
+      } else if (error.response?.status === 404) {
+        toast.error(t('templates.notFound') || 'Template not found');
+      } else {
+        toast.error(t('templates.downloadFailed') || 'Failed to download template');
+      }
     } finally {
       setDownloadingId(null);
     }

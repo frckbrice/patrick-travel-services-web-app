@@ -154,7 +154,6 @@ const handler = asyncHandler(async (request: NextRequest) => {
         // Create the database user
         const newUser = await tx.user.create({
           data: {
-            id: firebaseUid,
             email,
             password: randomBytes(32).toString('hex'), // Not used for Firebase auth
             firstName,
@@ -163,6 +162,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
             role: userRole,
             isActive: true, // Explicitly set account as active
             isVerified: false,
+            firebaseId: firebaseUid,
             ...gdprData, // Include GDPR consent fields
           },
           select: {
@@ -192,7 +192,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
                     UPDATE "InviteCode"
                     SET
                         "usedCount" = "usedCount" + 1,
-                        "lastUsedById" = ${firebaseUid},
+                        "lastUsedById" = ${newUser.id},
                         "lastUsedAt" = NOW()
                     WHERE
                         "id" = ${validatedInvite.id}
@@ -210,7 +210,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
         await tx.inviteUsage.create({
           data: {
             inviteCodeId: validatedInvite.id,
-            userId: firebaseUid,
+            userId: newUser.id,
             usedAt: new Date(),
           },
         });
@@ -229,7 +229,6 @@ const handler = asyncHandler(async (request: NextRequest) => {
       // No invite code - create user with default CLIENT role
       user = await prisma.user.create({
         data: {
-          id: firebaseUid,
           email,
           password: randomBytes(32).toString('hex'), // Not used for Firebase auth
           firstName,
@@ -238,6 +237,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
           role: userRole,
           isActive: true, // Explicitly set account as active
           isVerified: false,
+          firebaseId: firebaseUid,
           ...gdprData, // Include GDPR consent fields
         },
         select: {
