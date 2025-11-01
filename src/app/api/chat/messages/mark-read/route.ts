@@ -63,6 +63,7 @@ const putHandler = asyncHandler(async (request: NextRequest) => {
         firebaseId: true,
         recipientId: true,
         senderId: true,
+        caseId: true,
       },
     });
 
@@ -90,13 +91,37 @@ const putHandler = asyncHandler(async (request: NextRequest) => {
       },
     });
 
-    // Sync to Firebase if chatRoomId provided (non-blocking)
-    if (body.chatRoomId && messages.some((m) => m.firebaseId)) {
+    // Auto-mark related notifications as read
+    try {
+      const caseIds = [...new Set(messages.map((m) => m.caseId).filter(Boolean))] as string[];
+      if (caseIds.length > 0) {
+        await prisma.notification.updateMany({
+          where: {
+            userId: req.user.userId,
+            caseId: { in: caseIds },
+            type: 'NEW_MESSAGE',
+            isRead: false,
+          },
+          data: {
+            isRead: true,
+          },
+        });
+      }
+    } catch (notifError) {
+      logger.warn('Failed to mark related notifications as read', {
+        error: notifError,
+      });
+    }
+
+    // Sync to Firebase - auto-determine chatRoomId if not provided
+    const chatRoomId = body.chatRoomId || messages.find((m) => m.caseId)?.caseId;
+    if (chatRoomId && messages.some((m) => m.firebaseId)) {
       try {
         // Convert PostgreSQL user ID to Firebase UID
         const firebaseUid = await getFirebaseUidFromPostgresId(req.user.userId);
         if (firebaseUid) {
-          await markAllMessagesAsRead(body.chatRoomId, firebaseUid);
+          // Pass both IDs to handle format mismatches
+          await markAllMessagesAsRead(chatRoomId, firebaseUid, req.user.userId);
         } else {
           logger.warn('Could not convert PostgreSQL ID to Firebase UID for bulk update', {
             postgresId: req.user.userId,
@@ -104,14 +129,14 @@ const putHandler = asyncHandler(async (request: NextRequest) => {
         }
 
         logger.info('Bulk read status synced to Firebase', {
-          chatRoomId: body.chatRoomId,
+          chatRoomId,
           userId: req.user.userId,
           messageCount: messages.length,
         });
       } catch (firebaseError) {
         // Firebase update failure is non-critical - PostgreSQL succeeded
         logger.warn('Failed to sync bulk read status to Firebase (non-critical)', {
-          chatRoomId: body.chatRoomId,
+          chatRoomId,
           userId: req.user.userId,
           error: firebaseError,
         });

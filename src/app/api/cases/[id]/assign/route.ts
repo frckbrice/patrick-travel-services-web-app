@@ -313,7 +313,8 @@ const handler = asyncHandler(
                   agentFirebaseUid, // Use Firebase UID
                   agentFullName,
                   clientFullName,
-                  caseData.referenceNumber
+                  caseData.referenceNumber,
+                  clientFirebaseUid // Pass client Firebase UID
                 ),
               ]
             : [

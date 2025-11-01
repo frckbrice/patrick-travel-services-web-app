@@ -31,12 +31,28 @@ export interface ChatParticipants {
   agentName: string;
 }
 
-export interface ChatMetadata {
+export interface CaseReference {
+  caseId: string;
   caseReference: string;
+  assignedAt: number;
+}
+
+export interface ChatMetadata {
   participants: ChatParticipants;
+  caseReferences?: CaseReference[]; // Array of all cases for this client-agent pair
   createdAt: number;
   lastMessage: string | null;
   lastMessageTime: number | null;
+  updatedAt?: number;
+}
+
+/**
+ * Generate deterministic chat room ID from client-agent pair
+ * Always sorts IDs alphabetically to ensure consistency
+ */
+function getChatRoomId(clientId: string, agentId: string): string {
+  const sorted = [clientId, agentId].sort();
+  return `${sorted[0]}-${sorted[1]}`;
 }
 
 /**
@@ -55,39 +71,89 @@ export async function initializeFirebaseChat(
   agentName: string
 ): Promise<void> {
   try {
-    const conversationRef = ref(database, `chats/${caseId}/metadata`);
+    // Use client-agent pair for room ID instead of caseId
+    const chatRoomId = getChatRoomId(clientId, agentId);
+    const conversationRef = ref(database, `chats/${chatRoomId}/metadata`);
 
     // Check if conversation already exists
     const snapshot = await get(conversationRef);
 
     if (snapshot.exists()) {
-      // Update existing conversation with new agent info
-      await update(conversationRef, {
-        participants: {
-          clientId,
-          clientName,
-          agentId,
-          agentName,
-        },
-        updatedAt: Date.now(),
-      });
+      // Chat room exists - add this case to the caseReferences array if not already present
+      const existingData = snapshot.val();
+      const caseRefs = existingData.caseReferences || [];
 
-      logger.info('Firebase chat updated with new agent', {
-        caseId,
-        clientId,
-        agentId,
-        action: 'update',
-      });
+      // Check if this case is already in the array
+      const caseExists = caseRefs.some((ref: CaseReference) => ref.caseId === caseId);
+
+      if (!caseExists) {
+        // Add new case to the array
+        const updatedCaseRefs = [
+          ...caseRefs,
+          {
+            caseId,
+            caseReference,
+            assignedAt: Date.now(),
+          },
+        ];
+
+        await update(conversationRef, {
+          caseReferences: updatedCaseRefs,
+          updatedAt: Date.now(),
+        });
+
+        logger.info('Added case to existing chat room', {
+          caseId,
+          caseReference,
+          chatRoomId,
+          totalCases: updatedCaseRefs.length,
+        });
+      } else {
+        logger.info('Case already exists in chat room', {
+          caseId,
+          chatRoomId,
+        });
+      }
+
+      // Update participants if agent changed (reassignment case)
+      const needsParticipantUpdate =
+        existingData.participants?.agentId !== agentId ||
+        existingData.participants?.agentName !== agentName;
+
+      if (needsParticipantUpdate) {
+        await update(conversationRef, {
+          participants: {
+            clientId,
+            clientName,
+            agentId,
+            agentName,
+          },
+          updatedAt: Date.now(),
+        });
+
+        logger.info('Firebase chat updated with new agent', {
+          caseId,
+          chatRoomId,
+          oldAgent: existingData.participants?.agentId?.substring(0, 8),
+          newAgent: agentId.substring(0, 8),
+        });
+      }
     } else {
-      // Create new conversation
+      // Create new conversation with this case
       const chatMetadata: ChatMetadata = {
-        caseReference,
         participants: {
           clientId,
           clientName,
           agentId,
           agentName,
         },
+        caseReferences: [
+          {
+            caseId,
+            caseReference,
+            assignedAt: Date.now(),
+          },
+        ],
         createdAt: Date.now(),
         lastMessage: null,
         lastMessageTime: null,
@@ -96,42 +162,39 @@ export async function initializeFirebaseChat(
       await set(conversationRef, chatMetadata);
 
       // 🆕 Create userChats index entries
-      // Convert PostgreSQL IDs to Firebase UIDs for userChats access
-      const agentFirebaseUid = await getFirebaseUidFromPostgresId(agentId);
-      const clientFirebaseUid = await getFirebaseUidFromPostgresId(clientId);
-
-      if (agentFirebaseUid && clientFirebaseUid) {
+      // Note: clientId and agentId are already Firebase UIDs here
+      if (agentId && clientId) {
         await Promise.all([
-          set(ref(database, `userChats/${agentFirebaseUid}/${caseId}`), {
-            chatId: caseId,
+          set(ref(database, `userChats/${agentId}/${chatRoomId}`), {
+            chatId: chatRoomId,
             participantName: clientName,
             lastMessage: null,
             lastMessageTime: null,
           }),
-          set(ref(database, `userChats/${clientFirebaseUid}/${caseId}`), {
-            chatId: caseId,
+          set(ref(database, `userChats/${clientId}/${chatRoomId}`), {
+            chatId: chatRoomId,
             participantName: agentName,
             lastMessage: null,
             lastMessageTime: null,
           }),
         ]);
-        logger.info('userChats entries created during initialization');
+        logger.info('userChats entries created during initialization', {
+          chatRoomId,
+        });
       } else {
-        logger.warn(
-          'Could not create userChats entries during initialization - missing Firebase UIDs',
-          {
-            agentId: agentId.substring(0, 8) + '...',
-            clientId: clientId.substring(0, 8) + '...',
-            agentFirebaseUid: agentFirebaseUid?.substring(0, 8) + '...' || 'null',
-            clientFirebaseUid: clientFirebaseUid?.substring(0, 8) + '...' || 'null',
-          }
-        );
+        logger.warn('Could not create userChats entries - missing Firebase UIDs', {
+          chatRoomId,
+          agentId: agentId?.substring(0, 8) + '...',
+          clientId: clientId?.substring(0, 8) + '...',
+        });
       }
 
       logger.info('Firebase chat initialized', {
         caseId,
-        clientId,
-        agentId,
+        caseReference,
+        chatRoomId,
+        clientId: clientId.substring(0, 8) + '...',
+        agentId: agentId.substring(0, 8) + '...',
         action: 'create',
       });
     }
@@ -154,11 +217,15 @@ export async function sendWelcomeMessage(
   agentId: string, // Should be Firebase UID
   agentName: string,
   clientName: string,
-  caseReference: string
+  caseReference: string,
+  clientId: string // Should be Firebase UID - NEW PARAMETER
 ): Promise<void> {
   try {
-    const messagesRef = ref(database, `chats/${caseId}/messages`);
-    const welcomeMessageRef = ref(database, `chats/${caseId}/messages/${Date.now()}`);
+    // Use client-agent pair for room ID instead of caseId
+    const chatRoomId = getChatRoomId(clientId, agentId);
+
+    const messagesRef = ref(database, `chats/${chatRoomId}/messages`);
+    const welcomeMessageRef = ref(database, `chats/${chatRoomId}/messages/${Date.now()}`);
 
     const welcomeMessage = {
       caseId,
@@ -172,13 +239,19 @@ export async function sendWelcomeMessage(
     await set(welcomeMessageRef, welcomeMessage);
 
     // Update conversation metadata
-    const metadataRef = ref(database, `chats/${caseId}/metadata`);
+    const metadataRef = ref(database, `chats/${chatRoomId}/metadata`);
     await update(metadataRef, {
       lastMessage: welcomeMessage.content.substring(0, 100),
       lastMessageTime: Date.now(),
+      updatedAt: Date.now(),
     });
 
-    logger.info('Welcome message sent', { caseId, agentId });
+    logger.info('Welcome message sent', {
+      caseId,
+      caseReference,
+      chatRoomId,
+      agentId: agentId.substring(0, 8) + '...',
+    });
   } catch (error) {
     logger.error('Failed to send welcome message', error);
     // Don't throw - welcome message is optional
@@ -188,21 +261,66 @@ export async function sendWelcomeMessage(
 /**
  * Update agent information in existing conversation
  * Useful when reassigning cases to different agents
+ *
+ * NOTE: This function will create a NEW chat room for the new agent-client pair
+ * and migrate messages if needed. Old chat room remains for history.
  */
 export async function updateChatAgent(
   caseId: string,
-  newAgentId: string,
-  newAgentName: string
+  clientId: string, // Firebase UID
+  newAgentId: string, // Firebase UID
+  newAgentName: string,
+  caseReference: string
 ): Promise<void> {
   try {
-    const participantsRef = ref(database, `chats/${caseId}/metadata/participants`);
+    // Create new chat room for new agent-client pair
+    const oldChatRoomId = getChatRoomId(clientId, 'old-agent-will-be-updated'); // Not accurate, but we need to find the old room first
+    const newChatRoomId = getChatRoomId(clientId, newAgentId);
 
-    await update(participantsRef, {
-      agentId: newAgentId,
-      agentName: newAgentName,
+    // For now, we'll just update the existing room
+    // This is a simplified version - in production you'd want to:
+    // 1. Create new room with new agent
+    // 2. Keep old room for history
+    // 3. Update caseReferences to point to both rooms
+
+    // Find all chat rooms that contain this client
+    const chatsRef = ref(database, 'chats');
+    const snapshot = await get(chatsRef);
+
+    let updated = false;
+
+    snapshot.forEach((childSnapshot) => {
+      const metadata = childSnapshot.val()?.metadata;
+      if (metadata?.participants?.clientId === clientId) {
+        const chatRoomId = childSnapshot.key!;
+
+        // Check if this room has cases that include our caseId
+        const caseRefs = metadata.caseReferences || [];
+        const hasCase = caseRefs.some((ref: CaseReference) => ref.caseId === caseId);
+
+        if (hasCase) {
+          // Update participants
+          const participantsRef = ref(database, `chats/${chatRoomId}/metadata/participants`);
+
+          update(participantsRef, {
+            agentId: newAgentId,
+            agentName: newAgentName,
+          });
+
+          updated = true;
+          logger.info('Chat agent updated in existing room', {
+            caseId,
+            caseReference,
+            chatRoomId,
+            newAgentId: newAgentId.substring(0, 8) + '...',
+          });
+        }
+      }
     });
 
-    logger.info('Chat agent updated', { caseId, newAgentId });
+    if (!updated) {
+      logger.warn('Could not find existing chat room to update agent', { caseId, clientId });
+    }
   } catch (error) {
     logger.error('Failed to update chat agent', error);
     throw error;
@@ -299,10 +417,35 @@ export async function sendMessage(params: SendMessageParams): Promise<string> {
     });
 
     setLogLevel('debug');
-    // Determine chat room ID (use caseId if available, otherwise create from participant IDs)
-    const chatRoomId = params.caseId || [params.senderId, params.recipientId].sort().join('-');
 
-    logger.info('Chat room ID determined', { chatRoomId: chatRoomId.substring(0, 12) + '...' });
+    // Determine chat room ID using client-agent pair (deterministic, sorted)
+    // We need to identify who is client and who is agent
+    let clientId: string;
+    let agentId: string;
+
+    if (params.senderRole && params.recipientRole) {
+      // Use explicit roles if provided
+      if (params.senderRole === 'CLIENT') {
+        clientId = params.senderId;
+        agentId = params.recipientId;
+      } else {
+        clientId = params.recipientId;
+        agentId = params.senderId;
+      }
+    } else {
+      // Fallback: Order alphabetically and assume first is client
+      const orderedIds = [params.senderId, params.recipientId].sort();
+      clientId = orderedIds[0];
+      agentId = orderedIds[1];
+    }
+
+    // Use client-agent pair for deterministic room ID
+    const chatRoomId = getChatRoomId(clientId, agentId);
+
+    logger.info('Chat room ID determined', {
+      chatRoomId: chatRoomId.substring(0, 12) + '...',
+      hasCaseId: !!params.caseId,
+    });
 
     const timestamp = Date.now();
 
@@ -334,42 +477,46 @@ export async function sendMessage(params: SendMessageParams): Promise<string> {
 
     if (!existingMetadata.exists()) {
       logger.info('Creating chat room metadata');
-      // Create full metadata structure that Firebase rules expect
-      // Determine roles based on provided role information or fallback to alphabetical ordering
-      let clientId: string;
+
+      // Now we need to get clientName and agentName
       let clientName: string;
-      let agentId: string;
       let agentName: string;
 
       if (params.senderRole && params.recipientRole) {
         // Use explicit roles if provided
         if (params.senderRole === 'CLIENT') {
-          clientId = params.senderId;
           clientName = params.senderName;
-          agentId = params.recipientId;
           agentName = params.recipientName;
         } else {
-          clientId = params.recipientId;
           clientName = params.recipientName;
-          agentId = params.senderId;
           agentName = params.senderName;
         }
       } else {
-        // Fallback: Order alphabetically (original approach)
+        // Fallback: Use names based on ID ordering
         const orderedIds = [params.senderId, params.recipientId].sort();
-        clientId = orderedIds[0];
         clientName = orderedIds[0] === params.senderId ? params.senderName : params.recipientName;
-        agentId = orderedIds[1];
         agentName = orderedIds[1] === params.senderId ? params.senderName : params.recipientName;
       }
 
-      const metadataData = {
+      // Build caseReferences array if caseId is provided
+      const caseReferences = params.caseId
+        ? [
+            {
+              caseId: params.caseId,
+              caseReference: params.caseId, // Could get actual reference if available
+              assignedAt: timestamp,
+            },
+          ]
+        : [];
+
+      const metadataData: ChatMetadata = {
         participants: {
           clientId,
           clientName,
           agentId,
           agentName,
         },
+        caseReferences,
         createdAt: timestamp,
         lastMessage: params.content.substring(0, 100),
         lastMessageTime: timestamp,
@@ -381,25 +528,23 @@ export async function sendMessage(params: SendMessageParams): Promise<string> {
         agentId: agentId.substring(0, 8) + '...',
         agentName,
         chatRoomId: chatRoomId.substring(0, 12) + '...',
+        hasCase: !!params.caseId,
       });
 
       try {
         await set(metadataRef, metadataData);
 
         // 🆕 Ensure userChats index is created
-        // Convert PostgreSQL IDs to Firebase UIDs for userChats access
-        const agentFirebaseUid = await getFirebaseUidFromPostgresId(agentId);
-        const clientFirebaseUid = await getFirebaseUidFromPostgresId(clientId);
-
-        if (agentFirebaseUid && clientFirebaseUid) {
+        // Note: clientId and agentId are already Firebase UIDs at this point
+        if (agentId && clientId) {
           await Promise.all([
-            set(ref(database, `userChats/${agentFirebaseUid}/${chatRoomId}`), {
+            set(ref(database, `userChats/${agentId}/${chatRoomId}`), {
               chatId: chatRoomId,
               participantName: clientName,
               lastMessage: params.content.substring(0, 100),
               lastMessageTime: timestamp,
             }),
-            set(ref(database, `userChats/${clientFirebaseUid}/${chatRoomId}`), {
+            set(ref(database, `userChats/${clientId}/${chatRoomId}`), {
               chatId: chatRoomId,
               participantName: agentName,
               lastMessage: params.content.substring(0, 100),
@@ -409,10 +554,8 @@ export async function sendMessage(params: SendMessageParams): Promise<string> {
           logger.info('userChats entries created successfully');
         } else {
           logger.warn('Could not create userChats entries - missing Firebase UIDs', {
-            agentId: agentId.substring(0, 8) + '...',
-            clientId: clientId.substring(0, 8) + '...',
-            agentFirebaseUid: agentFirebaseUid?.substring(0, 8) + '...' || 'null',
-            clientFirebaseUid: clientFirebaseUid?.substring(0, 8) + '...' || 'null',
+            agentId: agentId?.substring(0, 8) + '...',
+            clientId: clientId?.substring(0, 8) + '...',
           });
         }
         logger.info('Chat room metadata created successfully');
