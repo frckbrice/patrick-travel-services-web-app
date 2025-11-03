@@ -140,7 +140,13 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
 
   // Apply filters
   if (status) {
-    where.status = status;
+    if (status === 'active') {
+      // Terminal case statuses (end states - these are NOT considered active)
+      const TERMINAL_STATUSES = ['APPROVED', 'REJECTED', 'CLOSED'];
+      where.status = { notIn: TERMINAL_STATUSES };
+    } else {
+      where.status = status;
+    }
   }
 
   if (serviceType) {

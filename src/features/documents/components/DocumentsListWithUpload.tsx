@@ -5,7 +5,7 @@ import { useAuthStore } from '@/features/auth/store';
 import { useDocuments, useCreateDocument, useDeleteDocument } from '../api';
 import { DocumentType } from '../types';
 import type { Document } from '../types';
-import { useUploadThing } from '@/lib/uploadthing/client';
+import { uploadFiles, getAuthHeaders } from '@/lib/uploadthing/client';
 import { FileText, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,23 +16,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from 'sonner';
-import { logger } from '@/lib/utils/logger';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { DocumentCard } from './DocumentCard';
 import { UploadDialog } from './UploadDialog';
 import { SimpleSkeleton, SkeletonText, SkeletonCard } from '@/components/ui/simple-skeleton';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
+import { logger } from '@/lib/utils/logger';
 
 export function DocumentsList() {
   const { t } = useTranslation();
   const { user } = useAuthStore();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Confirmation dialog state
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null);
 
   const { data, isLoading, error, refetch } = useDocuments({});
   const createDocument = useCreateDocument();
   const deleteDocument = useDeleteDocument();
-  const { startUpload, isUploading } = useUploadThing('documentUploader');
 
   const handleUpload = async (selectedFile: File, documentType: DocumentType, caseId: string) => {
     if (!selectedFile || !documentType || !caseId) {
@@ -59,19 +64,30 @@ export function DocumentsList() {
         caseId,
       });
 
-      const uploadResult = await startUpload([selectedFile]);
-      if (!uploadResult || uploadResult.length === 0) {
+      setIsUploading(true);
+
+      // Get auth headers and upload file
+      const headers = await getAuthHeaders();
+      const uploadedFiles = await uploadFiles('documentUploader', {
+        files: [selectedFile],
+        headers,
+      });
+
+      if (!uploadedFiles || uploadedFiles.length === 0) {
         throw new Error('Upload failed: No result returned from storage');
       }
 
-      const uploaded = uploadResult[0];
-      uploadedFileUrl = uploaded.url;
-      uploadedFileKey = uploaded.key || uploaded.url; // key is used for deletion if available
+      const uploaded = uploadedFiles[0];
+      uploadedFileUrl = uploaded.ufsUrl;
+      uploadedFileKey = uploaded.key || uploaded.ufsUrl; // key is used for deletion if available
       uploadSuccess = true;
 
       logger.info('File upload successful', {
         fileUrl: uploadedFileUrl,
         fileKey: uploadedFileKey,
+        // Avoid logging entire object to satisfy logger type
+        uploadedFileName: uploaded.name,
+        uploadedFileSize: uploaded.size,
       });
 
       // Step 2: Create document metadata in database
@@ -80,9 +96,9 @@ export function DocumentsList() {
       await createDocument.mutateAsync({
         fileName: uploaded.name,
         originalName: selectedFile.name,
-        filePath: uploaded.url,
-        fileSize: selectedFile.size,
-        mimeType: selectedFile.type,
+        filePath: uploaded.ufsUrl,
+        fileSize: uploaded.size,
+        mimeType: uploaded.type || selectedFile.type,
         documentType: documentType as DocumentType,
         caseId,
       });
@@ -158,45 +174,135 @@ export function DocumentsList() {
       // Shared cleanup: Ensure UI is in consistent state
       // Note: We don't clear the form on error to allow user to retry
       // Only clear on success (which is handled in the try block)
+      setIsUploading(false);
     }
   };
 
   const handleView = (doc: Document): void => {
     // Validate URL before opening to prevent security issues
     try {
-      const url = new URL(doc.filePath);
+      logger.info('Attempting to view document', {
+        filePath: doc.filePath,
+        documentId: doc.id,
+      });
+
+      // If filePath is already a full URL, validate it
+      if (!doc.filePath) {
+        logger.error('Document filePath is empty', { documentId: doc.id });
+        toast.error(t('documents.invalidDocumentUrl'));
+        return;
+      }
+
+      // Check if it's already a full URL
+      let fileUrl = doc.filePath;
+
+      // If it's not a full URL, try to construct it
+      if (!fileUrl.startsWith('http://') && !fileUrl.startsWith('https://')) {
+        logger.warn('Document filePath is not a full URL, adding https://', {
+          filePath: doc.filePath,
+        });
+        // Try to construct the URL with https://
+        fileUrl = `https://${fileUrl}`;
+      }
+
+      logger.info('Constructed file URL', { fileUrl });
+
+      const url = new URL(fileUrl);
 
       // Define trusted domains for file hosting
-      const trustedDomains = ['utfs.io', 'uploadthing.com'];
+      const trustedDomains = ['utfs.io', 'uploadthing.com', 'ufs.sh'];
 
       // Check if the hostname ends with one of the trusted domains
+      // This will match: *.utfs.io, *.uploadthing.com, *.ufs.sh
       const isTrustedDomain = trustedDomains.some(
         (domain) => url.hostname === domain || url.hostname.endsWith('.' + domain)
       );
 
       if (!isTrustedDomain) {
+        logger.warn('Document URL is not from trusted domain', {
+          hostname: url.hostname,
+          fileUrl,
+        });
         toast.error(t('documents.invalidDocumentUrl'));
         return;
       }
 
       // Open with security features to prevent window.opener attacks
-      window.open(doc.filePath, '_blank', 'noopener,noreferrer');
+      logger.info('Opening document in new tab', { fileUrl });
+      window.open(fileUrl, '_blank', 'noopener,noreferrer');
     } catch (error) {
+      logger.error('Failed to open document', error, {
+        filePath: doc.filePath,
+        documentId: doc.id,
+      });
       toast.error(t('documents.invalidDocumentUrl'));
     }
   };
 
-  const handleDownload = (doc: Document): void => {
-    const link = document.createElement('a');
-    link.href = doc.filePath;
-    link.download = doc.originalName;
-    link.click();
+  const handleDownload = async (doc: Document): Promise<void> => {
+    try {
+      logger.info('Starting document download', {
+        filePath: doc.filePath,
+        documentId: doc.id,
+        originalName: doc.originalName,
+      });
+
+      // Fetch the file as a blob
+      const response = await fetch(doc.filePath);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+
+      // Create a local blob URL
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      // Create a temporary link element and trigger download
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = doc.originalName;
+      document.body.appendChild(link);
+      link.click();
+
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+
+      logger.info('Document downloaded successfully', {
+        documentId: doc.id,
+        originalName: doc.originalName,
+      });
+    } catch (error) {
+      logger.error('Failed to download document', error, {
+        documentId: doc.id,
+        filePath: doc.filePath,
+      });
+      toast.error(t('documents.downloadFailed'));
+    }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm(t('documents.deleteConfirm'))) return;
-    await deleteDocument.mutateAsync(id);
-    refetch();
+  const handleDelete = async (document: Document) => {
+    setDocumentToDelete(document);
+    setConfirmDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!documentToDelete) return;
+
+    try {
+      logger.info('Attempting to delete document', { documentId: documentToDelete.id });
+      await deleteDocument.mutateAsync(documentToDelete.id);
+      // Mutation already refetches and shows toast via onSuccess/onError callbacks
+      logger.info('Document deleted successfully', { documentId: documentToDelete.id });
+    } catch (error) {
+      logger.error('Failed to delete document', error, { documentId: documentToDelete.id });
+      // Mutation already shows error toast via onError callback
+    } finally {
+      setConfirmDialogOpen(false);
+      setDocumentToDelete(null);
+    }
   };
 
   if (isLoading) return <DocumentsListSkeleton />;
@@ -277,7 +383,7 @@ export function DocumentsList() {
               document={document}
               onView={() => handleView(document)}
               onDownload={() => handleDownload(document)}
-              onDelete={() => handleDelete(document.id)}
+              onDelete={() => handleDelete(document)}
               showDelete={isClient && document.status !== 'APPROVED'}
               isDeleting={deleteDocument.isPending}
               showCaseInfo={!isClient}
@@ -285,6 +391,19 @@ export function DocumentsList() {
           ))}
         </div>
       )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={confirmDialogOpen}
+        onOpenChange={setConfirmDialogOpen}
+        onConfirm={handleConfirmDelete}
+        title="Delete Document"
+        description={`Are you sure you want to delete "${documentToDelete?.originalName}"? This action cannot be undone.`}
+        confirmText="Delete Document"
+        cancelText="Cancel"
+        variant="destructive"
+        isLoading={deleteDocument.isPending}
+      />
     </div>
   );
 }

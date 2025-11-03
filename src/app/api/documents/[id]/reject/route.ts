@@ -11,7 +11,7 @@ import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
 import { sendDocumentRejectedEmail } from '@/lib/notifications/email.service';
-import { createRealtimeNotification } from '@/lib/firebase/notifications.service';
+import { createRealtimeNotification } from '@/lib/firebase/notifications.service.server';
 import { escapeHtml } from '@/lib/utils/helpers';
 
 // Type for document with case and client included

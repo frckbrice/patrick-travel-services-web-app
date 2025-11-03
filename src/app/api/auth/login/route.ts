@@ -3,12 +3,12 @@
 // This endpoint syncs user data after Firebase auth and updates last login
 // Compatible with both web and mobile clients
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { adminAuth } from '@/lib/firebase/firebase-admin';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants';
 import { logger } from '@/lib/utils/logger';
-import { successResponse, errorResponse, serverErrorResponse } from '@/lib/utils/api-response';
+import { successResponse } from '@/lib/utils/api-response';
 import { asyncHandler, ApiError, HttpStatus } from '@/lib/utils/error-handler';
 import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
@@ -26,20 +26,27 @@ const handler = asyncHandler(async (request: NextRequest) => {
   // This supports both web (header) and mobile (body) clients
   const authHeader = request.headers.get('authorization');
   let token: string | undefined;
+  let requestBody: any = null;
 
   // Try to get token from Authorization header first (preferred)
   if (authHeader?.startsWith('Bearer ')) {
     token = authHeader.split('Bearer ')[1];
+    logger.debug('Login using token from Authorization header');
   } else {
     // Fallback: Check request body for { idToken: "..." } (mobile compatibility)
     try {
-      const body = await request.json();
-      if (body && typeof body.idToken === 'string' && body.idToken.trim().length > 0) {
-        token = body.idToken.trim();
+      requestBody = await request.json();
+      if (
+        requestBody &&
+        typeof requestBody.idToken === 'string' &&
+        requestBody.idToken.trim().length > 0
+      ) {
+        token = requestBody.idToken.trim();
         logger.info('Login using idToken from request body (mobile client)');
       }
     } catch (error) {
-      // JSON parsing failed, will be handled by token check below
+      // JSON parsing failed - might be empty body, which is OK if token is in header
+      // Will be handled by token check below
     }
   }
 
@@ -67,9 +74,12 @@ const handler = asyncHandler(async (request: NextRequest) => {
   // Extract Firebase UID from verified token (this is secure)
   const firebaseUid = decodedToken.uid;
 
-  // Find user by Firebase UID
-  const user = await prisma.user.findUnique({
-    where: { id: firebaseUid },
+  // Get user email from Firebase token
+  const firebaseEmail = decodedToken.email;
+
+  // Try to find user by Firebase UID first
+  let user = await prisma.user.findUnique({
+    where: { firebaseId: firebaseUid },
     select: {
       id: true,
       email: true,
@@ -82,11 +92,98 @@ const handler = asyncHandler(async (request: NextRequest) => {
       lastLogin: true,
       createdAt: true,
       updatedAt: true,
+      firebaseId: true, // Include to check if it exists
     },
   });
 
+  // If user not found by firebaseId, try to find by email and update firebaseId
+  if (!user && firebaseEmail) {
+    logger.info('User not found by firebaseId, attempting to find by email', {
+      firebaseEmail: firebaseEmail.substring(0, 5) + '...',
+    });
+
+    user = await prisma.user.findUnique({
+      where: { email: firebaseEmail },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        isVerified: true,
+        lastLogin: true,
+        createdAt: true,
+        updatedAt: true,
+        firebaseId: true,
+      },
+    });
+
+    // If found by email, update firebaseId
+    if (user && !user.firebaseId) {
+      logger.info('Updating user with firebaseId', {
+        userId: user.id,
+        email: user.email,
+      });
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { firebaseId: firebaseUid },
+      });
+
+      logger.info('firebaseId successfully linked to user', {
+        userId: user.id,
+      });
+    }
+  }
+
   if (!user) {
-    throw new ApiError(ERROR_MESSAGES.NOT_FOUND, HttpStatus.NOT_FOUND);
+    // Auto-provision minimal user if verified token and email exist
+    if (firebaseEmail) {
+      logger.info('Auto-provisioning user from Firebase token', {
+        hint: firebaseEmail.substring(0, 5) + '...',
+      });
+
+      const created = await prisma.user.create({
+        data: {
+          email: firebaseEmail,
+          password: '',
+          firstName: 'User',
+          lastName: '',
+          role: 'CLIENT',
+          isActive: true,
+          isVerified: true,
+          firebaseId: firebaseUid,
+        },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          role: true,
+          isActive: true,
+          isVerified: true,
+          lastLogin: true,
+          createdAt: true,
+          updatedAt: true,
+          firebaseId: true,
+        },
+      });
+
+      user = created;
+    } else {
+      // Log with hashed UID for debugging without exposing PII
+      logger.warn(
+        'Login attempt for non-existent user and no email on token',
+        createSafeLogIdentifier(firebaseUid, null)
+      );
+      throw new ApiError(
+        'User account not found. Please contact support if you believe this is an error.',
+        HttpStatus.NOT_FOUND
+      );
+    }
   }
 
   // Check if account is active
@@ -96,7 +193,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
 
   // Update last login
   await prisma.user.update({
-    where: { id: user.id },
+    where: { firebaseId: firebaseUid },
     data: { lastLogin: new Date() },
   });
 
@@ -141,3 +238,25 @@ const handler = asyncHandler(async (request: NextRequest) => {
 
 // Apply middleware: CORS -> Rate Limit -> Handler
 export const POST = withCorsMiddleware(withRateLimit(handler, RateLimitPresets.AUTH));
+
+// Return 405 Method Not Allowed for unsupported methods
+export async function GET() {
+  return NextResponse.json(
+    { success: false, error: 'Method not allowed. Use POST instead.' },
+    { status: 405 }
+  );
+}
+
+export async function PUT() {
+  return NextResponse.json(
+    { success: false, error: 'Method not allowed. Use POST instead.' },
+    { status: 405 }
+  );
+}
+
+export async function DELETE() {
+  return NextResponse.json(
+    { success: false, error: 'Method not allowed. Use POST instead.' },
+    { status: 405 }
+  );
+}

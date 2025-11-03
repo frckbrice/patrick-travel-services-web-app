@@ -19,7 +19,8 @@ export const SimpleSkeleton = memo(function SimpleSkeleton({
     <div
       data-slot="simple-skeleton"
       className={cn(
-        'bg-muted/50 rounded',
+        // Better visibility: use stronger background with proper contrast
+        'bg-muted/80 dark:bg-muted/60 rounded',
         // Optimized animation: opacity-only (no transform for better CLS)
         'animate-[pulse_1.5s_ease-in-out_infinite]',
         // Performance hint for browser compositor

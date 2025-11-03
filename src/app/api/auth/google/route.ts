@@ -51,9 +51,9 @@ const handler = asyncHandler(async (request: NextRequest) => {
     throw new ApiError('Email is required', HttpStatus.BAD_REQUEST);
   }
 
-  // Check if user exists in database
+  // Check if user exists in database by firebaseId
   let user = await prisma.user.findUnique({
-    where: { id: firebaseUid },
+    where: { firebaseId: firebaseUid },
     select: {
       id: true,
       email: true,
@@ -66,13 +66,70 @@ const handler = asyncHandler(async (request: NextRequest) => {
       createdAt: true,
       updatedAt: true,
       lastLogin: true,
+      firebaseId: true, // Include to check if it exists
     },
   });
+
+  // If not found by firebaseId, try by email and update firebaseId
+  if (!user) {
+    logger.info('User not found by firebaseId in Google OAuth, attempting to find by email', {
+      firebaseEmail: email.substring(0, 5) + '...',
+    });
+
+    user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        isVerified: true,
+        createdAt: true,
+        updatedAt: true,
+        lastLogin: true,
+        firebaseId: true,
+      },
+    });
+
+    // If found by email, update firebaseId
+    if (user) {
+      logger.info('Updating user with firebaseId from Google OAuth', {
+        userId: user.id,
+        email: user.email,
+      });
+
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { firebaseId: firebaseUid },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          role: true,
+          isActive: true,
+          isVerified: true,
+          createdAt: true,
+          updatedAt: true,
+          lastLogin: true,
+          firebaseId: true,
+        },
+      });
+
+      logger.info('firebaseId successfully linked to user in Google OAuth', {
+        userId: user.id,
+      });
+    }
+  }
 
   if (user) {
     // Update last login
     user = await prisma.user.update({
-      where: { id: firebaseUid },
+      where: { firebaseId: firebaseUid },
       data: { lastLogin: new Date() },
       select: {
         id: true,
@@ -83,6 +140,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
         role: true,
         isActive: true,
         isVerified: true,
+        firebaseId: true,
         createdAt: true,
         updatedAt: true,
         lastLogin: true,
@@ -134,6 +192,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
         role: 'CLIENT',
         isVerified: true, // Google accounts are already verified
         profilePicture: photoURL || null,
+        firebaseId: firebaseUid, // Link Firebase UID
       },
       select: {
         id: true,
@@ -144,6 +203,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
         role: true,
         isActive: true,
         isVerified: true,
+        firebaseId: true,
         createdAt: true,
         updatedAt: true,
         lastLogin: true,
@@ -202,7 +262,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
 
       // User was created by another concurrent request, fetch and update it
       user = await prisma.user.update({
-        where: { id: firebaseUid },
+        where: { firebaseId: firebaseUid },
         data: { lastLogin: new Date() },
         select: {
           id: true,
@@ -213,6 +273,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
           role: true,
           isActive: true,
           isVerified: true,
+          firebaseId: true,
           createdAt: true,
           updatedAt: true,
           lastLogin: true,

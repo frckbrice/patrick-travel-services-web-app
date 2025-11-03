@@ -81,6 +81,39 @@ export default function RootLayout({
             dangerouslySetInnerHTML={{
               __html: `
                 (function() {
+                  // Suppress browser extension errors (e.g., Grammarly)
+                  const originalError = window.console.error;
+                  window.console.error = function(...args) {
+                    const errorStr = args.join(' ');
+                    // Only suppress if it's from content_script.js (browser extensions) OR contains both grammarly and Cannot read properties
+                    if (
+                      errorStr.includes('content_script.js') ||
+                      (errorStr.includes('grammarly') && errorStr.includes('Cannot read properties of undefined')) ||
+                      (errorStr.includes('shouldOfferCompletionListForField') && errorStr.includes('content_script.js'))
+                    ) {
+                      return; // Suppress browser extension errors
+                    }
+                    originalError.apply(console, args);
+                  };
+
+                  // Suppress unhandled promise rejections from browser extensions
+                  window.addEventListener('unhandledrejection', function(event) {
+                    if (
+                      event.reason &&
+                      typeof event.reason === 'object' &&
+                      event.reason.message
+                    ) {
+                      const errorStr = event.reason.message;
+                      // Only suppress if it's from content_script.js OR grammarly
+                      if (
+                        errorStr.includes('content_script.js') ||
+                        (errorStr.includes('grammarly') && errorStr.includes('Cannot read properties of undefined'))
+                      ) {
+                        event.preventDefault(); // Suppress the error
+                      }
+                    }
+                  });
+
                   if ('serviceWorker' in navigator) {
                     navigator.serviceWorker.getRegistrations().then(function(registrations) {
                       if (registrations.length > 0) {
@@ -106,6 +139,47 @@ export default function RootLayout({
             }}
           />
         )}
+        {/* Suppress browser extension errors in production */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                // Suppress browser extension errors (e.g., Grammarly)
+                const originalError = window.console.error;
+                window.console.error = function(...args) {
+                  const errorStr = args.join(' ');
+                  // Only suppress if it's from content_script.js (browser extensions) OR contains both grammarly and Cannot read properties
+                  if (
+                    errorStr.includes('content_script.js') ||
+                    (errorStr.includes('grammarly') && errorStr.includes('Cannot read properties of undefined')) ||
+                    (errorStr.includes('shouldOfferCompletionListForField') && errorStr.includes('content_script.js'))
+                  ) {
+                    return; // Suppress browser extension errors
+                  }
+                  originalError.apply(console, args);
+                };
+
+                // Suppress unhandled promise rejections from browser extensions
+                window.addEventListener('unhandledrejection', function(event) {
+                  if (
+                    event.reason && 
+                    typeof event.reason === 'object' &&
+                    event.reason.message
+                  ) {
+                    const errorStr = event.reason.message;
+                    // Only suppress if it's from content_script.js OR grammarly
+                    if (
+                      errorStr.includes('content_script.js') ||
+                      (errorStr.includes('grammarly') && errorStr.includes('Cannot read properties of undefined'))
+                    ) {
+                      event.preventDefault(); // Suppress the error
+                    }
+                  }
+                });
+              })();
+            `,
+          }}
+        />
         {/* PERFORMANCE: Resource hints for faster loading */}
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="anonymous" />

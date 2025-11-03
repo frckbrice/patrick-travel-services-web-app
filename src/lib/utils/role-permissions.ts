@@ -13,6 +13,7 @@ import {
   Shield,
   HelpCircle,
   FileCheck,
+  FolderTree,
   LucideIcon,
 } from 'lucide-react';
 
@@ -55,6 +56,13 @@ export const navigationItems: NavItem[] = [
     icon: FileText,
     roles: ['CLIENT', 'AGENT', 'ADMIN'],
     description: 'Manage documents',
+  },
+  {
+    title: 'Resources',
+    href: '/dashboard/resources',
+    icon: FileCheck,
+    roles: ['CLIENT'],
+    description: 'Download templates and forms',
   },
   {
     title: 'Messages',
@@ -111,6 +119,13 @@ export const navigationItems: NavItem[] = [
     icon: HelpCircle,
     roles: ['AGENT', 'ADMIN'],
     description: 'Manage FAQ content',
+  },
+  {
+    title: 'Templates',
+    href: '/dashboard/templates',
+    icon: FolderTree,
+    roles: ['ADMIN'],
+    description: 'Manage document templates',
   },
   {
     title: 'Profile',

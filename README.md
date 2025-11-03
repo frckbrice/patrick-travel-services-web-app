@@ -2,7 +2,8 @@
 
 A production-ready immigration services management platform built with Next.js 15, designed to streamline case management, client communications, and administrative operations for immigration consulting services.
 
-##  Features
+## Features
+
 
 ### Authentication & Authorization
 
@@ -104,8 +105,8 @@ A production-ready immigration services management platform built with Next.js 1
 - **API:** Next.js API Routes
 - **Database:** PostgreSQL with Prisma ORM
 - **Authentication:** Firebase Auth (no custom JWT needed)
-- **Real-time:** Firebase Firestore (Chat/Messaging)
-- **File Upload:** [UploadThing](https://uploadthing.com) - Simple and developer-friendly
+- **Real-time:** Firebase Realtime Database (Chat/Messaging)
+- **File Upload:** UploadThing (web) + Cloudinary (mobile uploads)
 
 ### Development Tools
 
@@ -115,7 +116,8 @@ A production-ready immigration services management platform built with Next.js 1
 - **Type Checking:** TypeScript 5 (strict mode)
 - **Package Manager:** pnpm (preferred)
 
-##  Why Firebase Auth?
+## Why Firebase Auth?
+
 
 We chose Firebase Authentication over custom JWT for several key reasons:
 
@@ -125,16 +127,17 @@ We chose Firebase Authentication over custom JWT for several key reasons:
 4. **Advanced Features** - Email verification, password reset, MFA, and social login out-of-the-box
 5. **Reduced Maintenance** - Firebase handles all password hashing, token management, and security
 
-See [AUTH_MIGRATION_GUIDE.md](./AUTH_MIGRATION_GUIDE.md) for detailed authentication documentation.
 
-##  Prerequisites
+## Prerequisites
+
 
 - Node.js 18.x or higher
 - pnpm 8.x or higher (preferred) or yarn
 - PostgreSQL 14.x or higher
-- Firebase account (for real-time messaging)
+- Firebase project with Realtime Database enabled (for real-time messaging)
 
-##  Getting Started
+## Getting Started
+
 
 ### 1. Clone the repository
 
@@ -170,10 +173,16 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID="your-project-id"
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="your-storage-bucket"
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="your-sender-id"
 NEXT_PUBLIC_FIREBASE_APP_ID="your-app-id"
+NEXT_PUBLIC_FIREBASE_DATABASE_URL="https://your-project-id.firebaseio.com"
 
 # UploadThing (File Upload Service)
 # Get your token from https://uploadthing.com/dashboard
 UPLOADTHING_TOKEN="your-uploadthing-token"
+
+# Cloudinary (Mobile uploads – optional)
+CLOUDINARY_CLOUD_NAME="your-cloud-name"
+CLOUDINARY_API_KEY="your-api-key"
+CLOUDINARY_API_SECRET="your-api-secret"
 
 # PII Hash Secret (REQUIRED for secure logging)
 # Generate with: openssl rand -hex 32
@@ -204,7 +213,8 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-##  Docker Setup (Alternative)
+## Docker Setup (Alternative)
+
 
 You can run the entire application stack using Docker and Docker Compose.
 
@@ -330,6 +340,15 @@ pnpm type-check   # Run TypeScript type checking
 pnpm validate     # Run all quality checks + build
 ```
 
+### Utilities
+
+```bash
+pnpm prisma:seed       # Seed database with initial data
+pnpm test:email        # Send a test email
+pnpm pwa:generate-icons # Regenerate PWA icons from logo
+pnpm perf:optimize-images # Optimize images in public/
+```
+
 ### Database
 
 ```bash
@@ -450,8 +469,6 @@ web/
 - **Firebase SDK** automatically refreshes tokens
 - **No manual refresh logic needed** - it just works!
 
-See [AUTH_MIGRATION_GUIDE.md](./AUTH_MIGRATION_GUIDE.md) for complete documentation.
-
 ## Database Schema
 
 The application uses PostgreSQL with Prisma ORM. Key entities include:
@@ -467,9 +484,9 @@ See `prisma/schema.prisma` for the complete schema.
 
 ## Firebase Integration
 
-Firebase is used for real-time messaging functionality:
+Firebase is used for real-time messaging functionality via the Realtime Database:
 
-- **Firestore** - Message storage and real-time sync
+- **Realtime Database** - Message storage and real-time sync
 - **Real-time listeners** - Instant message delivery
 - **File attachments** - Support for document sharing
 - **Read receipts** - Message status tracking
@@ -519,7 +536,6 @@ refactor(api): improve error handling
 - `POST /api/auth/login` - User login
 - `POST /api/auth/logout` - User logout
 - `GET /api/auth/me` - Get current user
-- `POST /api/auth/refresh-token` - Refresh access token
 
 ### Cases (CRUD)
 
@@ -643,6 +659,10 @@ docker-compose -f docker-compose.prod.yml up -d
 3. Configure environment variables
 4. Deploy automatically
 
+## PWA
+
+This project is a fully installable Progressive Web App with offline support and app shortcuts. See `README_PWA.md` and the `docs/` folder for details and troubleshooting.
+
 ### Manual Deployment
 
 ```bash
@@ -661,9 +681,9 @@ pnpm start
 Ensure all environment variables are properly set:
 
 - Database connection string (DATABASE_URL)
-- JWT secrets (JWT_SECRET, JWT_REFRESH_SECRET)
-- Firebase credentials (both admin and client)
-- File storage credentials (Cloudinary/UploadThing)
+- Firebase credentials (admin and client, including NEXT_PUBLIC_FIREBASE_DATABASE_URL)
+- File storage credentials (UploadThing and/or Cloudinary)
+- PII hashing secret (PII_HASH_SECRET)
 - App URL (NEXT_PUBLIC_APP_URL)
 
 ## Security Features
@@ -741,4 +761,4 @@ For support and questions, please contact the me at https://maebrieporfolio.verc
 
 ---
 
-\*_Built with ❤️ by Avom Brice _
+\*_Built with ❤️ by Avom Brice _ check at https://maebrieporfolio.vercel.app

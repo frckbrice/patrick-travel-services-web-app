@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/features/auth/store';
-import { useCases } from '../api';
+import { useCases, CasesFilters } from '../api';
 import { useUsers } from '@/features/users/api/queries';
 import { useBulkCaseOperation, useExportCases } from '../api/mutations';
 import { AssignCaseDialog } from './AssignCaseDialog';
@@ -124,9 +124,55 @@ export function AgentCasesListEnhanced() {
   const [showBulkActions, setShowBulkActions] = useState(false);
   const itemsPerPage = 10;
 
-  const { data, isLoading, error, refetch } = useCases({
-    status: statusFilter !== 'all' && statusFilter !== 'active' ? statusFilter : undefined,
-  });
+  // Build server-side filters
+  const filters: CasesFilters = {
+    page: currentPage,
+    limit: itemsPerPage,
+  };
+
+  if (statusFilter !== 'all') {
+    filters.status = statusFilter;
+  }
+
+  if (serviceTypeFilter !== 'all') {
+    filters.serviceType = serviceTypeFilter;
+  }
+
+  if (assignedAgentFilter !== 'all') {
+    if (assignedAgentFilter === 'unassigned') {
+      filters.assignedAgentId = 'unassigned';
+    } else {
+      filters.assignedAgentId = assignedAgentFilter;
+    }
+  }
+
+  if (priorityFilter !== 'all') {
+    filters.priority = priorityFilter;
+  }
+
+  if (startDate) {
+    filters.startDate = startDate;
+  }
+
+  if (endDate) {
+    filters.endDate = endDate;
+  }
+
+  if (debouncedSearch) {
+    filters.search = debouncedSearch;
+  }
+
+  // Add assignment filter for ADMIN
+  if (user?.role === 'ADMIN') {
+    if (assignmentFilter === 'assigned') {
+      filters.isAssigned = 'true';
+    } else if (assignmentFilter === 'unassigned') {
+      filters.isAssigned = 'false';
+    }
+  }
+
+  // PERFORMANCE: Server-side pagination and filtering to handle large datasets efficiently
+  const { data, isLoading, error, refetch } = useCases(filters);
 
   // Fetch agents for filter (ADMIN only)
   const { data: usersData } = useUsers({ role: 'AGENT' }, { enabled: user?.role === 'ADMIN' });
@@ -186,82 +232,11 @@ export function AgentCasesListEnhanced() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Memoized filtered cases
-  const filteredCases = useMemo(() => {
-    if (!user?.id || !user?.role || !data?.cases) return [];
-    let cases: Case[] = data.cases;
-
-    // For AGENT: Filter to assigned cases only
-    if (user.role === 'AGENT') {
-      cases = cases.filter((c) => c.assignedAgentId === user.id);
-    } else if (user.role === 'ADMIN') {
-      if (assignmentFilter === 'unassigned') {
-        cases = cases.filter((c) => !c.assignedAgentId);
-      } else if (assignmentFilter === 'assigned') {
-        cases = cases.filter((c) => !!c.assignedAgentId);
-      }
-    }
-
-    // Active filter
-    if (statusFilter === 'active') {
-      cases = cases.filter((c) => !['APPROVED', 'REJECTED', 'CLOSED'].includes(c.status));
-    }
-
-    // Service type filter
-    if (serviceTypeFilter !== 'all') {
-      cases = cases.filter((c) => c.serviceType === serviceTypeFilter);
-    }
-
-    // Assigned agent filter (ADMIN only)
-    if (assignedAgentFilter !== 'all' && user.role === 'ADMIN') {
-      if (assignedAgentFilter === 'unassigned') {
-        cases = cases.filter((c) => !c.assignedAgentId);
-      } else {
-        cases = cases.filter((c) => c.assignedAgentId === assignedAgentFilter);
-      }
-    }
-
-    // Date range filter
-    if (startDate || endDate) {
-      cases = cases.filter((c) => {
-        const submissionDate = new Date(c.submissionDate);
-        if (startDate && submissionDate < new Date(startDate)) return false;
-        if (endDate && submissionDate > new Date(endDate)) return false;
-        return true;
-      });
-    }
-
-    // Search and priority filter
-    return cases.filter((c) => {
-      const clientName = c.client
-        ? `${c.client.firstName ?? ''} ${c.client.lastName ?? ''}`.trim()
-        : '';
-      const matchesSearch =
-        debouncedSearch === '' ||
-        c.referenceNumber.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        clientName.toLowerCase().includes(debouncedSearch.toLowerCase());
-      const matchesPriority = priorityFilter === 'all' || c.priority === priorityFilter;
-      return matchesSearch && matchesPriority;
-    });
-  }, [
-    data?.cases,
-    user?.role,
-    user?.id,
-    assignmentFilter,
-    statusFilter,
-    serviceTypeFilter,
-    assignedAgentFilter,
-    startDate,
-    endDate,
-    debouncedSearch,
-    priorityFilter,
-  ]);
-
-  // Pagination
-  const totalPages = Math.ceil(filteredCases.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedCases = filteredCases.slice(startIndex, endIndex);
+  // Use server-side filtered cases directly
+  const cases = data?.cases || [];
+  const pagination = data?.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 };
+  const totalPages = pagination.totalPages || 1;
+  const totalCases = pagination.total || 0;
 
   const handleFilterChange = () => {
     setCurrentPage(1);
@@ -269,10 +244,10 @@ export function AgentCasesListEnhanced() {
 
   // Bulk selection handlers
   const handleSelectAll = () => {
-    if (selectedCases.size === paginatedCases.length) {
+    if (selectedCases.size === cases.length) {
       setSelectedCases(new Set());
     } else {
-      setSelectedCases(new Set(paginatedCases.map((c) => c.id)));
+      setSelectedCases(new Set(cases.map((c) => c.id)));
     }
   };
 
@@ -308,15 +283,22 @@ export function AgentCasesListEnhanced() {
     refetch();
   };
 
+  const handleBulkUnassign = async () => {
+    if (selectedCases.size === 0) return;
+    await bulkOperation.mutateAsync({
+      operation: 'UNASSIGN',
+      caseIds: Array.from(selectedCases),
+    });
+    setSelectedCases(new Set());
+    refetch();
+  };
+
   const handleExport = async (format: 'csv' | 'xlsx') => {
     await exportCases.mutateAsync({
       format,
-      status: statusFilter !== 'all' && statusFilter !== 'active' ? statusFilter : undefined,
+      status: statusFilter !== 'all' ? statusFilter : undefined,
       serviceType: serviceTypeFilter !== 'all' ? serviceTypeFilter : undefined,
-      assignedAgentId:
-        assignedAgentFilter !== 'all' && assignedAgentFilter !== 'unassigned'
-          ? assignedAgentFilter
-          : undefined,
+      assignedAgentId: assignedAgentFilter !== 'all' ? assignedAgentFilter : undefined,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
       search: debouncedSearch || undefined,
@@ -394,10 +376,8 @@ export function AgentCasesListEnhanced() {
               </TooltipContent>
             </Tooltip>
             <Badge variant="secondary" className="text-base px-4 py-2">
-              {filteredCases.length}{' '}
-              {filteredCases.length === 1
-                ? t('cases.management.case')
-                : t('cases.management.cases')}
+              {totalCases}{' '}
+              {totalCases === 1 ? t('cases.management.case') : t('cases.management.cases')}
             </Badge>
           </div>
         </div>
@@ -512,34 +492,30 @@ export function AgentCasesListEnhanced() {
                 </SelectContent>
               </Select>
 
-              {/* Date Range */}
-              <div className="flex gap-2 lg:col-span-2">
-                <Input
-                  type="date"
-                  placeholder={t('cases.management.startDate')}
-                  value={startDate}
-                  onChange={(e) => {
-                    setStartDate(e.target.value);
-                    handleFilterChange();
-                  }}
-                  className="flex-1"
-                />
-                <Input
-                  type="date"
-                  placeholder={t('cases.management.endDate')}
-                  value={endDate}
-                  onChange={(e) => {
-                    setEndDate(e.target.value);
-                    handleFilterChange();
-                  }}
-                  className="flex-1"
-                />
-              </div>
+              {/* Date Range - Inline */}
+              <Input
+                type="date"
+                placeholder={t('cases.management.startDate')}
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  handleFilterChange();
+                }}
+              />
+              <Input
+                type="date"
+                placeholder={t('cases.management.endDate')}
+                value={endDate}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  handleFilterChange();
+                }}
+              />
             </div>
           </CardContent>
         </Card>
 
-        {/* Bulk Actions Bar (ADMIN only) */}
+        {/* Bulk Actions Bar (ADMIN ONLY - Agents cannot assign/unassign cases) */}
         {user.role === 'ADMIN' && selectedCases.size > 0 && (
           <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
             <CardContent className="py-4">
@@ -617,13 +593,25 @@ export function AgentCasesListEnhanced() {
                       <p>{t('cases.management.updateStatusSelected')}</p>
                     </TooltipContent>
                   </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="sm" onClick={handleBulkUnassign}>
+                        <XSquare className="mr-2 h-4 w-4" />
+                        {t('cases.management.bulkUnassign')}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Unassign selected cases from their agents</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {filteredCases.length === 0 ? (
+        {cases.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <Briefcase className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
@@ -643,10 +631,7 @@ export function AgentCasesListEnhanced() {
                         {user.role === 'ADMIN' && (
                           <th className="px-3 py-3 text-left">
                             <Checkbox
-                              checked={
-                                selectedCases.size === paginatedCases.length &&
-                                paginatedCases.length > 0
-                              }
+                              checked={selectedCases.size === cases.length && cases.length > 0}
                               onCheckedChange={handleSelectAll}
                             />
                           </th>
@@ -675,7 +660,7 @@ export function AgentCasesListEnhanced() {
                       </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                      {paginatedCases.map((c) => (
+                      {cases.map((c) => (
                         <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                           {user.role === 'ADMIN' && (
                             <td className="px-3 py-4">
@@ -775,8 +760,8 @@ export function AgentCasesListEnhanced() {
                 <CardContent className="py-4">
                   <div className="flex items-center justify-between gap-4">
                     <div className="text-sm text-muted-foreground">
-                      Showing {startIndex + 1}-{Math.min(endIndex, filteredCases.length)} of{' '}
-                      {filteredCases.length}
+                      Showing {(currentPage - 1) * itemsPerPage + 1}-
+                      {Math.min(currentPage * itemsPerPage, totalCases)} of {totalCases}
                     </div>
                     <div className="flex items-center gap-2">
                       <Button

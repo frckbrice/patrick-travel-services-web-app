@@ -1,5 +1,6 @@
-// GET /api/conversations/history - Get conversation history for agents/admins
+// GET /api/conversations/history - Get conversation history for all authenticated users
 // Shows both email and chat message history grouped by conversation
+// Performance: Uses efficient Prisma queries with pagination and selective includes
 
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
@@ -14,31 +15,44 @@ import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
 const handler = asyncHandler(async (request: NextRequest) => {
   const req = request as AuthenticatedRequest;
 
-  if (!req.user || !['AGENT', 'ADMIN'].includes(req.user.role)) {
-    throw new ApiError(ERROR_MESSAGES.FORBIDDEN, HttpStatus.FORBIDDEN);
+  if (!req.user) {
+    throw new ApiError(ERROR_MESSAGES.UNAUTHORIZED, HttpStatus.UNAUTHORIZED);
   }
 
   const { searchParams } = new URL(request.url);
   const messageType = searchParams.get('type') as 'EMAIL' | 'CHAT' | null;
   const searchQuery = searchParams.get('search') || '';
+  const isReadParam = searchParams.get('isRead'); // Support isRead filter
   const limit = parseInt(searchParams.get('limit') || '50');
   const offset = parseInt(searchParams.get('offset') || '0');
 
-  // Build where clause
+  // Build where clause with proper AND/OR logic
   const where: any = {
-    OR: [{ senderId: req.user.userId }, { recipientId: req.user.userId }],
+    AND: [
+      {
+        OR: [{ senderId: req.user.userId }, { recipientId: req.user.userId }],
+      },
+    ],
   };
 
   if (messageType) {
     where.messageType = messageType;
   }
 
+  // isRead filter - only filter read status if parameter is provided
+  if (isReadParam !== null && isReadParam !== undefined && isReadParam !== '') {
+    const isReadValue = isReadParam === 'true';
+    where.isRead = isReadValue;
+  }
+
   if (searchQuery) {
-    where.OR = [
-      ...(where.OR || []),
-      { content: { contains: searchQuery, mode: 'insensitive' } },
-      { subject: { contains: searchQuery, mode: 'insensitive' } },
-    ];
+    // Add search conditions to AND clause
+    where.AND.push({
+      OR: [
+        { content: { contains: searchQuery, mode: 'insensitive' } },
+        { subject: { contains: searchQuery, mode: 'insensitive' } },
+      ],
+    });
   }
 
   // Fetch messages with related data
@@ -110,7 +124,12 @@ const handler = asyncHandler(async (request: NextRequest) => {
         hasChat: message.messageType === 'CHAT',
         caseReference: message.case?.referenceNumber,
         caseId: message.caseId,
-        messages: [message],
+        messages: [
+          {
+            ...message,
+            threadId: message.emailThreadId || null,
+          },
+        ],
       });
     } else {
       const conversation = conversationsMap.get(conversationKey);
@@ -120,7 +139,10 @@ const handler = asyncHandler(async (request: NextRequest) => {
       if (!message.isRead && message.recipientId === req.user!.userId) {
         conversation.unreadCount += 1;
       }
-      conversation.messages.push(message);
+      conversation.messages.push({
+        ...message,
+        threadId: message.emailThreadId || null,
+      });
     }
   });
 

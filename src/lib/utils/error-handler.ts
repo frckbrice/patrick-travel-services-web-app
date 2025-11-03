@@ -207,7 +207,6 @@ export function handleApiError(error: unknown): NextResponse<ApiResponse> {
         {
           success: false,
           error: ErrorMessages[409],
-          details: `Duplicate value for field: ${prismaError.meta?.target?.join(', ')}`,
           meta: {
             timestamp: new Date().toISOString(),
           },
@@ -251,10 +250,11 @@ export function handleApiError(error: unknown): NextResponse<ApiResponse> {
 
   // Handle generic Error instances
   if (error instanceof Error) {
+    // Don't expose the actual error message to prevent information leakage
     return NextResponse.json(
       {
         success: false,
-        error: error.message || ErrorMessages[500],
+        error: ErrorMessages[500],
         meta: {
           timestamp: new Date().toISOString(),
         },

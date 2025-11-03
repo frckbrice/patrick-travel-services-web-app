@@ -51,6 +51,7 @@ import {
   Save,
   Flag,
   Eye,
+  Download,
   UserPlus,
   RefreshCw,
   Send,
@@ -189,6 +190,99 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
     }
   };
 
+  const handleViewDocument = (doc: Document) => {
+    try {
+      logger.info('Attempting to view document (case)', {
+        filePath: doc.filePath,
+        documentId: doc.id,
+      });
+
+      if (!doc.filePath) {
+        logger.error('Document filePath is empty (case)', { documentId: doc.id });
+        toast.error('Invalid document URL');
+        return;
+      }
+
+      let fileUrl = doc.filePath;
+
+      // If it's not a full URL, add https://
+      if (!fileUrl.startsWith('http://') && !fileUrl.startsWith('https://')) {
+        logger.warn('Document filePath is not a full URL (case), adding https://', {
+          filePath: doc.filePath,
+        });
+        fileUrl = `https://${fileUrl}`;
+      }
+
+      const url = new URL(fileUrl);
+      const trustedDomains = ['utfs.io', 'uploadthing.com', 'ufs.sh'];
+      const isTrusted = trustedDomains.some(
+        (domain) => url.hostname === domain || url.hostname.endsWith('.' + domain)
+      );
+
+      if (!isTrusted) {
+        logger.warn('Document URL is not from trusted domain (case)', {
+          hostname: url.hostname,
+          fileUrl,
+        });
+        toast.error('Invalid document URL');
+        return;
+      }
+
+      logger.info('Opening document in new tab (case)', { fileUrl });
+      window.open(fileUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      logger.error('Failed to open document (case)', error, {
+        filePath: doc.filePath,
+        documentId: doc.id,
+      });
+      toast.error('Invalid document URL');
+    }
+  };
+
+  const handleDownloadDocument = async (doc: Document) => {
+    try {
+      logger.info('Starting document download (case)', {
+        filePath: doc.filePath,
+        documentId: doc.id,
+        originalName: doc.originalName,
+      });
+
+      // Fetch the file as a blob
+      const response = await fetch(doc.filePath);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+
+      // Create a local blob URL
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      // Create a temporary link element and trigger download
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = doc.originalName || 'document';
+      document.body.appendChild(link);
+      link.click();
+
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+
+      logger.info('Document downloaded successfully (case)', {
+        documentId: doc.id,
+        originalName: doc.originalName,
+      });
+    } catch (error) {
+      logger.error('Failed to download document (case)', error, {
+        documentId: doc.id,
+        filePath: doc.filePath,
+      });
+      toast.error('Failed to download document');
+    }
+  };
+
   const handleSaveNote = async () => {
     if (!internalNote.trim()) {
       toast.error('Note cannot be empty');
@@ -222,7 +316,8 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
       return;
     }
     // Navigate to messages page with client parameters
-    const clientName = `${caseData.client.firstName || ''} ${caseData.client.lastName || ''}`.trim();
+    const clientName =
+      `${caseData.client.firstName || ''} ${caseData.client.lastName || ''}`.trim();
     router.push(
       `/dashboard/messages?clientId=${caseData.clientId}&clientName=${encodeURIComponent(clientName)}&clientEmail=${encodeURIComponent(caseData.client.email)}&caseRef=${encodeURIComponent(caseData.referenceNumber)}`
     );
@@ -234,7 +329,8 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
       return;
     }
     // Navigate to messages page with email mode and client parameters
-    const clientName = `${caseData.client.firstName || ''} ${caseData.client.lastName || ''}`.trim();
+    const clientName =
+      `${caseData.client.firstName || ''} ${caseData.client.lastName || ''}`.trim();
     router.push(
       `/dashboard/messages?mode=email&clientId=${caseData.clientId}&clientName=${encodeURIComponent(clientName)}&clientEmail=${encodeURIComponent(caseData.client.email)}&caseRef=${encodeURIComponent(caseData.referenceNumber)}`
     );
@@ -341,11 +437,28 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button variant="outline" onClick={() => setStatusDialogOpen(false)}>
+                      <Button
+                        variant="outline"
+                        onClick={() => setStatusDialogOpen(false)}
+                        disabled={updateCaseStatus.isPending}
+                      >
                         Cancel
                       </Button>
-                      <Button onClick={handleStatusUpdate} disabled={!newStatus}>
-                        Update Status
+                      <Button
+                        onClick={handleStatusUpdate}
+                        disabled={!newStatus || updateCaseStatus.isPending}
+                      >
+                        {updateCaseStatus.isPending ? (
+                          <>
+                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                            Updating...
+                          </>
+                        ) : (
+                          <>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Update Status
+                          </>
+                        )}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -404,15 +517,26 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                   setRejectReason('');
                   setSelectedDocId('');
                 }}
+                disabled={rejectDocument.isPending}
               >
                 Cancel
               </Button>
               <Button
                 variant="destructive"
                 onClick={() => handleRejectDocument(selectedDocId, rejectReason)}
-                disabled={!rejectReason.trim()}
+                disabled={!rejectReason.trim() || rejectDocument.isPending}
               >
-                Reject Document
+                {rejectDocument.isPending ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Rejecting...
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Reject Document
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -470,7 +594,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                   />
                   <InfoRow icon={Mail} label="Email" value={caseData.client?.email || 'N/A'} />
                   <InfoRow icon={Phone} label="Phone" value={caseData.client?.phone || 'N/A'} />
-                  
+
                   {/* Message/Email Client Actions - Only for Agents/Admins */}
                   {isAgent && caseData.client && (
                     <>
@@ -496,7 +620,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                               <p>Start a real-time chat with this client</p>
                             </TooltipContent>
                           </Tooltip>
-                          
+
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
@@ -551,20 +675,36 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                             {doc.status}
                           </Badge>
                           <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => window.open(doc.filePath, '_blank')}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>View Document</p>
-                              </TooltipContent>
-                            </Tooltip>
+                            <div className="flex gap-2">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleViewDocument(doc)}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>View Document</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDownloadDocument(doc)}
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Download Document</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
                           </TooltipProvider>
                           {isAgent && doc.status === 'PENDING' && (
                             <TooltipProvider>
@@ -574,9 +714,19 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                                     variant="default"
                                     size="sm"
                                     onClick={() => handleApproveDocument(doc.id)}
+                                    disabled={approveDocument.isPending}
                                   >
-                                    <CheckCircle className="mr-1 h-4 w-4" />
-                                    Approve
+                                    {approveDocument.isPending ? (
+                                      <>
+                                        <RefreshCw className="mr-1 h-4 w-4 animate-spin" />
+                                        Approving...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <CheckCircle className="mr-1 h-4 w-4" />
+                                        Approve
+                                      </>
+                                    )}
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>

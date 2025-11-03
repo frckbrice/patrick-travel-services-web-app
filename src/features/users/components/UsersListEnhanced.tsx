@@ -41,6 +41,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Dialog,
@@ -698,48 +699,17 @@ export function UsersListEnhanced() {
       </Dialog>
 
       {/* Delete User Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('users.deleteUserDialog.title')}</DialogTitle>
-            <DialogDescription>{t('users.deleteUserDialog.description')}</DialogDescription>
-          </DialogHeader>
-          {selectedUser && (
-            <div className="py-4">
-              <div className="flex items-center gap-3 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
-                <Avatar>
-                  <AvatarFallback>
-                    {getInitials(`${selectedUser.firstName} ${selectedUser.lastName}`)}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-medium">
-                    {selectedUser.firstName} {selectedUser.lastName}
-                  </p>
-                  <p className="text-sm text-muted-foreground">{selectedUser.email}</p>
-                  <Badge className={getRoleBadgeColor(selectedUser.role)} variant="outline">
-                    {selectedUser.role}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleConfirmDelete}
-              disabled={deleteUser.isPending}
-            >
-              {deleteUser.isPending
-                ? t('users.deleteUserDialog.deleting')
-                : t('users.deleteUserDialog.deleteButton')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleConfirmDelete}
+        title={t('users.deleteUserDialog.title')}
+        description={`Are you sure you want to delete ${selectedUser?.firstName} ${selectedUser?.lastName}? This action cannot be undone.`}
+        confirmText={t('users.deleteUserDialog.deleteButton')}
+        cancelText={t('common.cancel')}
+        variant="destructive"
+        isLoading={deleteUser.isPending}
+      />
     </div>
   );
 }

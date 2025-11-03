@@ -1,15 +1,14 @@
 'use client';
 
-import { memo, useMemo } from 'react';
+import { memo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/features/auth/store';
-import { useCases } from '@/features/cases/api';
-import { useDocuments } from '@/features/documents/api';
 import { useRealtimeChatRooms } from '@/features/messages/hooks/useRealtimeChat';
+import { apiClient } from '@/lib/utils/axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Briefcase, FileText, MessageSquare, CheckCircle2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
-import type { Case } from '@/features/cases/types';
 import { StatCardPlaceholder } from '@/components/ui/progressive-placeholder';
 import { SimpleSkeleton, SkeletonText } from '@/components/ui/simple-skeleton';
 
@@ -20,60 +19,34 @@ const CASE_STATUS_APPROVED = 'APPROVED' as const;
 export const DashboardHome = memo(function DashboardHome() {
   const { user } = useAuthStore();
 
-  // PERFORMANCE: Optimize queries with staleTime and prefetch for instant navigation
-  const { data: casesData, isLoading: casesLoading } = useCases(
-    {},
-    {
-      staleTime: 60000, // Cache for 60 seconds
-      gcTime: 600000, // Keep in cache for 10 minutes
-      refetchOnMount: false, // Use cached data
-      refetchOnWindowFocus: false, // Don't refetch on tab switch
-    }
-  );
-  const { data: documentsData, isLoading: documentsLoading } = useDocuments(
-    {},
-    {
-      staleTime: 60000,
-      gcTime: 600000,
-      refetchOnMount: false,
-      refetchOnWindowFocus: false,
-    }
-  );
-  // REAL-TIME: Use Firebase real-time hook instead of slow API call
-  const { chatRooms: conversations, isLoading: conversationsLoading } = useRealtimeChatRooms();
+  // PERFORMANCE: Fetch dashboard statistics from server (efficient COUNT queries)
+  const { data: stats, isLoading: isLoadingStats } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: async () => {
+      const response = await apiClient.get('/api/dashboard/stats');
+      return response.data.data;
+    },
+    staleTime: 30000, // Cache for 30 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
 
-  // PERFORMANCE: Memoize expensive calculations
-  const stats = useMemo(() => {
-    const cases = casesData?.cases || [];
-    const documents = documentsData?.documents || [];
-    const chatRooms = conversations || [];
+  // REAL-TIME: Use Firebase real-time hook for unread messages
+  const { chatRooms: conversations } = useRealtimeChatRooms();
 
-    // Calculate pending documents (documents with PENDING status)
-    const pendingDocuments = documents.filter((doc) => doc.status === 'PENDING').length;
+  // Calculate unread messages from chat rooms
+  const unreadMessages = user?.id
+    ? (conversations || []).reduce((total, room) => {
+        if (room.unreadCount) {
+          return total + (room.unreadCount[user.id] || 0);
+        }
+        return total;
+      }, 0)
+    : 0;
 
-    // Calculate unread messages from chat rooms
-    const unreadMessages = user?.id
-      ? chatRooms.reduce((total, room) => {
-          if (room.unreadCount) {
-            return total + (room.unreadCount[user.id] || 0);
-          }
-          return total;
-        }, 0)
-      : 0;
-
-    return {
-      totalCases: cases.length,
-      activeCases: cases.filter((c: Case) => !TERMINAL_STATUSES.includes(c.status as any)).length,
-      completedCases: cases.filter((c: Case) => c.status === CASE_STATUS_APPROVED).length,
-      pendingDocuments,
-      unreadMessages,
-    };
-  }, [casesData?.cases, documentsData?.documents, conversations, user?.id]);
-
-  // Progressive loading flags
-  const isLoadingCases = casesLoading && !casesData;
-  const isLoadingDocuments = documentsLoading && !documentsData;
-  const isLoadingConversations = conversationsLoading && !conversations;
+  // Progressive loading flag
+  const isLoading = isLoadingStats || !stats;
 
   return (
     <div className="space-y-8">
@@ -84,65 +57,73 @@ export const DashboardHome = memo(function DashboardHome() {
         <p className="text-muted-foreground mt-2">Here is an overview of your immigration cases</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {isLoadingCases ? (
-          <StatCardPlaceholder title="Total Cases" icon={Briefcase} />
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        {isLoading ? (
+          <>
+            <StatCardPlaceholder title="Total Cases" icon={Briefcase} />
+            <StatCardPlaceholder title="Pending Documents" icon={FileText} />
+            <StatCardPlaceholder title="Unread Messages" icon={MessageSquare} />
+            <StatCardPlaceholder
+              title={user?.role === 'CLIENT' ? 'Completed' : 'Assigned Cases'}
+              icon={CheckCircle2}
+            />
+          </>
         ) : (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Cases</CardTitle>
-              <Briefcase className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalCases}</div>
-              <p className="text-xs text-muted-foreground">{stats.activeCases} active</p>
-            </CardContent>
-          </Card>
-        )}
+          <>
+            <Card className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-muted-foreground">Total Cases</span>
+                <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold">{stats.totalCases || 0}</span>
+                <span className="text-xs text-muted-foreground">
+                  {stats.activeCases || 0} active
+                </span>
+              </div>
+            </Card>
 
-        {isLoadingDocuments ? (
-          <StatCardPlaceholder title="Pending Documents" icon={FileText} />
-        ) : (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Documents</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.pendingDocuments}</div>
-              <p className="text-xs text-muted-foreground">Documents to upload</p>
-            </CardContent>
-          </Card>
-        )}
+            <Card className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-muted-foreground">Pending Documents</span>
+                <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold">{stats.pendingDocuments || 0}</span>
+                <span className="text-xs text-muted-foreground">to upload</span>
+              </div>
+            </Card>
 
-        {isLoadingConversations ? (
-          <StatCardPlaceholder title="Unread Messages" icon={MessageSquare} />
-        ) : (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Unread Messages</CardTitle>
-              <MessageSquare className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.unreadMessages}</div>
-              <p className="text-xs text-muted-foreground">From your advisor</p>
-            </CardContent>
-          </Card>
-        )}
+            <Card className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-muted-foreground">Unread Messages</span>
+                <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold">{unreadMessages}</span>
+                <span className="text-xs text-muted-foreground">from advisor</span>
+              </div>
+            </Card>
 
-        {isLoadingCases ? (
-          <StatCardPlaceholder title="Completed" icon={CheckCircle2} />
-        ) : (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completed</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.completedCases}</div>
-              <p className="text-xs text-muted-foreground">Successful cases</p>
-            </CardContent>
-          </Card>
+            <Card className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-muted-foreground">
+                  {user?.role === 'CLIENT' ? 'Completed' : 'Assigned Cases'}
+                </span>
+                <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold">
+                  {user?.role === 'CLIENT'
+                    ? stats.completedCases || 0
+                    : ((stats as any)?.assignedCases ?? 0)}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {user?.role === 'CLIENT' ? 'successful' : 'cases'}
+                </span>
+              </div>
+            </Card>
+          </>
         )}
       </div>
 
@@ -221,10 +202,10 @@ export const DashboardHomeSkeleton = memo(function DashboardHomeSkeleton() {
         <SkeletonText size="sm" className="w-96" />
       </div>
 
-      {/* Stat Cards - Reduced from 4 to 3, simplified structure */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {[1, 2, 3].map((i) => (
-          <SimpleSkeleton key={i} className="h-28 rounded-lg" />
+      {/* Stat Cards - Compact design */}
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <SimpleSkeleton key={i} className="h-20 rounded-lg" />
         ))}
       </div>
 

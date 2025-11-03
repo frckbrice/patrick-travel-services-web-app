@@ -124,7 +124,7 @@ export async function setCustomClaimsWithRetry(
 
     try {
       await prisma.user.delete({
-        where: { id: firebaseUid },
+        where: { firebaseId: firebaseUid },
       });
 
       // Log with hashed UID to prevent PII leakage
@@ -143,35 +143,20 @@ export async function setCustomClaimsWithRetry(
       // This is a critical inconsistency - user exists in DB but has no claims
       throw new ApiError(
         'Failed to set user claims and rollback failed. Manual intervention required.',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        {
-          firebaseUid,
-          claimError: lastError?.message,
-          deleteError: deleteError instanceof Error ? deleteError.message : String(deleteError),
-        }
+        HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
 
     // Rollback successful - throw error to inform caller
     throw new ApiError(
       'Failed to set Firebase custom claims after multiple attempts. User creation has been rolled back.',
-      HttpStatus.INTERNAL_SERVER_ERROR,
-      {
-        firebaseUid,
-        attempts: maxRetries,
-        lastError: lastError?.message,
-      }
+      HttpStatus.INTERNAL_SERVER_ERROR
     );
   } else {
     // Rollback disabled - just throw error
     throw new ApiError(
       'Failed to set Firebase custom claims after multiple attempts',
-      HttpStatus.INTERNAL_SERVER_ERROR,
-      {
-        firebaseUid,
-        attempts: maxRetries,
-        lastError: lastError?.message,
-      }
+      HttpStatus.INTERNAL_SERVER_ERROR
     );
   }
 }
@@ -201,8 +186,7 @@ export async function deleteFirebaseUser(firebaseUid: string): Promise<void> {
     });
     throw new ApiError(
       'Failed to delete Firebase user during rollback',
-      HttpStatus.INTERNAL_SERVER_ERROR,
-      { firebaseUid, error: errorMessage }
+      HttpStatus.INTERNAL_SERVER_ERROR
     );
   }
 }
@@ -248,7 +232,7 @@ export async function rollbackUserCreation(
   if (deletePrisma) {
     try {
       await prisma.user.delete({
-        where: { id: firebaseUid },
+        where: { firebaseId: firebaseUid },
       });
       // Log with hashed UID to prevent PII leakage
       logger.info('Prisma user rolled back', { firebaseUidHash: hashPII(firebaseUid), context });
@@ -269,9 +253,8 @@ export async function rollbackUserCreation(
 
   if (errors.length > 0) {
     throw new ApiError(
-      `Rollback incomplete: ${errors.join('; ')}. Manual cleanup may be required.`,
-      HttpStatus.INTERNAL_SERVER_ERROR,
-      { firebaseUid, context, errors }
+      'Rollback incomplete. Manual cleanup may be required.',
+      HttpStatus.INTERNAL_SERVER_ERROR
     );
   }
 }

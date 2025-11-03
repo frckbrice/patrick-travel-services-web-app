@@ -175,15 +175,15 @@ export function useTransferCase() {
   });
 }
 
-// Bulk operations on cases (ADMIN only)
+// Bulk operations on cases (ADMIN ONLY - Agents cannot perform bulk operations)
 export function useBulkCaseOperation() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: {
-      operation: 'ASSIGN' | 'UPDATE_STATUS' | 'UPDATE_PRIORITY';
+      operation: 'ASSIGN' | 'UPDATE_STATUS' | 'UPDATE_PRIORITY' | 'UNASSIGN';
       caseIds: string[];
-      data: {
+      data?: {
         assignedAgentId?: string;
         status?: string;
         priority?: string;

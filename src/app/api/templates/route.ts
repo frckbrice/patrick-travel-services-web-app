@@ -7,15 +7,24 @@ import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 import { logger } from '@/lib/utils/logger';
 import { uploadFiles, getAuthHeaders } from '@/lib/uploadthing/client';
 
-// GET /api/templates - List all active templates
+// GET /api/templates - List templates (all for admin, active only for others)
 const getHandler = asyncHandler(async (request: NextRequest) => {
+  const req = request as AuthenticatedRequest;
   const { searchParams } = new URL(request.url);
   const serviceType = searchParams.get('serviceType');
   const category = searchParams.get('category');
+  const includeInactive = searchParams.get('includeInactive') === 'true';
 
-  const where: any = {
-    isActive: true,
-  };
+  // Check if user is admin and requesting all templates
+  const isAdmin = req.user?.role === 'ADMIN';
+  const showAllTemplates = isAdmin && includeInactive;
+
+  const where: any = {};
+
+  // Only show active templates unless admin explicitly requests all
+  if (!showAllTemplates) {
+    where.isActive = true;
+  }
 
   if (serviceType) {
     where.serviceType = serviceType;
@@ -33,10 +42,12 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
       description: true,
       serviceType: true,
       fileName: true,
+      fileUrl: true,
       fileSize: true,
       mimeType: true,
       category: true,
       isRequired: true,
+      isActive: true, // Always include isActive field
       downloadCount: true,
       version: true,
       createdAt: true,
@@ -89,6 +100,7 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
       mimeType: mimeType || 'application/pdf',
       category,
       isRequired: isRequired || false,
+      isActive: true, // Explicitly set to active by default
       version: version || null,
       createdById: req.user.userId,
     },

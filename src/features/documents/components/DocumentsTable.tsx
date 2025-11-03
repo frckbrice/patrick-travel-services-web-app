@@ -59,6 +59,7 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import { SimpleSkeleton, SkeletonText } from '@/components/ui/simple-skeleton';
 import { useTranslation } from 'react-i18next';
+import { logger } from '@/lib/utils/logger';
 
 const getStatusConfig = (t: any) => ({
   PENDING: {
@@ -128,7 +129,7 @@ export function DocumentsTable() {
     documents.forEach((doc) => {
       // Skip documents without client info
       if (!doc.uploadedBy) {
-        console.warn('Document missing uploadedBy data:', doc.id);
+        logger.warn('Document missing uploadedBy data:', { docId: doc.id });
         return;
       }
 
@@ -196,33 +197,96 @@ export function DocumentsTable() {
   const handleView = (doc: Document) => {
     // Validate URL before opening
     try {
-      const url = new URL(doc.filePath);
-      const trustedDomains = ['utfs.io', 'uploadthing.com'];
+      logger.info('Attempting to view document (agent)', {
+        filePath: doc.filePath,
+        documentId: doc.id,
+      });
+
+      if (!doc.filePath) {
+        logger.error('Document filePath is empty (agent)', { documentId: doc.id });
+        toast.error(t('documents.invalidDocumentUrl'));
+        return;
+      }
+
+      let fileUrl = doc.filePath;
+
+      // If it's not a full URL, add https://
+      if (!fileUrl.startsWith('http://') && !fileUrl.startsWith('https://')) {
+        logger.warn('Document filePath is not a full URL (agent), adding https://', {
+          filePath: doc.filePath,
+        });
+        fileUrl = `https://${fileUrl}`;
+      }
+
+      logger.info('Constructed file URL (agent)', { fileUrl });
+
+      const url = new URL(fileUrl);
+      const trustedDomains = ['utfs.io', 'uploadthing.com', 'ufs.sh'];
       const isTrusted = trustedDomains.some(
         (domain) => url.hostname === domain || url.hostname.endsWith('.' + domain)
       );
 
       if (!isTrusted) {
+        logger.warn('Document URL is not from trusted domain (agent)', {
+          hostname: url.hostname,
+          fileUrl,
+        });
         toast.error(t('documents.invalidDocumentUrl'));
         return;
       }
 
-      window.open(doc.filePath, '_blank', 'noopener,noreferrer');
+      logger.info('Opening document in new tab (agent)', { fileUrl });
+      window.open(fileUrl, '_blank', 'noopener,noreferrer');
     } catch (error) {
+      logger.error('Failed to open document (agent)', error, {
+        filePath: doc.filePath,
+        documentId: doc.id,
+      });
       toast.error(t('documents.invalidDocumentUrl'));
     }
   };
 
-  const handleDownload = (doc: Document) => {
+  const handleDownload = async (doc: Document) => {
     try {
+      logger.info('Starting document download (agent)', {
+        filePath: doc.filePath,
+        documentId: doc.id,
+        originalName: doc.originalName,
+      });
+
+      // Fetch the file as a blob
+      const response = await fetch(doc.filePath);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+
+      // Create a local blob URL
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      // Create a temporary link element and trigger download
       const link = document.createElement('a');
-      link.href = doc.filePath;
+      link.href = blobUrl;
       link.download = doc.originalName || 'document';
       document.body.appendChild(link);
       link.click();
+
+      // Clean up
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+
+      logger.info('Document downloaded successfully (agent)', {
+        documentId: doc.id,
+        originalName: doc.originalName,
+      });
     } catch (error) {
-      toast.error(t('documents.failedToDownload'));
+      logger.error('Failed to download document (agent)', error, {
+        documentId: doc.id,
+        filePath: doc.filePath,
+      });
+      toast.error(t('documents.downloadFailed'));
     }
   };
 

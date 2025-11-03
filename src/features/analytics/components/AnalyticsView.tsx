@@ -10,6 +10,19 @@ import { BarChart3, TrendingUp, FileCheck, Target } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 
 export function AnalyticsView() {
   const { user } = useAuthStore();
@@ -24,12 +37,6 @@ export function AnalyticsView() {
     }
   }, [user, router]);
 
-  if (user && !['ADMIN', 'AGENT'].includes(user.role)) {
-    return null;
-  }
-
-  if (isLoading) return <AnalyticsViewSkeleton />;
-
   const cases: Case[] = data?.cases || [];
   const totalCases = cases.length;
   const activeCases = cases.filter(
@@ -38,36 +45,92 @@ export function AnalyticsView() {
   const approvedCases = cases.filter((c: Case) => c.status === 'APPROVED').length;
   const successRate = totalCases > 0 ? Math.round((approvedCases / totalCases) * 100) : 0;
 
+  // Calculate analytics data for charts
+  const statusData = useMemo(() => {
+    const statusCounts = cases.reduce(
+      (acc, c) => {
+        const status = c.status || 'UNKNOWN';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
+    return Object.entries(statusCounts).map(([status, count]) => ({
+      name: status.replace(/_/g, ' '),
+      value: count,
+    }));
+  }, [cases]);
+
+  const serviceTypeData = useMemo(() => {
+    const typeCounts = cases.reduce(
+      (acc, c) => {
+        const type = c.serviceType || 'UNKNOWN';
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
+    return Object.entries(typeCounts).map(([type, count]) => ({
+      name: type.replace(/_/g, ' '),
+      value: count,
+    }));
+  }, [cases]);
+
+  const monthlyTrends = useMemo(() => {
+    const monthCounts: Record<string, number> = {};
+
+    cases.forEach((c) => {
+      const date = new Date(c.submissionDate);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      monthCounts[monthKey] = (monthCounts[monthKey] || 0) + 1;
+    });
+
+    return Object.entries(monthCounts)
+      .map(([month, count]) => ({ month, count }))
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .slice(-6); // Last 6 months
+  }, [cases]);
+
+  // Guards placed after hooks to satisfy rules-of-hooks
+  if (user && !['ADMIN', 'AGENT'].includes(user.role)) {
+    return null;
+  }
+
+  if (isLoading) {
+    return <AnalyticsViewSkeleton />;
+  }
+
   const stats = [
     {
       label: 'Total Cases',
       value: totalCases.toString(),
-      trend: '+12%',
       icon: BarChart3,
       description: 'All time cases',
     },
     {
       label: 'Active Cases',
       value: activeCases.toString(),
-      trend: '+8%',
       icon: TrendingUp,
       description: 'Currently processing',
     },
     {
       label: 'Approved Cases',
       value: approvedCases.toString(),
-      trend: '+15%',
       icon: FileCheck,
       description: 'Successfully approved',
     },
     {
       label: 'Success Rate',
       value: `${successRate}%`,
-      trend: '+3%',
       icon: Target,
       description: 'Approval percentage',
     },
   ];
+
+  // Color palette for charts
+  const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1', '#d084d0'];
 
   return (
     <div className="space-y-6">
@@ -78,24 +141,19 @@ export function AnalyticsView() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <Card key={stat.label}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{stat.label}</CardTitle>
-                <Icon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <div className="flex items-center space-x-2 mt-1">
-                  <p className="text-xs text-green-600 dark:text-green-400 font-medium">
-                    {stat.trend}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{stat.description}</p>
-                </div>
-              </CardContent>
+            <Card key={stat.label} className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-muted-foreground">{stat.label}</span>
+                <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold">{stat.value}</span>
+                <span className="text-xs text-muted-foreground">{stat.description}</span>
+              </div>
             </Card>
           );
         })}
@@ -116,12 +174,22 @@ export function AnalyticsView() {
               <CardDescription>Distribution of cases across different statuses</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-64 flex items-center justify-center text-muted-foreground">
-                <div className="text-center">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Chart placeholder - integrate Recharts</p>
+              {statusData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={statusData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="value" fill="#8884d8" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-64 flex items-center justify-center text-muted-foreground">
+                  <p>No data available</p>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -133,12 +201,22 @@ export function AnalyticsView() {
               <CardDescription>Case volume and approval trends over time</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-64 flex items-center justify-center text-muted-foreground">
-                <div className="text-center">
-                  <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Chart placeholder - integrate Recharts</p>
+              {monthlyTrends.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={monthlyTrends}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="count" fill="#82ca9d" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-64 flex items-center justify-center text-muted-foreground">
+                  <p>No data available</p>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -150,12 +228,34 @@ export function AnalyticsView() {
               <CardDescription>Breakdown by visa type</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-64 flex items-center justify-center text-muted-foreground">
-                <div className="text-center">
-                  <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Chart placeholder - integrate Recharts</p>
+              {serviceTypeData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={serviceTypeData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={(entry: any) =>
+                        `${entry.name}: ${((entry.percent || 0) * 100).toFixed(0)}%`
+                      }
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {serviceTypeData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-64 flex items-center justify-center text-muted-foreground">
+                  <p>No data available</p>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -171,16 +271,11 @@ export function AnalyticsViewSkeleton() {
         <Skeleton className="h-9 w-32" />
         <Skeleton className="h-5 w-64 mt-2" />
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i}>
-            <CardHeader>
-              <Skeleton className="h-4 w-24" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-8 w-12" />
-              <Skeleton className="h-3 w-20 mt-2" />
-            </CardContent>
+          <Card key={i} className="p-4">
+            <Skeleton className="h-4 w-24 mb-2" />
+            <Skeleton className="h-8 w-20" />
           </Card>
         ))}
       </div>

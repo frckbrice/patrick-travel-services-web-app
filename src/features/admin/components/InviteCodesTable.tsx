@@ -288,7 +288,7 @@ export function InviteCodesTable({ onRefresh }: InviteCodesTableProps) {
             <span className="text-sm font-medium">
               {row.original.usedCount}/{row.original.maxUses}
             </span>
-            <div className="w-16 bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+            <div className="w-16 bg-muted/80 dark:bg-muted/60 rounded-full h-2">
               <div
                 className={cn(
                   'h-2 rounded-full transition-all',

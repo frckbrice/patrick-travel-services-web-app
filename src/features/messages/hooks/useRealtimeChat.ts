@@ -5,7 +5,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuthStore } from '@/features/auth/store';
 import { ref, onValue, off, query, orderByChild, equalTo } from 'firebase/database';
-import { database } from '@/lib/firebase/firebase-client';
+import { database, auth } from '@/lib/firebase/firebase-client';
+import { logger } from '@/lib/utils/logger';
 
 // Type definitions
 export interface ChatMessage {
@@ -56,18 +57,46 @@ function subscribeToRoomMessages(
   chatRoomId: string,
   callback: (messages: ChatMessage[]) => void
 ): () => void {
-  const messagesRef = ref(database, `chats/${chatRoomId}/messages`);
+  const messagesRef = query(ref(database, `chats/${chatRoomId}/messages`), orderByChild('sentAt'));
 
-  onValue(messagesRef, (snapshot) => {
-    const messages: ChatMessage[] = [];
-    snapshot.forEach((childSnapshot) => {
-      messages.push({
-        id: childSnapshot.key!,
-        ...childSnapshot.val(),
-      });
-    });
-    callback(messages.sort((a, b) => a.sentAt - b.sentAt));
-  });
+  onValue(
+    messagesRef,
+    (snapshot) => {
+      const messages: ChatMessage[] = [];
+
+      if (snapshot.exists()) {
+        snapshot.forEach((childSnapshot) => {
+          messages.push({
+            id: childSnapshot.key!,
+            ...childSnapshot.val(),
+          });
+        });
+      }
+
+      // Debug logging
+      logger.debug(
+        `[Firebase] Received ${messages.length} messages for room ${chatRoomId.substring(0, 8)}...`
+      );
+      if (messages.length > 0) {
+        logger.debug(`[Firebase] Latest message:`, {
+          id: messages[messages.length - 1].id?.substring(0, 8) + '...',
+          senderId: messages[messages.length - 1].senderId?.substring(0, 8) + '...',
+          content: messages[messages.length - 1].content?.substring(0, 20) + '...',
+        });
+      }
+
+      // Sort by sentAt
+      const sorted = messages.sort((a, b) => a.sentAt - b.sentAt);
+      callback(sorted);
+    },
+    (error) => {
+      logger.error(
+        `[Firebase] Error listening to messages for room ${chatRoomId.substring(0, 8)}...`,
+        error
+      );
+      callback([]);
+    }
+  );
 
   return () => off(messagesRef);
 }
@@ -78,30 +107,70 @@ function subscribeToUserChatRooms(
 ): () => void {
   const roomsRef = ref(database, 'chats');
 
-  onValue(roomsRef, (snapshot) => {
-    const rooms: ChatRoom[] = [];
-    snapshot.forEach((childSnapshot) => {
-      const metadata = childSnapshot.child('metadata').val();
-      if (
-        metadata?.participants?.clientId === userId ||
-        metadata?.participants?.agentId === userId
-      ) {
-        rooms.push({
-          id: childSnapshot.key!,
-          participants: {
-            [metadata.participants.clientId]: true,
-            [metadata.participants.agentId]: true,
-          },
-          caseId: childSnapshot.key!,
-          lastMessage: metadata.lastMessage,
-          lastMessageAt: metadata.lastMessageTime,
-          createdAt: metadata.createdAt,
-          updatedAt: metadata.updatedAt || metadata.createdAt,
-        });
+  onValue(
+    roomsRef,
+    (snapshot) => {
+      const rooms: ChatRoom[] = [];
+
+      // Check if snapshot has data
+      if (!snapshot.exists()) {
+        logger.debug(`[Chat Rooms] No rooms found for userId ${userId.substring(0, 8)}...`);
+        callback([]);
+        return;
       }
-    });
-    callback(rooms.sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0)));
-  });
+
+      // Use .size property instead of .numChildren() for modular SDK
+      const roomsCount = snapshot.size;
+      logger.debug(`[Chat Rooms] Listening for userId ${userId.substring(0, 8)}...`, {
+        roomsFound: roomsCount,
+      });
+
+      snapshot.forEach((childSnapshot) => {
+        const metadata = childSnapshot.child('metadata').val();
+        const roomId = childSnapshot.key!;
+
+        logger.debug(`[Chat Rooms] Checking room ${roomId.substring(0, 8)}...`, {
+          hasMetadata: !!metadata,
+          participants: metadata?.participants,
+          matchesClient: metadata?.participants?.clientId === userId,
+          matchesAgent: metadata?.participants?.agentId === userId,
+        });
+
+        if (
+          metadata?.participants?.clientId === userId ||
+          metadata?.participants?.agentId === userId
+        ) {
+          const room = {
+            id: roomId,
+            participants: {
+              [metadata.participants.clientId]: true,
+              [metadata.participants.agentId]: true,
+            },
+            caseId: roomId,
+            lastMessage: metadata.lastMessage,
+            lastMessageAt: metadata.lastMessageTime,
+            createdAt: metadata.createdAt,
+            updatedAt: metadata.updatedAt || metadata.createdAt,
+          };
+
+          logger.debug(`[Chat Rooms] Added room ${roomId.substring(0, 8)}...`);
+          rooms.push(room);
+        }
+      });
+
+      logger.debug(
+        `[Chat Rooms] Returning ${rooms.length} rooms for userId ${userId.substring(0, 8)}...`
+      );
+      callback(rooms.sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0)));
+    },
+    (error) => {
+      logger.error(
+        `[Chat Rooms] Error listening to rooms for userId ${userId.substring(0, 8)}...`,
+        error
+      );
+      callback([]);
+    }
+  );
 
   return () => off(roomsRef);
 }
@@ -185,113 +254,6 @@ async function sendMessage(message: any) {
 }
 
 /**
- * MOCK DATA: Demo messages for development/testing (DEVELOPMENT ONLY)
- * Function that generates mock messages with actual logged-in user data
- */
-const getMockMessagesForRoom = (
-  roomId: string,
-  currentUserId: string,
-  currentUserName: string,
-  currentUserEmail: string
-): ChatMessage[] => {
-  const mockData: Record<string, ChatMessage[]> = {
-    'demo-room-1': [
-      {
-        id: 'msg-1-1',
-        senderId: 'agent-1',
-        senderName: 'Sarah Johnson',
-        senderEmail: 'sarah.johnson@immigration.com',
-        recipientId: currentUserId,
-        recipientName: currentUserName,
-        recipientEmail: currentUserEmail,
-        content:
-          'Hello! I reviewed your application and everything looks good. We will proceed to the next stage.',
-        isRead: true,
-        sentAt: Date.now() - 7200000, // 2 hours ago
-      },
-      {
-        id: 'msg-1-2',
-        senderId: currentUserId,
-        senderName: currentUserName,
-        senderEmail: currentUserEmail,
-        recipientId: 'agent-1',
-        recipientName: 'Sarah Johnson',
-        recipientEmail: 'sarah.johnson@immigration.com',
-        content: 'That is great news! How long will this stage take?',
-        isRead: true,
-        sentAt: Date.now() - 5400000, // 1.5 hours ago
-      },
-      {
-        id: 'msg-1-3',
-        senderId: 'agent-1',
-        senderName: 'Sarah Johnson',
-        senderEmail: 'sarah.johnson@immigration.com',
-        recipientId: currentUserId,
-        recipientName: currentUserName,
-        recipientEmail: currentUserEmail,
-        content: 'Typically 2-3 weeks. I will keep you updated on any progress.',
-        isRead: true,
-        sentAt: Date.now() - 4800000,
-      },
-      {
-        id: 'msg-1-4',
-        senderId: currentUserId,
-        senderName: currentUserName,
-        senderEmail: currentUserEmail,
-        recipientId: 'agent-1',
-        recipientName: 'Sarah Johnson',
-        recipientEmail: 'sarah.johnson@immigration.com',
-        content: 'Thank you for the update on my case!',
-        isRead: false,
-        sentAt: Date.now() - 3600000, // 1 hour ago
-      },
-    ],
-    'demo-room-2': [
-      {
-        id: 'msg-2-1',
-        senderId: 'agent-2',
-        senderName: 'Michael Chen',
-        senderEmail: 'michael.chen@immigration.com',
-        recipientId: currentUserId,
-        recipientName: currentUserName,
-        recipientEmail: currentUserEmail,
-        content: 'Hi! I need you to upload your passport copies and proof of employment.',
-        isRead: true,
-        sentAt: Date.now() - 14400000, // 4 hours ago
-      },
-      {
-        id: 'msg-2-2',
-        senderId: currentUserId,
-        senderName: currentUserName,
-        senderEmail: currentUserEmail,
-        recipientId: 'agent-2',
-        recipientName: 'Michael Chen',
-        recipientEmail: 'michael.chen@immigration.com',
-        content: 'I have uploaded the requested documents.',
-        isRead: true,
-        sentAt: Date.now() - 7200000, // 2 hours ago
-      },
-    ],
-    'demo-room-3': [
-      {
-        id: 'msg-3-1',
-        senderId: currentUserId,
-        senderName: currentUserName,
-        senderEmail: currentUserEmail,
-        recipientId: 'agent-3',
-        recipientName: 'Emily Rodriguez',
-        recipientEmail: 'emily.rodriguez@immigration.com',
-        content: 'When can I expect the next update?',
-        isRead: false,
-        sentAt: Date.now() - 86400000, // 1 day ago
-      },
-    ],
-  };
-
-  return mockData[roomId] || [];
-};
-
-/**
  * Hook for real-time messages in a chat room
  * Replaces polling - instant delivery
  * DEMO MODE: Falls back to mock data after 1.5s timeout if Firebase empty (DEVELOPMENT ONLY)
@@ -302,6 +264,7 @@ export function useRealtimeMessages(chatRoomId: string | null) {
   const [isLoading, setIsLoading] = useState(true);
   const [useMockData, setUseMockData] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastMarkedRef = useRef<number>(0);
 
   useEffect(() => {
     if (!chatRoomId) {
@@ -312,30 +275,10 @@ export function useRealtimeMessages(chatRoomId: string | null) {
 
     setIsLoading(true);
 
-    // DEMO MODE: Set timeout to show mock data if Firebase takes too long (DEVELOPMENT ONLY)
-    const isDevelopment = process.env.NODE_ENV === 'development';
-
-    if (isDevelopment) {
-      timeoutRef.current = setTimeout(() => {
-        console.log('[DEMO MODE] Firebase timeout - showing mock messages for', chatRoomId);
-        setUseMockData(true);
-
-        // Generate mock messages with current user data
-        const currentUserName = user ? `${user.firstName} ${user.lastName}`.trim() : 'User';
-        const currentUserEmail = user?.email || 'user@example.com';
-        const currentUserId = user?.id || 'current-user';
-
-        setMessages(
-          getMockMessagesForRoom(chatRoomId, currentUserId, currentUserName, currentUserEmail)
-        );
-        setIsLoading(false);
-      }, 800); // 800ms timeout - faster response
-    } else {
-      // PRODUCTION: Stop loading after 2 seconds even if no data
-      timeoutRef.current = setTimeout(() => {
-        setIsLoading(false);
-      }, 2000);
-    }
+    // PRODUCTION: Stop loading after 2 seconds even if no data
+    timeoutRef.current = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
 
     const unsubscribe = subscribeToRoomMessages(chatRoomId, (newMessages) => {
       // Clear timeout if Firebase responds
@@ -343,47 +286,35 @@ export function useRealtimeMessages(chatRoomId: string | null) {
         clearTimeout(timeoutRef.current);
       }
 
-      const currentUserName = user ? `${user.firstName} ${user.lastName}`.trim() : 'User';
-      const currentUserEmail = user?.email || 'user@example.com';
-      const currentUserId = user?.id || 'current-user';
-
-      if (newMessages.length > 0) {
-        // DEMO MODE: Merge Firebase messages with mock data (DEVELOPMENT ONLY)
-        if (isDevelopment) {
-          const mockMessages = getMockMessagesForRoom(
-            chatRoomId,
-            currentUserId,
-            currentUserName,
-            currentUserEmail
-          );
-          // Combine mock and real messages, removing duplicates by ID
-          const messageMap = new Map<string, ChatMessage>();
-
-          // Add mock messages first
-          mockMessages.forEach((msg) => messageMap.set(msg.id!, msg));
-          // Override/add with real Firebase messages
-          newMessages.forEach((msg) => messageMap.set(msg.id!, msg));
-
-          // Convert back to array and sort by time
-          const combinedMessages = Array.from(messageMap.values()).sort(
-            (a, b) => a.sentAt - b.sentAt
-          );
-          setMessages(combinedMessages);
-          setUseMockData(false);
-        } else {
-          // Production: Only use Firebase data
-          setMessages(newMessages);
-          setUseMockData(false);
-        }
-      } else if (!useMockData && isDevelopment) {
-        // Firebase is empty but connected - show mock data for demo (DEVELOPMENT ONLY)
-        console.log('[DEMO MODE] Firebase empty - showing mock messages for', chatRoomId);
-        setMessages(
-          getMockMessagesForRoom(chatRoomId, currentUserId, currentUserName, currentUserEmail)
-        );
-        setUseMockData(true);
-      }
+      // Only use real Firebase data
+      setMessages(newMessages);
+      setUseMockData(false);
       setIsLoading(false);
+
+      // PERFORMANCE: Throttle read-marking to at most once per 2s
+      // Get Firebase UID for comparing with message senderIds (which are Firebase UIDs)
+      const firebaseUser = auth.currentUser;
+      const firebaseUserId = firebaseUser?.uid;
+
+      const now = Date.now();
+      if (
+        firebaseUserId &&
+        chatRoomId &&
+        newMessages.length > 0 &&
+        now - lastMarkedRef.current > 2000 &&
+        // Only trigger if there exists at least one unread message not from current user
+        // COMPARE: senderId is Firebase UID, so compare against Firebase UID, not PostgreSQL ID
+        newMessages.some((m) => m.senderId !== firebaseUserId && !m.isRead)
+      ) {
+        lastMarkedRef.current = now;
+        // Best-effort; don't await to avoid UI jank
+        import('@/lib/firebase/chat.service').then(({ markMessagesAsRead }) => {
+          // CRITICAL: Pass Firebase UID, not PostgreSQL ID
+          markMessagesAsRead(chatRoomId, firebaseUserId).catch(() => {
+            // Silently ignore; rules enforce permissions
+          });
+        });
+      }
     });
 
     return () => {
@@ -396,40 +327,6 @@ export function useRealtimeMessages(chatRoomId: string | null) {
 
   return { messages, isLoading };
 }
-
-/**
- * MOCK DATA: Demo conversations for development/testing (DEVELOPMENT ONLY)
- * Function that generates mock chat rooms with actual logged-in user ID
- */
-const getMockChatRooms = (currentUserId: string): ChatRoom[] => [
-  {
-    id: 'demo-room-1',
-    participants: { [currentUserId]: true, 'agent-1': true },
-    lastMessage: 'Thank you for the update on my case!',
-    lastMessageAt: Date.now() - 3600000, // 1 hour ago
-    unreadCount: { [currentUserId]: 2 },
-    createdAt: Date.now() - 86400000 * 7, // 7 days ago
-    updatedAt: Date.now() - 3600000,
-  },
-  {
-    id: 'demo-room-2',
-    participants: { [currentUserId]: true, 'agent-2': true },
-    lastMessage: 'I have uploaded the requested documents.',
-    lastMessageAt: Date.now() - 7200000, // 2 hours ago
-    unreadCount: { [currentUserId]: 0 },
-    createdAt: Date.now() - 86400000 * 14, // 14 days ago
-    updatedAt: Date.now() - 7200000,
-  },
-  {
-    id: 'demo-room-3',
-    participants: { [currentUserId]: true, 'agent-3': true },
-    lastMessage: 'When can I expect the next update?',
-    lastMessageAt: Date.now() - 86400000, // 1 day ago
-    unreadCount: { [currentUserId]: 1 },
-    createdAt: Date.now() - 86400000 * 30, // 30 days ago
-    updatedAt: Date.now() - 86400000,
-  },
-];
 
 /**
  * Hook for real-time chat rooms list
@@ -450,41 +347,33 @@ export function useRealtimeChatRooms() {
       return;
     }
 
-    setIsLoading(true);
+    // Get Firebase UID from auth.currentUser for filtering
+    // Firebase UID is what's stored in metadata participants, not PostgreSQL ID
+    const firebaseUser = auth.currentUser;
+    const firebaseUserId = firebaseUser?.uid;
 
-    // DEMO MODE: Set timeout to show mock data if Firebase takes too long (DEVELOPMENT ONLY)
-    const isDevelopment = process.env.NODE_ENV === 'development';
-
-    if (isDevelopment) {
-      timeoutRef.current = setTimeout(() => {
-        console.log('[DEMO MODE] Firebase timeout - showing mock data');
-        setUseMockData(true);
-        setChatRooms(getMockChatRooms(user.id));
-        setIsLoading(false);
-      }, 1000); // 1 second timeout - faster response
-    } else {
-      // PRODUCTION: Stop loading after 2 seconds even if no data
-      timeoutRef.current = setTimeout(() => {
-        setIsLoading(false);
-      }, 2000);
+    if (!firebaseUserId) {
+      setChatRooms([]);
+      setIsLoading(false);
+      return;
     }
 
-    const unsubscribe = subscribeToUserChatRooms(user.id, (rooms) => {
+    setIsLoading(true);
+
+    // PRODUCTION: Stop loading after 2 seconds even if no data
+    timeoutRef.current = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+
+    const unsubscribe = subscribeToUserChatRooms(firebaseUserId, (rooms) => {
       // Clear timeout if Firebase responds
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
 
-      if (rooms.length > 0) {
-        // Firebase has data - use it
-        setChatRooms(rooms);
-        setUseMockData(false);
-      } else if (!useMockData && isDevelopment) {
-        // Firebase is empty but connected - show mock data for demo (DEVELOPMENT ONLY)
-        console.log('[DEMO MODE] Firebase empty - showing mock data');
-        setChatRooms(getMockChatRooms(user.id));
-        setUseMockData(true);
-      }
+      // Only use real Firebase data
+      setChatRooms(rooms);
+      setUseMockData(false);
       setIsLoading(false);
     });
 
@@ -574,29 +463,10 @@ export function useMultipleUserPresence(userIds: string[]) {
 
     setIsLoading(true);
 
-    // DEMO MODE: Set timeout to show mock data if Firebase takes too long (DEVELOPMENT ONLY)
-    const isDevelopment = process.env.NODE_ENV === 'development';
-
-    if (isDevelopment) {
-      timeoutRef.current = setTimeout(() => {
-        console.log('[DEMO MODE] Firebase timeout - showing mock presence data');
-        setUseMockData(true);
-        // Filter mock presences to only requested users
-        const filteredPresences: Record<string, UserPresence> = {};
-        userIds.forEach((userId) => {
-          if (MOCK_PRESENCES[userId]) {
-            filteredPresences[userId] = MOCK_PRESENCES[userId];
-          }
-        });
-        setPresences(filteredPresences);
-        setIsLoading(false);
-      }, 500); // 500ms timeout - fast response
-    } else {
-      // PRODUCTION: Stop loading after 1 second even if no data
-      timeoutRef.current = setTimeout(() => {
-        setIsLoading(false);
-      }, 1000);
-    }
+    // PRODUCTION: Stop loading after 1 second even if no data
+    timeoutRef.current = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
 
     const unsubscribe = subscribeToMultipleUserPresence(userIds, (newPresences) => {
       // Clear timeout if Firebase responds
@@ -604,22 +474,9 @@ export function useMultipleUserPresence(userIds: string[]) {
         clearTimeout(timeoutRef.current);
       }
 
-      if (Object.keys(newPresences).length > 0) {
-        // Firebase has data - use it
-        setPresences(newPresences);
-        setUseMockData(false);
-      } else if (!useMockData && isDevelopment) {
-        // Firebase is empty but connected - show mock data for demo (DEVELOPMENT ONLY)
-        console.log('[DEMO MODE] Firebase empty - showing mock presence data');
-        const filteredPresences: Record<string, UserPresence> = {};
-        userIds.forEach((userId) => {
-          if (MOCK_PRESENCES[userId]) {
-            filteredPresences[userId] = MOCK_PRESENCES[userId];
-          }
-        });
-        setPresences(filteredPresences);
-        setUseMockData(true);
-      }
+      // Only use real Firebase data
+      setPresences(newPresences);
+      setUseMockData(false);
       setIsLoading(false);
     });
 

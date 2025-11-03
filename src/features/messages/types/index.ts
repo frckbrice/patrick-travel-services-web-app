@@ -1,6 +1,8 @@
 // Types for Messages feature
 import { MessageAttachment } from '@/lib/types';
 
+export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'failed';
+
 export interface Message {
   id: string;
   senderId: string;
@@ -16,6 +18,10 @@ export interface Message {
   readAt?: number;
   sentAt: number;
   attachments?: MessageAttachment[];
+  status?: MessageStatus; // For optimistic messages
+  firebaseId?: string; // Firebase message ID
+  archivedToDb?: boolean; // Whether archived to PostgreSQL
+  errorMessage?: string; // Error if failed
 }
 
 export interface ChatRoom {
@@ -42,9 +48,19 @@ export interface SendMessageInput {
   attachments?: MessageAttachment[];
 }
 
+export interface ArchiveMessageInput {
+  firebaseId: string;
+  senderId: string;
+  recipientId: string;
+  content: string;
+  caseId?: string;
+  attachments?: MessageAttachment[];
+  sentAt: number;
+}
+
 export interface SendEmailInput {
   recipientId?: string; // Optional for clients (auto-determined from case)
-  caseId?: string; // Required for clients, optional for agents
+  caseId: string; // CRITICAL: Required for all emails to ensure all emails are bound to a case
   subject: string;
   content: string;
   attachments?: MessageAttachment[];

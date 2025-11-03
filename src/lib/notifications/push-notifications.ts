@@ -3,7 +3,7 @@ import { logger } from '@/lib/utils/logger';
 
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
   if (!('Notification' in window)) {
-    console.warn('This browser does not support notifications');
+    logger.warn('This browser does not support notifications');
     return 'denied';
   }
 

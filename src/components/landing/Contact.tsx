@@ -192,7 +192,7 @@ export function Contact() {
                             <span suppressHydrationWarning>{t('landing.contact.name')}</span>
                           </FormLabel>
                           <FormControl>
-                            <Input placeholder="John Doe" className="h-12" {...field} />
+                            <Input placeholder="franck brice" className="h-12" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

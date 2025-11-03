@@ -26,7 +26,7 @@ export function FileUploader({ endpoint, onUploadComplete, onUploadError }: File
           setIsUploading(false);
           const files =
             res?.map((file) => ({
-              url: file.url,
+              url: file.ufsUrl,
               name: file.name,
             })) || [];
 

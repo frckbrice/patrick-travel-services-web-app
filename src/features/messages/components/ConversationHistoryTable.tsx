@@ -113,8 +113,9 @@ export function ConversationHistoryTable() {
   }, [conversations]);
 
   const handleStartChat = (conversation: Conversation) => {
+    // Navigate to messages page with client info and chat mode to switch to Active Chats tab
     router.push(
-      `/dashboard/messages?clientId=${conversation.participantId}&clientName=${encodeURIComponent(conversation.participantName)}&clientEmail=${encodeURIComponent(conversation.participantEmail)}`
+      `/dashboard/messages?mode=chat&clientId=${conversation.participantId}&clientName=${encodeURIComponent(conversation.participantName)}&clientEmail=${encodeURIComponent(conversation.participantEmail)}`
     );
   };
 
@@ -185,12 +186,10 @@ export function ConversationHistoryTable() {
     return (
       <div className="space-y-6">
         {/* Stats Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           {[1, 2, 3, 4, 5].map((i) => (
-            <Card key={i}>
-              <CardContent className="pt-6">
-                <SimpleSkeleton className="h-20 w-full" />
-              </CardContent>
+            <Card key={i} className="p-4">
+              <SimpleSkeleton className="h-16 w-full" />
             </Card>
           ))}
         </div>
@@ -223,56 +222,52 @@ export function ConversationHistoryTable() {
   return (
     <div className="space-y-6">
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col">
-              <span className="text-2xl font-bold">{stats.totalConversations}</span>
-              <span className="text-xs text-muted-foreground mt-1">Total Conversations</span>
-            </div>
-          </CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground">Total Conversations</span>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold">{stats.totalConversations}</span>
+          </div>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-blue-600" />
-                <span className="text-2xl font-bold">{stats.emailConversations}</span>
-              </div>
-              <span className="text-xs text-muted-foreground mt-1">Email Threads</span>
-            </div>
-          </CardContent>
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground">Email Threads</span>
+            <Mail className="h-3.5 w-3.5 text-blue-600" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold">{stats.emailConversations}</span>
+          </div>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-green-600" />
-                <span className="text-2xl font-bold">{stats.chatConversations}</span>
-              </div>
-              <span className="text-xs text-muted-foreground mt-1">Chat Sessions</span>
-            </div>
-          </CardContent>
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground">Chat Sessions</span>
+            <MessageSquare className="h-3.5 w-3.5 text-green-600" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold">{stats.chatConversations}</span>
+          </div>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col">
-              <span className="text-2xl font-bold">{stats.totalMessages}</span>
-              <span className="text-xs text-muted-foreground mt-1">Total Messages</span>
-            </div>
-          </CardContent>
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground">Total Messages</span>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold">{stats.totalMessages}</span>
+          </div>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col">
-              <span className="text-2xl font-bold text-orange-600">{stats.unreadMessages}</span>
-              <span className="text-xs text-muted-foreground mt-1">Unread Messages</span>
-            </div>
-          </CardContent>
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground">Unread Messages</span>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-orange-600">{stats.unreadMessages}</span>
+          </div>
         </Card>
       </div>
 

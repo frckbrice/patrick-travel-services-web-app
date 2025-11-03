@@ -11,10 +11,10 @@ import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
 
 interface ArchiveMessageRequest {
   firebaseId: string;
-  senderId: string;
+  senderId: string; // PostgreSQL ID for database relations
   senderName: string;
   senderEmail: string;
-  recipientId: string;
+  recipientId: string; // PostgreSQL ID for database relations
   recipientName: string;
   recipientEmail: string;
   content: string;
@@ -23,6 +23,7 @@ interface ArchiveMessageRequest {
   isRead?: boolean;
   sentAt: string;
   attachments?: MessageAttachment[];
+  firebaseSenderId?: string; // Firebase UID for reference (optional)
 }
 
 // POST /api/chat/archive - Archive Firebase message to Neon

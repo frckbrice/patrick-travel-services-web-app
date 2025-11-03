@@ -1,7 +1,12 @@
 // Shared constants for Patrick Travel Services
 
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+  // Keep it simple: prod uses the deployed domain, dev uses localhost.
+  // Allow override via NEXT_PUBLIC_API_URL when explicitly provided.
+  BASE_URL:
+    process.env.NODE_ENV === 'production'
+      ? process.env.NEXT_PUBLIC_VERCEL_URL || process.env.NEXT_PUBLIC_API_URL
+      : 'http://localhost:3000',
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
 };
@@ -155,6 +160,28 @@ export const SUCCESS_MESSAGES = {
   CREATED: 'Created successfully',
   UPDATED: 'Updated successfully',
   DELETED: 'Deleted successfully',
+};
+
+// Notification action URLs - centralized constants for consistency
+export const NOTIFICATION_ACTION_URLS = {
+  // Case-related notifications
+  CASE_DETAILS: (id: string) => `/dashboard/cases/${id}`,
+  CASE_SUBMISSION: (id: string) => `/dashboard/cases/${id}`,
+  CASE_ASSIGNED: (id: string) => `/dashboard/cases/${id}`,
+  CASE_STATUS_UPDATE: (id: string) => `/dashboard/cases/${id}`,
+  CASE_UNASSIGNED: '/dashboard/cases',
+
+  // Document-related notifications
+  DOCUMENTS_PAGE: '/dashboard/documents',
+
+  // Message-related notifications
+  MESSAGES_PAGE: '/dashboard/messages',
+  MESSAGE_WITH_CASE: (caseId: string) => `/dashboard/messages?caseId=${caseId}`,
+
+  // Dashboard notifications
+  DASHBOARD: '/dashboard',
+  CASES_LIST: '/dashboard/cases',
+  CASES_MY_CASES: '/dashboard/cases?filter=my-cases',
 };
 
 export const ROUTES = {

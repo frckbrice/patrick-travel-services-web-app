@@ -40,6 +40,7 @@ import {
   UserRole,
 } from '@/lib/utils/role-permissions';
 import { useRealtimeNotifications } from '@/features/notifications/hooks/useRealtimeNotifications';
+import { useUnreadReceivedEmails } from '@/features/messages/hooks/useUnreadReceivedEmails';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -64,6 +65,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   // Real-time notifications
   useRealtimeNotifications();
+
+  // Get unread received emails count for badge (agents/admins only)
+  const { data: unreadReceivedEmailsCount } = useUnreadReceivedEmails();
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -128,22 +132,39 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     <SheetTitle className="text-left">{t('dashboard.navigation')}</SheetTitle>
                   </SheetHeader>
                   <nav className="mt-6 space-y-2">
-                    {allNavItems.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={cn(
-                          'flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
-                          pathname === item.href
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                        )}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </Link>
-                    ))}
+                    {allNavItems.map((item) => {
+                      const badgeCount =
+                        item.href === '/dashboard/messages' && unreadReceivedEmailsCount
+                          ? unreadReceivedEmailsCount
+                          : undefined;
+
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={cn(
+                            'flex items-center justify-between space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                            pathname === item.href
+                              ? 'bg-primary text-primary-foreground'
+                              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                          )}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.title}</span>
+                          </div>
+                          {badgeCount && badgeCount > 0 && (
+                            <Badge
+                              variant="secondary"
+                              className="ml-auto h-5 w-5 flex items-center justify-center p-0 text-xs"
+                            >
+                              {badgeCount}
+                            </Badge>
+                          )}
+                        </Link>
+                      );
+                    })}
                   </nav>
                   <Separator className="my-4" />
                   <div className="space-y-3">
@@ -255,16 +276,25 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <div className="w-full max-w-7xl mx-auto">
             <nav className="p-4 space-y-2">
               {/* Role-Based Navigation */}
-              {allNavItems.map((item) => (
-                <NavLink
-                  key={item.href}
-                  href={item.href}
-                  icon={item.icon}
-                  isActive={pathname === item.href}
-                >
-                  {item.title}
-                </NavLink>
-              ))}
+              {allNavItems.map((item) => {
+                // Add badge for Messages link with unread received emails count
+                const badgeCount =
+                  item.href === '/dashboard/messages' && unreadReceivedEmailsCount
+                    ? unreadReceivedEmailsCount
+                    : undefined;
+
+                return (
+                  <NavLink
+                    key={item.href}
+                    href={item.href}
+                    icon={item.icon}
+                    isActive={pathname === item.href}
+                    badge={badgeCount}
+                  >
+                    {item.title}
+                  </NavLink>
+                );
+              })}
             </nav>
           </div>
         </aside>

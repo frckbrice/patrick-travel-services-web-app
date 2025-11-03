@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DocumentType } from '../types';
-import { Upload, Loader2 } from 'lucide-react';
+import { Upload, Loader2, AlertCircle } from 'lucide-react';
+import { logger } from '@/lib/utils/logger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -51,28 +52,50 @@ const getDocTypeLabels = (t: any): Record<DocumentType, string> => ({
 });
 
 const getServiceTypeLabel = (serviceType: string, t: any): string => {
-  const labels: Record<string, string> = {
-    STUDENT_VISA: t('cases.serviceTypes.STUDENT_VISA') || 'Student Visa',
-    WORK_PERMIT: t('cases.serviceTypes.WORK_PERMIT') || 'Work Permit',
-    FAMILY_REUNIFICATION: t('cases.serviceTypes.FAMILY_REUNIFICATION') || 'Family Reunification',
-    TOURIST_VISA: t('cases.serviceTypes.TOURIST_VISA') || 'Tourist Visa',
-    BUSINESS_VISA: t('cases.serviceTypes.BUSINESS_VISA') || 'Business Visa',
-    PERMANENT_RESIDENCY: t('cases.serviceTypes.PERMANENT_RESIDENCY') || 'Permanent Residency',
+  // Default English labels as fallback
+  const defaultLabels: Record<string, string> = {
+    STUDENT_VISA: 'Student Visa',
+    WORK_PERMIT: 'Work Permit',
+    FAMILY_REUNIFICATION: 'Family Reunification',
+    TOURIST_VISA: 'Tourist Visa',
+    BUSINESS_VISA: 'Business Visa',
+    PERMANENT_RESIDENCY: 'Permanent Residency',
   };
-  return labels[serviceType] || serviceType;
+
+  // Try translation first, fall back to default label
+  const translationKey = `cases.serviceTypes.${serviceType}`;
+  const translated = t(translationKey);
+
+  // If translation returns the key itself, use default label
+  if (translated === translationKey) {
+    return defaultLabels[serviceType] || serviceType.replace(/_/g, ' ');
+  }
+
+  return translated;
 };
 
 const getCaseStatusLabel = (status: string, t: any): string => {
-  const labels: Record<string, string> = {
-    SUBMITTED: t('cases.status.SUBMITTED') || 'Submitted',
-    UNDER_REVIEW: t('cases.status.UNDER_REVIEW') || 'Under Review',
-    DOCUMENTS_REQUIRED: t('cases.status.DOCUMENTS_REQUIRED') || 'Documents Required',
-    PROCESSING: t('cases.status.PROCESSING') || 'Processing',
-    APPROVED: t('cases.status.APPROVED') || 'Approved',
-    REJECTED: t('cases.status.REJECTED') || 'Rejected',
-    CLOSED: t('cases.status.CLOSED') || 'Closed',
+  // Default English labels as fallback
+  const defaultLabels: Record<string, string> = {
+    SUBMITTED: 'Submitted',
+    UNDER_REVIEW: 'Under Review',
+    DOCUMENTS_REQUIRED: 'Documents Required',
+    PROCESSING: 'Processing',
+    APPROVED: 'Approved',
+    REJECTED: 'Rejected',
+    CLOSED: 'Closed',
   };
-  return labels[status] || status;
+
+  // Try translation first, fall back to default label
+  const translationKey = `cases.status.${status}`;
+  const translated = t(translationKey);
+
+  // If translation returns the key itself, use default label
+  if (translated === translationKey) {
+    return defaultLabels[status] || status.replace(/_/g, ' ');
+  }
+
+  return translated;
 };
 
 export interface UploadDialogProps {
@@ -90,12 +113,33 @@ export function UploadDialog({ open, onOpenChange, onUpload, isUploading }: Uplo
   const [caseId, setCaseId] = useState<string>('');
 
   // Fetch user's cases for selection
-  const { data: casesData, isLoading: isLoadingCases } = useCases(
+  const {
+    data: casesData,
+    isLoading: isLoadingCases,
+    isError: isErrorLoadingCases,
+    refetch: refetchCases,
+  } = useCases(
     { limit: 100 },
-    { enabled: open } // Only fetch when dialog is open
+    {
+      enabled: open, // Only fetch when dialog is open
+      refetchOnMount: true, // Override default to ensure fresh data when opening
+      staleTime: 30 * 1000, // 30 seconds - shorter than default for more recent data
+    }
   );
 
   const userCases = casesData?.cases || [];
+
+  // Log for debugging
+  useEffect(() => {
+    if (open) {
+      logger.debug('[UploadDialog] Cases query state', {
+        isLoading: isLoadingCases,
+        isError: isErrorLoadingCases,
+        casesCount: userCases.length,
+        hasData: !!casesData,
+      });
+    }
+  }, [open, isLoadingCases, isErrorLoadingCases, userCases.length, casesData]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -141,7 +185,7 @@ export function UploadDialog({ open, onOpenChange, onUpload, isUploading }: Uplo
       setCaseId('');
     } catch (error) {
       toast.error(t('documents.uploadFailed'));
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
     }
   };
 
@@ -200,8 +244,23 @@ export function UploadDialog({ open, onOpenChange, onUpload, isUploading }: Uplo
             <Label htmlFor="case-select">{t('documents.selectCase') || 'Select Case'}</Label>
             {isLoadingCases ? (
               <SimpleSkeleton className="h-10 w-full rounded-md" />
+            ) : isErrorLoadingCases ? (
+              <div className="space-y-2">
+                <div className="text-sm text-red-700 dark:text-red-300 p-3 bg-red-50 dark:bg-red-950/30 rounded-md border border-red-200 dark:border-red-800">
+                  {t('documents.casesLoadError') || 'Failed to load cases. Please try again.'}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetchCases()}
+                  className="w-full"
+                >
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  {t('common.retry') || 'Retry'}
+                </Button>
+              </div>
             ) : userCases.length === 0 ? (
-              <div className="text-sm text-muted-foreground p-3 bg-muted rounded-md">
+              <div className="text-sm text-amber-700 dark:text-amber-300 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-md border border-amber-200 dark:border-amber-800">
                 {t('documents.noCasesAvailable') ||
                   'No cases available. Please create a case first.'}
               </div>
