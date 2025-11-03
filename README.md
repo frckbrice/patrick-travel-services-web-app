@@ -4,6 +4,7 @@ A production-ready immigration services management platform built with Next.js 1
 
 ## Features
 
+
 ### Authentication & Authorization
 
 - **Firebase Authentication** for secure user management
@@ -117,6 +118,7 @@ A production-ready immigration services management platform built with Next.js 1
 
 ## Why Firebase Auth?
 
+
 We chose Firebase Authentication over custom JWT for several key reasons:
 
 1. **Simplified Architecture** - No need to manage JWT secrets, token generation, or refresh logic
@@ -125,9 +127,9 @@ We chose Firebase Authentication over custom JWT for several key reasons:
 4. **Advanced Features** - Email verification, password reset, MFA, and social login out-of-the-box
 5. **Reduced Maintenance** - Firebase handles all password hashing, token management, and security
 
-See [AUTH_MIGRATION_GUIDE.md](./AUTH_MIGRATION_GUIDE.md) for detailed authentication documentation.
 
 ## Prerequisites
+
 
 - Node.js 18.x or higher
 - pnpm 8.x or higher (preferred) or yarn
@@ -135,6 +137,7 @@ See [AUTH_MIGRATION_GUIDE.md](./AUTH_MIGRATION_GUIDE.md) for detailed authentica
 - Firebase project with Realtime Database enabled (for real-time messaging)
 
 ## Getting Started
+
 
 ### 1. Clone the repository
 
@@ -211,6 +214,7 @@ pnpm dev
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Docker Setup (Alternative)
+
 
 You can run the entire application stack using Docker and Docker Compose.
 
@@ -753,7 +757,7 @@ This project is proprietary and confidential.
 
 ## 👥 Support
 
-For support and questions, please contact the development team.
+For support and questions, please contact the me at https://maebrieporfolio.vercel.app.
 
 ---
 
