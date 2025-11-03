@@ -102,7 +102,11 @@ interface ReceivedEmailsResponse {
   };
 }
 
-export function ReceivedEmailsTable() {
+interface ReceivedEmailsTableProps {
+  preselectedMessageId?: string;
+}
+
+export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTableProps = {}) {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
 
@@ -178,6 +182,17 @@ export function ReceivedEmailsTable() {
     return data.emails.filter((email) => !email.isRead).length;
   }, [data?.emails]);
 
+  // Auto-open email if preselectedMessageId is provided
+  useEffect(() => {
+    if (preselectedMessageId && emails.length > 0) {
+      const email = emails.find((e) => e.id === preselectedMessageId);
+      if (email) {
+        setSelectedEmailId(email.id);
+        setIsDialogOpen(true);
+      }
+    }
+  }, [preselectedMessageId, emails]);
+
   // Fetch single email details for dialog
   const { data: selectedEmailData, isLoading: isLoadingEmail } = useQuery<{ email: Email }>({
     queryKey: ['email-detail', selectedEmailId],
@@ -195,9 +210,10 @@ export function ReceivedEmailsTable() {
       await apiClient.put(`/api/emails/${emailId}`);
     },
     onSuccess: () => {
-      // Invalidate queries to refresh the list
+      // Invalidate queries to refresh the list and notifications
       queryClient.invalidateQueries({ queryKey: ['received-emails'] });
       queryClient.invalidateQueries({ queryKey: ['email-detail'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
 

@@ -39,7 +39,6 @@ import { AuthLoadingOverlay } from './AuthLoadingOverlay';
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const registerMutation = useRegister();
   const googleSignInMutation = useGoogleSignIn();
   const { t } = useTranslation();
@@ -66,21 +65,12 @@ export function RegisterForm() {
     setMounted(true);
   }, []);
 
-  // SESSION AWARE: Redirect to dashboard if already logged in
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      router.push('/dashboard');
-    }
-  }, [isAuthenticated, isLoading, router]);
-
   const handleGoogleSignIn = async () => {
     try {
       await googleSignInMutation.mutateAsync();
-      // Show success state before redirect
-      setShowSuccess(true);
+      // Redirect handled in mutation's onSuccess
     } catch {
       // Error is already handled by the mutation's onError callback
-      setShowSuccess(false);
     }
   };
 
@@ -92,11 +82,9 @@ export function RegisterForm() {
         consentedAt: new Date().toISOString(),
       };
       await registerMutation.mutateAsync(registrationData);
-      // Show success state before redirect
-      setShowSuccess(true);
+      // Redirect handled in mutation's onSuccess
     } catch {
       // Error is handled by mutation's onError
-      setShowSuccess(false);
     }
   };
 
@@ -125,7 +113,7 @@ export function RegisterForm() {
       {/* Enhanced Loading Overlay */}
       <AuthLoadingOverlay
         isLoading={isAuthLoading}
-        isSuccess={showSuccess}
+        isSuccess={isAuthenticated}
         steps={{
           authenticating: 'Creating your account...',
           settingUp: 'Setting up your profile...',

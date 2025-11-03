@@ -38,7 +38,6 @@ import { AuthLoadingOverlay } from './AuthLoadingOverlay';
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const loginMutation = useLogin();
   const googleSignInMutation = useGoogleSignIn();
   const { t } = useTranslation();
@@ -59,32 +58,21 @@ export function LoginForm() {
     setMounted(true);
   }, []);
 
-  // SESSION AWARE: Redirect to dashboard if already logged in
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      router.push('/dashboard');
-    }
-  }, [isAuthenticated, isLoading, router]);
-
   const handleGoogleSignIn = async () => {
     try {
       await googleSignInMutation.mutateAsync();
-      // Show success state before redirect
-      setShowSuccess(true);
+      // Redirect handled in mutation's onSuccess
     } catch {
       // Error is already handled by the mutation's onError callback
-      setShowSuccess(false);
     }
   };
 
   const onSubmit = async (data: LoginInput) => {
     try {
       await loginMutation.mutateAsync(data);
-      // Show success state before redirect
-      setShowSuccess(true);
+      // Redirect handled in mutation's onSuccess
     } catch {
       // Error is handled by mutation's onError
-      setShowSuccess(false);
     }
   };
 
@@ -113,7 +101,7 @@ export function LoginForm() {
       {/* Enhanced Loading Overlay */}
       <AuthLoadingOverlay
         isLoading={isAuthLoading}
-        isSuccess={showSuccess}
+        isSuccess={isAuthenticated}
         steps={{
           authenticating: 'Authenticating your credentials...',
           settingUp: 'Setting up your session...',

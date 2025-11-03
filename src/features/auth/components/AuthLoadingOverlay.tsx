@@ -32,10 +32,10 @@ export function AuthLoadingOverlay({ isLoading, isSuccess, steps }: AuthLoadingO
         clearTimeout(timer2);
       };
     } else if (isSuccess) {
-      setCurrentStep(3);
-      // Hide after success animation
-      const timer = setTimeout(() => setShow(false), 2000);
-      return () => clearTimeout(timer);
+      // When success, show success state and keep showing until page navigation
+      setCurrentStep(2);
+      // Don't hide automatically - let the redirect happen naturally
+      // The overlay will disappear when component unmounts on navigation
     } else {
       setShow(false);
       setCurrentStep(0);
@@ -47,7 +47,7 @@ export function AuthLoadingOverlay({ isLoading, isSuccess, steps }: AuthLoadingO
   const stepMessages = [steps.authenticating, steps.settingUp, steps.redirecting];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/30 backdrop-blur-[2px] animate-in fade-in duration-200">
       <Card className="w-full max-w-md mx-4 shadow-2xl border-2">
         <CardContent className="pt-6 pb-8 px-8">
           <div className="flex flex-col items-center space-y-6">
