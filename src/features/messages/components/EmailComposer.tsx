@@ -277,7 +277,10 @@ export function EmailComposer({
 
   const isFormValid = useMemo(
     () =>
-      subject.trim() && content.trim() && caseId && (user?.role !== 'CLIENT' ? selectedRecipient : true),
+      subject.trim() &&
+      content.trim() &&
+      caseId &&
+      (user?.role !== 'CLIENT' ? selectedRecipient : true),
     [subject, content, caseId, user?.role, selectedRecipient]
   );
 
@@ -332,10 +335,7 @@ export function EmailComposer({
         {/* Case Selector - Required for ALL users */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Label
-              htmlFor="case-select"
-              className="text-sm font-semibold flex items-center gap-2"
-            >
+            <Label htmlFor="case-select" className="text-sm font-semibold flex items-center gap-2">
               <Briefcase className="h-4 w-4 text-primary" />
               {t('email.selectCase') || 'Select Case'}
               <span className="text-red-500">*</span>
@@ -392,72 +392,69 @@ export function EmailComposer({
                   className="h-14 hover:bg-accent/50 transition-colors border-2 focus:ring-2 focus:ring-primary/20"
                 >
                   <SelectValue
-                    placeholder={
-                      t('email.chooseCasePlaceholder') || 'Choose a case to continue...'
-                    }
+                    placeholder={t('email.chooseCasePlaceholder') || 'Choose a case to continue...'}
                   >
                     {caseId &&
                       (() => {
                         const selectedCase = userCases.find((c: any) => c.id === caseId);
                         if (!selectedCase) return null;
 
-                            const statusColorMap: Record<string, string> = {
-                              SUBMITTED:
-                                'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-                              UNDER_REVIEW:
-                                'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
-                              DOCUMENTS_REQUIRED:
-                                'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
-                              PROCESSING:
-                                'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
-                              APPROVED:
-                                'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
-                              REJECTED: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
-                              CLOSED: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-                            };
-                            const statusColor =
-                              statusColorMap[selectedCase.status] ||
-                              'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+                        const statusColorMap: Record<string, string> = {
+                          SUBMITTED:
+                            'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
+                          UNDER_REVIEW:
+                            'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
+                          DOCUMENTS_REQUIRED:
+                            'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
+                          PROCESSING:
+                            'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
+                          APPROVED:
+                            'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
+                          REJECTED: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
+                          CLOSED: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+                        };
+                        const statusColor =
+                          statusColorMap[selectedCase.status] ||
+                          'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
 
-                              return (
-                                <div className="flex items-center justify-between w-full pr-2">
-                                  <div className="flex flex-col gap-1">
-                                    <span className="font-semibold text-sm">
-                                      {selectedCase.referenceNumber}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                      <Briefcase className="h-3 w-3" />
-                                      {getServiceTypeLabel(selectedCase.serviceType)}
-                                    </span>
-                                  </div>
-                                  <span
-                                    className={`text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${statusColor}`}
-                                  >
-                                    {getCaseStatusLabel(selectedCase.status)}
-                                  </span>
-                                </div>
-                              );
-                            })()}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[300px]">
-                        {userCases.map((caseItem: any) => {
-                          const statusColorMap: Record<string, string> = {
-                            SUBMITTED: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-                            UNDER_REVIEW:
-                              'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
-                            DOCUMENTS_REQUIRED:
-                              'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
-                            PROCESSING:
-                              'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
-                            APPROVED:
-                              'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
-                            REJECTED: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
-                            CLOSED: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-                          };
-                          const statusColor =
-                            statusColorMap[caseItem.status] ||
-                            'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+                        return (
+                          <div className="flex items-center justify-between w-full pr-2">
+                            <div className="flex flex-col gap-1">
+                              <span className="font-semibold text-sm">
+                                {selectedCase.referenceNumber}
+                              </span>
+                              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Briefcase className="h-3 w-3" />
+                                {getServiceTypeLabel(selectedCase.serviceType)}
+                              </span>
+                            </div>
+                            <span
+                              className={`text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${statusColor}`}
+                            >
+                              {getCaseStatusLabel(selectedCase.status)}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {userCases.map((caseItem: any) => {
+                    const statusColorMap: Record<string, string> = {
+                      SUBMITTED: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
+                      UNDER_REVIEW:
+                        'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
+                      DOCUMENTS_REQUIRED:
+                        'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
+                      PROCESSING:
+                        'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
+                      APPROVED: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
+                      REJECTED: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
+                      CLOSED: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+                    };
+                    const statusColor =
+                      statusColorMap[caseItem.status] ||
+                      'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
 
                     return (
                       <SelectItem
@@ -484,8 +481,8 @@ export function EmailComposer({
                       </SelectItem>
                     );
                   })}
-                      </SelectContent>
-                    </Select>
+                </SelectContent>
+              </Select>
 
               <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800/50">
                 <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
