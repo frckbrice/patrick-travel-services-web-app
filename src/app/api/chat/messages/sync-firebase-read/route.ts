@@ -65,8 +65,23 @@ const putHandler = asyncHandler(async (request: NextRequest) => {
     if (!adminDatabase) {
       throw new ApiError('Firebase Admin not initialized', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
+    // Get chat room ID - use new format (clientId-agentId) with fallback to old format (caseId)
+    const { findChatRoomIdForCase } = await import('@/lib/firebase/chat.service.server');
+    const chatRoomId = await findChatRoomIdForCase(body.caseId);
+
+    if (!chatRoomId) {
+      logger.warn('No chat room found for case', { caseId: body.caseId });
+      return successResponse({ count: 0, messageIds: [] }, 'No chat room found for this case');
+    }
+
+    logger.debug('Using chat room ID for sync', {
+      caseId: body.caseId,
+      chatRoomId: chatRoomId.substring(0, 12) + '...',
+    });
+
     // Get messages from Firebase (Admin SDK)
-    const snapshot = await adminDatabase.ref(`chats/${body.caseId}/messages`).get();
+    const snapshot = await adminDatabase.ref(`chats/${chatRoomId}/messages`).get();
 
     if (!snapshot.exists()) {
       return successResponse({ count: 0, messageIds: [] }, 'No messages found in Firebase');

@@ -47,7 +47,7 @@ const PII_FIELDS = [
   'sender_name',
   'recipientName',
   'recipient_name',
-  'message',
+  // Note: 'message' removed - often contains user-facing error messages, not PII
   'content',
   'address',
   'zipCode',

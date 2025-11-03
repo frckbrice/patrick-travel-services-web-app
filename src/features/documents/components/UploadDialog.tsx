@@ -127,7 +127,10 @@ export function UploadDialog({ open, onOpenChange, onUpload, isUploading }: Uplo
     }
   );
 
-  const userCases = casesData?.cases || [];
+  // Filter out approved cases - approved cases should not be available for document uploads
+  const userCases = (casesData?.cases || []).filter(
+    (caseItem: any) => caseItem.status !== 'APPROVED'
+  );
 
   // Log for debugging
   useEffect(() => {
@@ -136,6 +139,7 @@ export function UploadDialog({ open, onOpenChange, onUpload, isUploading }: Uplo
         isLoading: isLoadingCases,
         isError: isErrorLoadingCases,
         casesCount: userCases.length,
+        totalCases: casesData?.cases?.length || 0,
         hasData: !!casesData,
       });
     }

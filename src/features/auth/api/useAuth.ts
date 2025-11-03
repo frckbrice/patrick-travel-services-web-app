@@ -27,6 +27,7 @@ interface ApiError {
     data?: {
       error?: string;
       message?: string;
+      errors?: Record<string, string[]>;
     };
   };
   message?: string;
@@ -45,14 +46,8 @@ export const useRegister = () => {
 
       // SECURITY: Send password to backend - server creates Firebase user
       // This prevents client-created users and ensures validation happens first
-      const response = await apiClient.post('/api/auth/register', {
-        email: data.email,
-        password: data.password,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        phone: data.phone,
-        inviteCode: data.inviteCode,
-      });
+      // Send all registration data including GDPR consent fields
+      const response = await apiClient.post('/api/auth/register', data);
 
       const { user, customToken } = response.data.data;
 
@@ -76,23 +71,43 @@ export const useRegister = () => {
       });
       toast.success('Registration successful! Welcome to Patrick Travel Services.');
 
-      // Delay redirect to show success state
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 1500);
+      // Redirect immediately - overlay will handle the visual feedback
+      router.push('/dashboard');
     },
     onError: (error: ApiError) => {
       // Handle errors from backend
       let message = 'Registration failed. Please try again.';
 
-      // Backend validation errors
-      if (error.response?.data?.error) {
+      // Backend validation errors - show field-specific errors if available
+      if (error.response?.data?.errors) {
+        const errors = error.response.data.errors;
+        const errorMessages = Object.entries(errors).map(([field, messages]) => {
+          const fieldLabel =
+            field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1');
+          const msg = Array.isArray(messages) ? messages[0] : String(messages);
+          return `${fieldLabel}: ${msg}`;
+        });
+        // Show first error, or combine all if there are multiple
+        if (errorMessages.length === 1) {
+          message = errorMessages[0];
+        } else if (errorMessages.length > 1) {
+          message = `Validation errors: ${errorMessages.join('; ')}`;
+        } else {
+          message = error.response.data.error || message;
+        }
+      } else if (error.response?.data?.error) {
         message = error.response.data.error;
       } else if (error.response?.data?.message) {
         message = error.response.data.message;
       } else if (error.message) {
         message = error.message;
       }
+
+      // Log full error for debugging
+      logger.error('Registration error', {
+        error: error.response?.data,
+        message,
+      });
 
       toast.error(message);
     },
@@ -148,10 +163,8 @@ export const useLogin = () => {
       });
       toast.success(`Welcome back, ${data.user.firstName}!`);
 
-      // Delay redirect to show success state
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 1500);
+      // Redirect immediately - overlay will handle the visual feedback
+      router.push('/dashboard');
     },
     onError: (error: ApiError) => {
       // Handle Firebase errors
@@ -325,10 +338,8 @@ export const useGoogleSignIn = () => {
         toast.success(`Welcome back, ${data.user.firstName}!`);
       }
 
-      // Delay redirect to show success state
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 1500);
+      // Redirect immediately - overlay will handle the visual feedback
+      router.push('/dashboard');
     },
     onError: (error: ApiError) => {
       let message = 'Google sign-in failed. Please try again.';

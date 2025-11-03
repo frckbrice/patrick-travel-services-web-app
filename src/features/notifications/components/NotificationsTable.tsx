@@ -27,6 +27,7 @@ import {
   ArrowUp,
   ArrowDown,
   Search,
+  Mail,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -84,6 +85,10 @@ const notifConfig: Record<string, { icon: any; className: string }> = {
   NEW_MESSAGE: {
     icon: MessageSquare,
     className: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
+  },
+  NEW_EMAIL: {
+    icon: Mail,
+    className: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400',
   },
   DOCUMENT_UPLOADED: {
     icon: FileText,
@@ -430,6 +435,7 @@ export function NotificationsTable({ onMarkAsRead, onMarkAllAsRead }: Notificati
                   {t('notifications.filters.caseAssigned')}
                 </SelectItem>
                 <SelectItem value="NEW_MESSAGE">{t('notifications.filters.messages')}</SelectItem>
+                <SelectItem value="NEW_EMAIL">Emails</SelectItem>
                 <SelectItem value="DOCUMENT_UPLOADED">
                   {t('notifications.filters.documentUploaded')}
                 </SelectItem>

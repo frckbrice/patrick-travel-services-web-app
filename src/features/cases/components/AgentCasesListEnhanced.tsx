@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { useAuthStore } from '@/features/auth/store';
 import { useCases, CasesFilters } from '../api';
 import { useUsers } from '@/features/users/api/queries';
@@ -242,16 +243,37 @@ export function AgentCasesListEnhanced() {
     setCurrentPage(1);
   };
 
+  // Get selectable cases (exclude approved cases from bulk operations for non-admin users)
+  // ADMIN can select approved cases
+  const selectableCases =
+    user?.role === 'ADMIN'
+      ? cases // ADMIN can select all cases including approved
+      : cases.filter((c) => c.status !== 'APPROVED'); // Non-admin cannot select approved cases
+  const selectableCaseIds = new Set(selectableCases.map((c) => c.id));
+
   // Bulk selection handlers
   const handleSelectAll = () => {
-    if (selectedCases.size === cases.length) {
-      setSelectedCases(new Set());
+    const allSelectableSelected = selectableCases.every((c) => selectedCases.has(c.id));
+    if (allSelectableSelected) {
+      // Deselect all selectable cases
+      const newSelection = new Set(selectedCases);
+      selectableCaseIds.forEach((id) => newSelection.delete(id));
+      setSelectedCases(newSelection);
     } else {
-      setSelectedCases(new Set(cases.map((c) => c.id)));
+      // Select all selectable cases
+      const newSelection = new Set(selectedCases);
+      selectableCaseIds.forEach((id) => newSelection.add(id));
+      setSelectedCases(newSelection);
     }
   };
 
   const handleSelectCase = (caseId: string) => {
+    // Prevent selecting approved cases for non-admin users
+    const caseItem = cases.find((c) => c.id === caseId);
+    if (caseItem?.status === 'APPROVED' && user?.role !== 'ADMIN') {
+      return; // Do not allow non-admin to select approved cases
+    }
+
     const newSelection = new Set(selectedCases);
     if (newSelection.has(caseId)) {
       newSelection.delete(caseId);
@@ -263,9 +285,27 @@ export function AgentCasesListEnhanced() {
 
   const handleBulkAssign = async (agentId: string) => {
     if (selectedCases.size === 0) return;
+    // Filter out approved cases for non-admin users before bulk operation
+    const validCaseIds =
+      user?.role === 'ADMIN'
+        ? Array.from(selectedCases) // ADMIN can assign approved cases
+        : Array.from(selectedCases).filter((id) => {
+            const caseItem = cases.find((c) => c.id === id);
+            return caseItem && caseItem.status !== 'APPROVED';
+          });
+
+    if (validCaseIds.length === 0) {
+      const errorMessage =
+        user?.role === 'ADMIN'
+          ? 'No valid cases to assign.'
+          : 'No valid cases to assign. Approved cases cannot be assigned.';
+      toast.error(errorMessage);
+      return;
+    }
+
     await bulkOperation.mutateAsync({
       operation: 'ASSIGN',
-      caseIds: Array.from(selectedCases),
+      caseIds: validCaseIds,
       data: { assignedAgentId: agentId },
     });
     setSelectedCases(new Set());
@@ -274,9 +314,27 @@ export function AgentCasesListEnhanced() {
 
   const handleBulkStatusUpdate = async (status: string) => {
     if (selectedCases.size === 0) return;
+    // Filter out approved cases for non-admin users before bulk operation
+    const validCaseIds =
+      user?.role === 'ADMIN'
+        ? Array.from(selectedCases) // ADMIN can update approved cases
+        : Array.from(selectedCases).filter((id) => {
+            const caseItem = cases.find((c) => c.id === id);
+            return caseItem && caseItem.status !== 'APPROVED';
+          });
+
+    if (validCaseIds.length === 0) {
+      const errorMessage =
+        user?.role === 'ADMIN'
+          ? 'No valid cases to update.'
+          : 'No valid cases to update. Approved cases cannot be updated.';
+      toast.error(errorMessage);
+      return;
+    }
+
     await bulkOperation.mutateAsync({
       operation: 'UPDATE_STATUS',
-      caseIds: Array.from(selectedCases),
+      caseIds: validCaseIds,
       data: { status },
     });
     setSelectedCases(new Set());
@@ -285,9 +343,27 @@ export function AgentCasesListEnhanced() {
 
   const handleBulkUnassign = async () => {
     if (selectedCases.size === 0) return;
+    // Filter out approved cases for non-admin users before bulk operation
+    const validCaseIds =
+      user?.role === 'ADMIN'
+        ? Array.from(selectedCases) // ADMIN can unassign approved cases
+        : Array.from(selectedCases).filter((id) => {
+            const caseItem = cases.find((c) => c.id === id);
+            return caseItem && caseItem.status !== 'APPROVED';
+          });
+
+    if (validCaseIds.length === 0) {
+      const errorMessage =
+        user?.role === 'ADMIN'
+          ? 'No valid cases to unassign.'
+          : 'No valid cases to unassign. Approved cases cannot be unassigned.';
+      toast.error(errorMessage);
+      return;
+    }
+
     await bulkOperation.mutateAsync({
       operation: 'UNASSIGN',
-      caseIds: Array.from(selectedCases),
+      caseIds: validCaseIds,
     });
     setSelectedCases(new Set());
     refetch();
@@ -631,8 +707,12 @@ export function AgentCasesListEnhanced() {
                         {user.role === 'ADMIN' && (
                           <th className="px-3 py-3 text-left">
                             <Checkbox
-                              checked={selectedCases.size === cases.length && cases.length > 0}
+                              checked={
+                                selectableCases.length > 0 &&
+                                selectableCases.every((c) => selectedCases.has(c.id))
+                              }
                               onCheckedChange={handleSelectAll}
+                              disabled={selectableCases.length === 0}
                             />
                           </th>
                         )}
@@ -667,6 +747,12 @@ export function AgentCasesListEnhanced() {
                               <Checkbox
                                 checked={selectedCases.has(c.id)}
                                 onCheckedChange={() => handleSelectCase(c.id)}
+                                disabled={c.status === 'APPROVED' && user?.role !== 'ADMIN'}
+                                title={
+                                  c.status === 'APPROVED' && user?.role !== 'ADMIN'
+                                    ? 'Approved cases cannot be selected for bulk operations (Admin only)'
+                                    : undefined
+                                }
                               />
                             </td>
                           )}

@@ -85,6 +85,14 @@ const handler = asyncHandler(
       throw new ApiError('Cannot assign closed cases', HttpStatus.BAD_REQUEST);
     }
 
+    // Only ADMIN can assign approved cases
+    if (existingCase.status === 'APPROVED' && req.user.role !== 'ADMIN') {
+      throw new ApiError(
+        'Cannot assign approved cases. Only administrators can reassign approved cases.',
+        HttpStatus.BAD_REQUEST
+      );
+    }
+
     // Check for duplicate assignment
     if (existingCase.assignedAgentId) {
       if (existingCase.assignedAgentId === agentId) {

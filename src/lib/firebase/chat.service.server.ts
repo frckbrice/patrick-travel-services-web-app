@@ -3,10 +3,94 @@
 
 import { adminDatabase } from './firebase-admin';
 import { logger } from '@/lib/utils/logger';
+import { prisma } from '@/lib/db/prisma';
 
 function getChatRoomId(clientId: string, agentId: string): string {
   const sorted = [clientId, agentId].sort();
   return `${sorted[0]}-${sorted[1]}`;
+}
+
+/**
+ * Convert caseId to chatRoomId by looking up the case and generating
+ * the clientId-agentId based room ID. This is needed because:
+ * - Old system used caseId directly as chat room ID
+ * - New system uses clientId-agentId format
+ *
+ * @param caseId - PostgreSQL case ID
+ * @returns The chat room ID in format "clientId-agentId" (Firebase UIDs), or null if case not found or not assigned
+ */
+export async function getChatRoomIdFromCaseId(caseId: string): Promise<string | null> {
+  try {
+    // Get case with client and agent info
+    const caseData = await prisma.case.findUnique({
+      where: { id: caseId },
+      select: {
+        clientId: true,
+        assignedAgentId: true,
+        client: {
+          select: { firebaseId: true },
+        },
+        assignedAgent: {
+          select: { firebaseId: true },
+        },
+      },
+    });
+
+    if (!caseData || !caseData.assignedAgentId) {
+      logger.warn('Case not found or not assigned to agent', { caseId });
+      return null;
+    }
+
+    const clientFirebaseId = caseData.client.firebaseId;
+    const agentFirebaseId = caseData.assignedAgent?.firebaseId;
+
+    if (!clientFirebaseId || !agentFirebaseId) {
+      logger.warn('Missing Firebase UIDs for case participants', {
+        caseId,
+        hasClientFirebaseId: !!clientFirebaseId,
+        hasAgentFirebaseId: !!agentFirebaseId,
+      });
+      return null;
+    }
+
+    const chatRoomId = getChatRoomId(clientFirebaseId, agentFirebaseId);
+    return chatRoomId;
+  } catch (error) {
+    logger.error('Failed to get chat room ID from case ID', error, { caseId });
+    return null;
+  }
+}
+
+/**
+ * Find chat room ID for a case, checking both new format (clientId-agentId) and old format (caseId)
+ * This provides backward compatibility during migration period
+ *
+ * @param caseId - PostgreSQL case ID
+ * @returns The chat room ID, or null if not found
+ */
+export async function findChatRoomIdForCase(caseId: string): Promise<string | null> {
+  if (!adminDatabase) {
+    logger.error('Firebase Admin not initialized');
+    return null;
+  }
+
+  // First try: Use new format (clientId-agentId)
+  const newFormatRoomId = await getChatRoomIdFromCaseId(caseId);
+  if (newFormatRoomId) {
+    const snapshot = await adminDatabase.ref(`chats/${newFormatRoomId}`).get();
+    if (snapshot.exists()) {
+      return newFormatRoomId;
+    }
+  }
+
+  // Fallback: Check if old format (caseId) exists
+  const oldFormatSnapshot = await adminDatabase.ref(`chats/${caseId}`).get();
+  if (oldFormatSnapshot.exists()) {
+    logger.info('Found old format chat room for case', { caseId });
+    return caseId;
+  }
+
+  return null;
 }
 
 export async function initializeFirebaseChat(

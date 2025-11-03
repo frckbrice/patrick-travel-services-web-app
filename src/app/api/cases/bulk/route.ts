@@ -62,8 +62,13 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
       }
 
       // Fetch full case details for notifications (efficient: single query with all relations)
+      // Filter out approved cases for non-admin users (ADMIN can assign approved cases)
       const casesToAssign = await prisma.case.findMany({
-        where: { id: { in: caseIds } },
+        where: {
+          id: { in: caseIds },
+          // Only exclude approved cases if user is not ADMIN
+          ...(req.user.role !== 'ADMIN' ? { status: { not: 'APPROVED' } } : {}),
+        },
         include: {
           client: {
             select: {
@@ -76,19 +81,37 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
         },
       });
 
-      // Update all cases
+      const assignableCaseIds = casesToAssign.map((c) => c.id);
+
+      if (assignableCaseIds.length === 0) {
+        const errorMessage =
+          req.user.role === 'ADMIN'
+            ? 'No valid cases to assign.'
+            : 'No valid cases to assign. Approved cases cannot be assigned.';
+        throw new ApiError(errorMessage, HttpStatus.BAD_REQUEST);
+      }
+
+      if (req.user.role !== 'ADMIN' && assignableCaseIds.length < caseIds.length) {
+        logger.warn('Some cases were excluded from bulk assignment (approved cases)', {
+          requested: caseIds.length,
+          valid: assignableCaseIds.length,
+          excluded: caseIds.length - assignableCaseIds.length,
+        });
+      }
+
+      // Update only valid cases (excluding approved)
       result = await prisma.case.updateMany({
         where: {
-          id: { in: caseIds },
+          id: { in: assignableCaseIds },
         },
         data: {
           assignedAgentId: data.assignedAgentId,
         },
       });
 
-      // Create activity logs for bulk assignment
+      // Create activity logs for bulk assignment (only for valid cases)
       await prisma.activityLog.createMany({
-        data: caseIds.map((caseId: string) => ({
+        data: assignableCaseIds.map((caseId: string) => ({
           userId: req.user!.userId,
           action: 'CASE_ASSIGNED',
           description: `Case assigned to agent via bulk operation`,
@@ -221,18 +244,46 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
         throw new ApiError('Invalid status value', HttpStatus.BAD_REQUEST);
       }
 
-      result = await prisma.case.updateMany({
+      // Filter out approved cases for non-admin users (ADMIN can update approved cases)
+      const casesToUpdate = await prisma.case.findMany({
         where: {
           id: { in: caseIds },
+          // Only exclude approved cases if user is not ADMIN
+          ...(req.user.role !== 'ADMIN' ? { status: { not: 'APPROVED' } } : {}),
+        },
+        select: { id: true },
+      });
+
+      const validCaseIds = casesToUpdate.map((c) => c.id);
+
+      if (validCaseIds.length === 0) {
+        const errorMessage =
+          req.user.role === 'ADMIN'
+            ? 'No valid cases to update.'
+            : 'No valid cases to update. Approved cases cannot have their status changed.';
+        throw new ApiError(errorMessage, HttpStatus.BAD_REQUEST);
+      }
+
+      if (req.user.role !== 'ADMIN' && validCaseIds.length < caseIds.length) {
+        logger.warn('Some cases were excluded from bulk status update (approved cases)', {
+          requested: caseIds.length,
+          valid: validCaseIds.length,
+          excluded: caseIds.length - validCaseIds.length,
+        });
+      }
+
+      result = await prisma.case.updateMany({
+        where: {
+          id: { in: validCaseIds },
         },
         data: {
           status: data.status,
         },
       });
 
-      // Create activity logs for bulk status update
+      // Create activity logs for bulk status update (only for valid cases)
       await prisma.activityLog.createMany({
-        data: caseIds.map((caseId: string) => ({
+        data: validCaseIds.map((caseId: string) => ({
           userId: req.user!.userId,
           action: 'CASE_STATUS_UPDATED',
           description: `Case status updated to ${data.status} via bulk operation`,
@@ -293,10 +344,13 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
     case 'UNASSIGN':
       // Bulk unassign cases (remove agent assignment)
       // Fetch cases with current assignments for notifications
+      // Filter out approved cases for non-admin users (ADMIN can unassign approved cases)
       const casesToUnassign = await prisma.case.findMany({
         where: {
           id: { in: caseIds },
           assignedAgentId: { not: null }, // Only unassign cases that have agents
+          // Only exclude approved cases if user is not ADMIN
+          ...(req.user.role !== 'ADMIN' ? { status: { not: 'APPROVED' } } : {}),
         },
         include: {
           assignedAgent: {
@@ -317,7 +371,19 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
       });
 
       if (casesToUnassign.length === 0) {
-        return successResponse({ updatedCount: 0 }, 'No assigned cases found to unassign');
+        const errorMessage =
+          req.user.role === 'ADMIN'
+            ? 'No assigned cases found to unassign.'
+            : 'No assigned cases found to unassign. Approved cases cannot be unassigned.';
+        throw new ApiError(errorMessage, HttpStatus.BAD_REQUEST);
+      }
+
+      if (req.user.role !== 'ADMIN' && casesToUnassign.length < caseIds.length) {
+        logger.warn('Some cases were excluded from bulk unassign (approved cases)', {
+          requested: caseIds.length,
+          valid: casesToUnassign.length,
+          excluded: caseIds.length - casesToUnassign.length,
+        });
       }
 
       // Group cases by agent for efficient notifications
