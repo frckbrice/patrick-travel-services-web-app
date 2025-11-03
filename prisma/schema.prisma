@@ -7,8 +7,175 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id                   String             @id @default(uuid())
+  email                String             @unique
+  password             String
+  firstName            String
+  lastName             String
+  phone                String?
+  profilePicture       String?
+  role                 Role               @default(CLIENT)
+  isActive             Boolean            @default(true)
+  isVerified           Boolean            @default(false)
+  verificationToken    String?
+  resetToken           String?
+  resetTokenExpiry     DateTime?
+  lastLogin            DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  acceptedPrivacy      Boolean?
+  acceptedTerms        Boolean?
+  consentedAt          DateTime?
+  dataExportRequests   Int                @default(0)
+  deletionReason       String?
+  deletionScheduledFor DateTime?
+  lastDataExport       DateTime?
+  privacyAcceptedAt    DateTime?
+  termsAcceptedAt      DateTime?
+  firebaseId           String?            @unique
+  activityLogs         ActivityLog[]
+  assignedCases        Case[]             @relation("AgentCases")
+  cases                Case[]             @relation("ClientCases")
+  destinationsCreated  Destination[]      @relation("DestinationsCreated")
+  documents            Document[]
+  templatesCreated     DocumentTemplate[] @relation("TemplatesCreated")
+  inviteCodesCreated   InviteCode[]       @relation("CreatedInviteCodes")
+  inviteCodesLastUsed  InviteCode[]       @relation("LastUsedInviteCodes")
+  inviteUsages         InviteUsage[]      @relation("UserInviteUsages")
+  receivedMessages     Message[]          @relation("ReceivedMessages")
+  sentMessages         Message[]          @relation("SentMessages")
+  notifications        Notification[]
+  transferredFrom      TransferHistory[]  @relation("TransferFrom")
+  transferredTo        TransferHistory[]  @relation("TransferTo")
+  transfersInitiated   TransferHistory[]  @relation("TransferInitiator")
+
+  @@index([email])
+  @@index([role])
+}
+
+model Case {
+  id                  String            @id @default(uuid())
+  referenceNumber     String            @unique
+  clientId            String
+  assignedAgentId     String?
+  serviceType         ServiceType
+  status              CaseStatus        @default(SUBMITTED)
+  priority            Priority          @default(NORMAL)
+  submissionDate      DateTime          @default(now())
+  lastUpdated         DateTime          @updatedAt
+  internalNotes       String?
+  estimatedCompletion DateTime?
+  destinationId       String?
+  assignedAgent       User?             @relation("AgentCases", fields: [assignedAgentId], references: [id])
+  client              User              @relation("ClientCases", fields: [clientId], references: [id])
+  destination         Destination?      @relation(fields: [destinationId], references: [id])
+  formData            CaseFormData?
+  documents           Document[]
+  messages            Message[]
+  notifications       Notification[]
+  statusHistory       StatusHistory[]
+  transferHistory     TransferHistory[]
+
+  @@index([clientId])
+  @@index([assignedAgentId])
+  @@index([destinationId])
+  @@index([status])
+  @@index([serviceType])
+  @@index([referenceNumber])
+}
+
+model CaseFormData {
+  id        String   @id @default(uuid())
+  caseId    String   @unique
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
+
+model StatusHistory {
+  id        String     @id @default(uuid())
+  caseId    String
+  status    CaseStatus
+  changedBy String
+  notes     String?
+  timestamp DateTime   @default(now())
+  case      Case       @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([timestamp])
+}
+
+model Document {
+  id              String         @id @default(uuid())
+  caseId          String
+  uploadedById    String
+  fileName        String
+  originalName    String
+  filePath        String
+  fileSize        Int
+  mimeType        String
+  documentType    DocumentType
+  status          DocumentStatus @default(PENDING)
+  uploadDate      DateTime       @default(now())
+  verifiedBy      String?
+  verifiedAt      DateTime?
+  rejectionReason String?
+  case            Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  uploadedBy      User           @relation(fields: [uploadedById], references: [id])
+
+  @@index([caseId])
+  @@index([status])
+}
+
+model Message {
+  id            String      @id @default(uuid())
+  senderId      String
+  recipientId   String
+  caseId        String?
+  subject       String?
+  content       String
+  isRead        Boolean     @default(false)
+  readAt        DateTime?
+  sentAt        DateTime    @default(now())
+  attachments   Json?
+  emailThreadId String?
+  messageType   MessageType @default(CHAT)
+  replyToId     String?
+  case          Case?       @relation(fields: [caseId], references: [id])
+  recipient     User        @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  sender        User        @relation("SentMessages", fields: [senderId], references: [id])
+
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([caseId])
+  @@index([isRead])
+  @@index([messageType])
+  @@index([emailThreadId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  caseId    String?
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  actionUrl String?
+  case      Case?            @relation(fields: [caseId], references: [id])
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
 model ActivityLog {
-  id          String   @id
+  id          String   @id @default(uuid())
   userId      String
   action      String
   description String
@@ -16,55 +183,129 @@ model ActivityLog {
   userAgent   String?
   metadata    Json?
   timestamp   DateTime @default(now())
-  User        User     @relation(fields: [userId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
 
-  @@index([action])
-  @@index([timestamp])
   @@index([userId])
+  @@index([timestamp])
+  @@index([action])
 }
 
-model Case {
-  id                              String            @id
-  referenceNumber                 String            @unique
-  clientId                        String
-  assignedAgentId                 String?
-  serviceType                     ServiceType
-  status                          CaseStatus        @default(SUBMITTED)
-  priority                        Priority          @default(NORMAL)
-  submissionDate                  DateTime          @default(now())
-  lastUpdated                     DateTime
-  internalNotes                   String?
-  estimatedCompletion             DateTime?
-  destinationId                   String?
-  User_Case_assignedAgentIdToUser User?             @relation("Case_assignedAgentIdToUser", fields: [assignedAgentId], references: [id])
-  User_Case_clientIdToUser        User              @relation("Case_clientIdToUser", fields: [clientId], references: [id])
-  Destination                     Destination?      @relation(fields: [destinationId], references: [id])
-  CaseFormData                    CaseFormData?
-  Document                        Document[]
-  Message                         Message[]
-  Notification                    Notification[]
-  StatusHistory                   StatusHistory[]
-  TransferHistory                 TransferHistory[]
-
-  @@index([assignedAgentId])
-  @@index([clientId])
-  @@index([destinationId])
-  @@index([referenceNumber])
-  @@index([serviceType])
-  @@index([status])
-}
-
-model CaseFormData {
-  id        String   @id
-  caseId    String   @unique
-  data      Json
+model FAQ {
+  id        String   @id @default(uuid())
+  question  String
+  answer    String
+  category  String
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
-  updatedAt DateTime
-  Case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([isActive])
+}
+
+model DocumentTemplate {
+  id            String       @id @default(uuid())
+  name          String
+  description   String
+  fileSize      Int
+  category      String
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  createdById   String?
+  downloadCount Int          @default(0)
+  fileName      String
+  fileUrl       String
+  isRequired    Boolean      @default(false)
+  mimeType      String
+  serviceType   ServiceType?
+  version       String?
+  createdBy     User?        @relation("TemplatesCreated", fields: [createdById], references: [id])
+
+  @@index([serviceType])
+  @@index([category])
+  @@index([isActive])
+  @@index([isRequired])
+}
+
+model SystemSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  category  String
+  updatedAt DateTime @updatedAt
+  updatedBy String
+
+  @@index([key])
+  @@index([category])
+}
+
+model InviteCode {
+  id             String        @id @default(uuid())
+  code           String        @unique
+  role           Role
+  createdById    String
+  lastUsedById   String?
+  maxUses        Int           @default(1)
+  usedCount      Int           @default(0)
+  expiresAt      DateTime
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  lastUsedAt     DateTime?
+  purpose        String?
+  createdByUser  User          @relation("CreatedInviteCodes", fields: [createdById], references: [id])
+  lastUsedByUser User?         @relation("LastUsedInviteCodes", fields: [lastUsedById], references: [id])
+  usages         InviteUsage[]
+
+  @@index([code])
+  @@index([isActive])
+  @@index([expiresAt])
+  @@index([createdById])
+  @@index([lastUsedById])
+  @@index([purpose])
+}
+
+model InviteUsage {
+  id           String     @id @default(uuid())
+  inviteCodeId String
+  userId       String?
+  usedAt       DateTime   @default(now())
+  inviteCode   InviteCode @relation(fields: [inviteCodeId], references: [id], onDelete: Cascade)
+  user         User?      @relation("UserInviteUsages", fields: [userId], references: [id])
+
+  @@index([inviteCodeId])
+  @@index([userId])
+  @@index([usedAt])
+}
+
+model TransferHistory {
+  id                String         @id @default(uuid())
+  caseId            String
+  fromAgentId       String?
+  fromAgentName     String?
+  toAgentId         String
+  toAgentName       String
+  transferredBy     String?
+  reason            TransferReason
+  handoverNotes     String?
+  transferredAt     DateTime       @default(now())
+  notifyClient      Boolean        @default(true)
+  notifyAgent       Boolean        @default(true)
+  case              Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  fromAgent         User?          @relation("TransferFrom", fields: [fromAgentId], references: [id])
+  toAgent           User           @relation("TransferTo", fields: [toAgentId], references: [id], onDelete: Cascade)
+  transferredByUser User?          @relation("TransferInitiator", fields: [transferredBy], references: [id])
+
+  @@index([caseId])
+  @@index([fromAgentId])
+  @@index([toAgentId])
+  @@index([transferredBy])
+  @@index([transferredAt])
 }
 
 model ChatMessage {
-  id             String    @id
+  id             String    @id @default(uuid())
   firebaseId     String    @unique
   senderId       String
   senderName     String
@@ -81,48 +322,48 @@ model ChatMessage {
   createdAt      DateTime  @default(now())
   attachments    Json?
 
+  @@index([senderId])
+  @@index([recipientId])
   @@index([caseId])
+  @@index([sentAt])
   @@index([firebaseId])
   @@index([isRead])
-  @@index([recipientId])
-  @@index([senderId])
   @@index([senderId, recipientId, sentAt])
-  @@index([sentAt])
 }
 
 model ChatRoom {
-  id             String    @id
+  id             String    @id @default(uuid())
   firebaseId     String    @unique
   participantIds String[]
   caseId         String?
   lastMessage    String?
   lastMessageAt  DateTime?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime  @updatedAt
 
-  @@index([caseId])
   @@index([firebaseId])
+  @@index([caseId])
   @@index([lastMessageAt])
 }
 
 model Contact {
-  id        String        @id
+  id        String        @id @default(uuid())
   name      String
   email     String
   phone     String?
   message   String
   status    ContactStatus @default(NEW)
   createdAt DateTime      @default(now())
-  updatedAt DateTime
+  updatedAt DateTime      @updatedAt
   subject   String?
 
-  @@index([createdAt])
   @@index([email])
   @@index([status])
+  @@index([createdAt])
 }
 
 model Destination {
-  id           String   @id
+  id           String   @id @default(uuid())
   name         String   @unique
   code         String   @unique
   flagEmoji    String
@@ -130,255 +371,29 @@ model Destination {
   isActive     Boolean  @default(true)
   displayOrder Int      @default(0)
   createdAt    DateTime @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime @updatedAt
   createdById  String?
-  Case         Case[]
-  User         User?    @relation(fields: [createdById], references: [id])
+  cases        Case[]
+  createdBy    User?    @relation("DestinationsCreated", fields: [createdById], references: [id])
 
-  @@index([code])
+  @@index([isActive])
   @@index([displayOrder])
-  @@index([isActive])
-}
-
-model Document {
-  id              String         @id
-  caseId          String
-  uploadedById    String
-  fileName        String
-  originalName    String
-  filePath        String
-  fileSize        Int
-  mimeType        String
-  documentType    DocumentType
-  status          DocumentStatus @default(PENDING)
-  uploadDate      DateTime       @default(now())
-  verifiedBy      String?
-  verifiedAt      DateTime?
-  rejectionReason String?
-  Case            Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  User            User           @relation(fields: [uploadedById], references: [id])
-
-  @@index([caseId])
-  @@index([status])
-}
-
-model DocumentTemplate {
-  id            String       @id
-  name          String
-  description   String
-  fileSize      Int
-  category      String
-  isActive      Boolean      @default(true)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime
-  createdById   String?
-  downloadCount Int          @default(0)
-  fileName      String
-  fileUrl       String
-  isRequired    Boolean      @default(false)
-  mimeType      String
-  serviceType   ServiceType?
-  version       String?
-  User          User?        @relation(fields: [createdById], references: [id])
-
-  @@index([category])
-  @@index([isActive])
-  @@index([isRequired])
-  @@index([serviceType])
-}
-
-model FAQ {
-  id        String   @id
-  question  String
-  answer    String
-  category  String
-  order     Int      @default(0)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime
-
-  @@index([category])
-  @@index([isActive])
-}
-
-model InviteCode {
-  id                                 String        @id
-  code                               String        @unique
-  role                               Role
-  maxUses                            Int           @default(1)
-  usedCount                          Int           @default(0)
-  expiresAt                          DateTime
-  isActive                           Boolean       @default(true)
-  createdAt                          DateTime      @default(now())
-  lastUsedAt                         DateTime?
-  createdById                        String
-  lastUsedById                       String?
-  purpose                            String?
-  User_InviteCode_createdByIdToUser  User          @relation("InviteCode_createdByIdToUser", fields: [createdById], references: [id])
-  User_InviteCode_lastUsedByIdToUser User?         @relation("InviteCode_lastUsedByIdToUser", fields: [lastUsedById], references: [id])
-  InviteUsage                        InviteUsage[]
-
   @@index([code])
-  @@index([createdById])
-  @@index([expiresAt])
-  @@index([isActive])
-  @@index([lastUsedById])
-  @@index([purpose])
 }
 
-model InviteUsage {
-  id           String     @id
-  inviteCodeId String
-  userId       String?
-  usedAt       DateTime   @default(now())
-  InviteCode   InviteCode @relation(fields: [inviteCodeId], references: [id], onDelete: Cascade)
-  User         User?      @relation(fields: [userId], references: [id])
-
-  @@index([inviteCodeId])
-  @@index([usedAt])
-  @@index([userId])
+enum Role {
+  CLIENT
+  AGENT
+  ADMIN
 }
 
-model Message {
-  id                             String      @id
-  senderId                       String
-  recipientId                    String
-  caseId                         String?
-  subject                        String?
-  content                        String
-  isRead                         Boolean     @default(false)
-  readAt                         DateTime?
-  sentAt                         DateTime    @default(now())
-  attachments                    Json?
-  emailThreadId                  String?
-  messageType                    MessageType @default(CHAT)
-  replyToId                      String?
-  Case                           Case?       @relation(fields: [caseId], references: [id])
-  User_Message_recipientIdToUser User        @relation("Message_recipientIdToUser", fields: [recipientId], references: [id])
-  User_Message_senderIdToUser    User        @relation("Message_senderIdToUser", fields: [senderId], references: [id])
-
-  @@index([caseId])
-  @@index([emailThreadId])
-  @@index([isRead])
-  @@index([messageType])
-  @@index([recipientId])
-  @@index([senderId])
-}
-
-model Notification {
-  id        String           @id
-  userId    String
-  caseId    String?
-  type      NotificationType
-  title     String
-  message   String
-  isRead    Boolean          @default(false)
-  readAt    DateTime?
-  createdAt DateTime         @default(now())
-  actionUrl String?
-  Case      Case?            @relation(fields: [caseId], references: [id])
-  User      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([createdAt])
-  @@index([isRead])
-  @@index([userId])
-}
-
-model StatusHistory {
-  id        String     @id
-  caseId    String
-  status    CaseStatus
-  changedBy String
-  notes     String?
-  timestamp DateTime   @default(now())
-  Case      Case       @relation(fields: [caseId], references: [id], onDelete: Cascade)
-
-  @@index([caseId])
-  @@index([timestamp])
-}
-
-model SystemSetting {
-  id        String   @id
-  key       String   @unique
-  value     String
-  category  String
-  updatedAt DateTime
-  updatedBy String
-
-  @@index([category])
-  @@index([key])
-}
-
-model TransferHistory {
-  id                                       String         @id
-  caseId                                   String
-  fromAgentId                              String?
-  fromAgentName                            String?
-  toAgentId                                String
-  toAgentName                              String
-  reason                                   TransferReason
-  handoverNotes                            String?
-  transferredAt                            DateTime       @default(now())
-  transferredBy                            String?
-  notifyClient                             Boolean        @default(true)
-  notifyAgent                              Boolean        @default(true)
-  Case                                     Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  User_TransferHistory_fromAgentIdToUser   User?          @relation("TransferHistory_fromAgentIdToUser", fields: [fromAgentId], references: [id])
-  User_TransferHistory_toAgentIdToUser     User           @relation("TransferHistory_toAgentIdToUser", fields: [toAgentId], references: [id], onDelete: Cascade)
-  User_TransferHistory_transferredByToUser User?          @relation("TransferHistory_transferredByToUser", fields: [transferredBy], references: [id])
-
-  @@index([caseId])
-  @@index([fromAgentId])
-  @@index([toAgentId])
-  @@index([transferredAt])
-  @@index([transferredBy])
-}
-
-model User {
-  id                                                  String             @id
-  email                                               String             @unique
-  password                                            String
-  firstName                                           String
-  lastName                                            String
-  phone                                               String?
-  role                                                Role               @default(CLIENT)
-  isActive                                            Boolean            @default(true)
-  isVerified                                          Boolean            @default(false)
-  verificationToken                                   String?
-  resetToken                                          String?
-  resetTokenExpiry                                    DateTime?
-  lastLogin                                           DateTime?
-  createdAt                                           DateTime           @default(now())
-  updatedAt                                           DateTime
-  profilePicture                                      String?
-  acceptedPrivacy                                     Boolean?
-  acceptedTerms                                       Boolean?
-  consentedAt                                         DateTime?
-  dataExportRequests                                  Int                @default(0)
-  deletionReason                                      String?
-  deletionScheduledFor                                DateTime?
-  lastDataExport                                      DateTime?
-  privacyAcceptedAt                                   DateTime?
-  termsAcceptedAt                                     DateTime?
-  firebaseId                                          String?            @unique
-  ActivityLog                                         ActivityLog[]
-  Case_Case_assignedAgentIdToUser                     Case[]             @relation("Case_assignedAgentIdToUser")
-  Case_Case_clientIdToUser                            Case[]             @relation("Case_clientIdToUser")
-  Destination                                         Destination[]
-  Document                                            Document[]
-  DocumentTemplate                                    DocumentTemplate[]
-  InviteCode_InviteCode_createdByIdToUser             InviteCode[]       @relation("InviteCode_createdByIdToUser")
-  InviteCode_InviteCode_lastUsedByIdToUser            InviteCode[]       @relation("InviteCode_lastUsedByIdToUser")
-  InviteUsage                                         InviteUsage[]
-  Message_Message_recipientIdToUser                   Message[]          @relation("Message_recipientIdToUser")
-  Message_Message_senderIdToUser                      Message[]          @relation("Message_senderIdToUser")
-  Notification                                        Notification[]
-  TransferHistory_TransferHistory_fromAgentIdToUser   TransferHistory[]  @relation("TransferHistory_fromAgentIdToUser")
-  TransferHistory_TransferHistory_toAgentIdToUser     TransferHistory[]  @relation("TransferHistory_toAgentIdToUser")
-  TransferHistory_TransferHistory_transferredByToUser TransferHistory[]  @relation("TransferHistory_transferredByToUser")
-
-  @@index([email])
-  @@index([role])
+enum ServiceType {
+  STUDENT_VISA
+  WORK_PERMIT
+  FAMILY_REUNIFICATION
+  TOURIST_VISA
+  BUSINESS_VISA
+  PERMANENT_RESIDENCY
 }
 
 enum CaseStatus {
@@ -391,17 +406,11 @@ enum CaseStatus {
   CLOSED
 }
 
-enum ContactStatus {
-  NEW
-  REVIEWED
-  RESPONDED
-  CLOSED
-}
-
-enum DocumentStatus {
-  PENDING
-  APPROVED
-  REJECTED
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
 }
 
 enum DocumentType {
@@ -415,6 +424,12 @@ enum DocumentType {
   PROOF_OF_RESIDENCE
   PHOTO
   OTHER
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum MessageType {
@@ -433,32 +448,17 @@ enum NotificationType {
   NEW_EMAIL
 }
 
-enum Priority {
-  LOW
-  NORMAL
-  HIGH
-  URGENT
-}
-
-enum Role {
-  CLIENT
-  AGENT
-  ADMIN
-}
-
-enum ServiceType {
-  STUDENT_VISA
-  WORK_PERMIT
-  FAMILY_REUNIFICATION
-  TOURIST_VISA
-  BUSINESS_VISA
-  PERMANENT_RESIDENCY
-}
-
 enum TransferReason {
   REASSIGNMENT
   COVERAGE
   SPECIALIZATION
   WORKLOAD
   OTHER
+}
+
+enum ContactStatus {
+  NEW
+  REVIEWED
+  RESPONDED
+  CLOSED
 }

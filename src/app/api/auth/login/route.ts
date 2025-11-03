@@ -139,12 +139,51 @@ const handler = asyncHandler(async (request: NextRequest) => {
   }
 
   if (!user) {
-    // Log with hashed UID for debugging without exposing PII
-    logger.warn('Login attempt for non-existent user', createSafeLogIdentifier(firebaseUid, null));
-    throw new ApiError(
-      'User account not found. Please contact support if you believe this is an error.',
-      HttpStatus.NOT_FOUND
-    );
+    // Auto-provision minimal user if verified token and email exist
+    if (firebaseEmail) {
+      logger.info('Auto-provisioning user from Firebase token', {
+        hint: firebaseEmail.substring(0, 5) + '...',
+      });
+
+      const created = await prisma.user.create({
+        data: {
+          email: firebaseEmail,
+          password: '',
+          firstName: 'User',
+          lastName: '',
+          role: 'CLIENT',
+          isActive: true,
+          isVerified: true,
+          firebaseId: firebaseUid,
+        },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          role: true,
+          isActive: true,
+          isVerified: true,
+          lastLogin: true,
+          createdAt: true,
+          updatedAt: true,
+          firebaseId: true,
+        },
+      });
+
+      user = created;
+    } else {
+      // Log with hashed UID for debugging without exposing PII
+      logger.warn(
+        'Login attempt for non-existent user and no email on token',
+        createSafeLogIdentifier(firebaseUid, null)
+      );
+      throw new ApiError(
+        'User account not found. Please contact support if you believe this is an error.',
+        HttpStatus.NOT_FOUND
+      );
+    }
   }
 
   // Check if account is active

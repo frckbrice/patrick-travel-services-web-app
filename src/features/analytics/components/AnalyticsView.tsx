@@ -37,12 +37,6 @@ export function AnalyticsView() {
     }
   }, [user, router]);
 
-  if (user && !['ADMIN', 'AGENT'].includes(user.role)) {
-    return null;
-  }
-
-  if (isLoading) return <AnalyticsViewSkeleton />;
-
   const cases: Case[] = data?.cases || [];
   const totalCases = cases.length;
   const activeCases = cases.filter(
@@ -98,6 +92,15 @@ export function AnalyticsView() {
       .sort((a, b) => a.month.localeCompare(b.month))
       .slice(-6); // Last 6 months
   }, [cases]);
+
+  // Guards placed after hooks to satisfy rules-of-hooks
+  if (user && !['ADMIN', 'AGENT'].includes(user.role)) {
+    return null;
+  }
+
+  if (isLoading) {
+    return <AnalyticsViewSkeleton />;
+  }
 
   const stats = [
     {

@@ -4,7 +4,7 @@
  * Seeds initial travel destinations for the application
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -56,10 +56,27 @@ async function seedDestinations() {
 
   for (const destination of destinations) {
     try {
+      const createData: Prisma.DestinationCreateInput | any = {
+        name: destination.name,
+        code: destination.code,
+        flagEmoji: destination.flagEmoji,
+        description: destination.description,
+        isActive: destination.isActive,
+        displayOrder: destination.displayOrder,
+      };
+
+      const updateData: Prisma.DestinationUpdateInput | any = {
+        name: destination.name,
+        flagEmoji: destination.flagEmoji,
+        description: destination.description,
+        isActive: destination.isActive,
+        displayOrder: destination.displayOrder,
+      };
+
       const result = await prisma.destination.upsert({
         where: { code: destination.code },
-        update: destination,
-        create: destination,
+        update: updateData,
+        create: createData,
       });
       console.log(`✅ ${result.flagEmoji} ${result.name} (${result.code})`);
     } catch (error) {

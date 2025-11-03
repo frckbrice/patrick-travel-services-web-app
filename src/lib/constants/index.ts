@@ -1,7 +1,12 @@
 // Shared constants for Patrick Travel Services
 
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+  // Keep it simple: prod uses the deployed domain, dev uses localhost.
+  // Allow override via NEXT_PUBLIC_API_URL when explicitly provided.
+  BASE_URL:
+    process.env.NODE_ENV === 'production'
+      ? process.env.NEXT_PUBLIC_VERCEL_URL || process.env.NEXT_PUBLIC_API_URL
+      : 'http://localhost:3000',
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
 };

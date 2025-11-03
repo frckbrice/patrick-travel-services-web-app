@@ -120,8 +120,7 @@ const putHandler = asyncHandler(async (request: NextRequest) => {
         // Convert PostgreSQL user ID to Firebase UID
         const firebaseUid = await getFirebaseUidFromPostgresId(req.user.userId);
         if (firebaseUid) {
-          // Pass both IDs to handle format mismatches
-          await markAllMessagesAsRead(chatRoomId, firebaseUid, req.user.userId);
+          await markAllMessagesAsRead(chatRoomId, firebaseUid);
         } else {
           logger.warn('Could not convert PostgreSQL ID to Firebase UID for bulk update', {
             postgresId: req.user.userId,
