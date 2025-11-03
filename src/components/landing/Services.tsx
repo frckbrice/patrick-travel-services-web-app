@@ -49,7 +49,7 @@ export function Services() {
   ];
 
   return (
-    <section className="relative py-16 md:py-20 lg:py-24">
+    <section className="relative py-16 md:py-20 lg:py-24 bg-gradient-to-b from-blue-50 via-indigo-200/20 to-purple-100/30 dark:from-transparent dark:via-transparent dark:to-transparent">
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-16">
@@ -104,7 +104,7 @@ export function Services() {
 
         {/* CTA */}
         <div className="text-center">
-          <Button size="lg" variant="outline" className="text-lg px-8 h-12">
+          <Button size="lg" variant="outline" className="text-lg px-8 h-12 cursor-not-allowed">
             <span suppressHydrationWarning>{t('landing.services.viewAll')}</span>
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
