@@ -10,6 +10,7 @@ import { asyncHandler, ApiError, HttpStatus } from '@/lib/utils/error-handler';
 import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
+import { NotificationType } from '@prisma/client';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -127,6 +128,7 @@ const putHandler = asyncHandler(async (request: NextRequest, context: RouteConte
         isRead: true,
         readAt: true,
         senderId: true,
+        caseId: true,
       },
     });
 
@@ -172,8 +174,41 @@ const putHandler = asyncHandler(async (request: NextRequest, context: RouteConte
         readAt: true,
         recipientId: true,
         senderId: true,
+        caseId: true,
       },
     });
+
+    // Mark related NEW_EMAIL notification as read (fire-and-forget)
+    if (email.caseId) {
+      prisma.notification
+        .updateMany({
+          where: {
+            userId: req.user.userId,
+            type: NotificationType.NEW_EMAIL,
+            caseId: email.caseId,
+            isRead: false,
+          },
+          data: {
+            isRead: true,
+          },
+        })
+        .then((result) => {
+          if (result.count > 0) {
+            logger.info('Marked related email notifications as read', {
+              emailId: id,
+              caseId: email.caseId,
+              notificationsMarked: result.count,
+            });
+          }
+        })
+        .catch((error) => {
+          logger.warn('Failed to mark related notifications as read', {
+            emailId: id,
+            caseId: email.caseId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        });
+    }
 
     logger.info('Email marked as read', {
       emailId: id,

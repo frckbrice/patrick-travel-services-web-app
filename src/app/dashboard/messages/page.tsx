@@ -9,6 +9,8 @@ interface MessagesPageProps {
     clientEmail?: string;
     caseRef?: string;
     mode?: 'email' | 'chat';
+    tab?: 'active' | 'received' | 'history';
+    messageId?: string;
   }>;
 }
 
@@ -32,6 +34,8 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
         preselectedClientEmail={params.clientEmail}
         caseReference={params.caseRef}
         initialMode={params.mode}
+        initialTab={params.tab}
+        preselectedMessageId={params.messageId}
       />
     </Suspense>
   );

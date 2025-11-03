@@ -119,6 +119,10 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Ensure all links have cursor pointer */
+  a {
+    @apply cursor-pointer;
+  }
 }
 
 @layer utilities {

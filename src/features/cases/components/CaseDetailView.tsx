@@ -74,6 +74,38 @@ const statusOptions = [
   { value: 'REJECTED', label: 'Rejected' },
 ];
 
+// Consistent status colors as used in list views
+const statusConfig: Record<string, { label: string; className: string }> = {
+  SUBMITTED: {
+    label: 'Submitted',
+    className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+  },
+  UNDER_REVIEW: {
+    label: 'Under Review',
+    className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+  },
+  DOCUMENTS_REQUIRED: {
+    label: 'Documents Required',
+    className: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
+  },
+  PROCESSING: {
+    label: 'Processing',
+    className: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+  },
+  APPROVED: {
+    label: 'Approved',
+    className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+  },
+  REJECTED: {
+    label: 'Rejected',
+    className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+  },
+  CLOSED: {
+    label: 'Closed',
+    className: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
+  },
+};
+
 const priorityOptions = [
   { value: 'LOW', label: 'Low', color: 'text-gray-600' },
   { value: 'NORMAL', label: 'Normal', color: 'text-blue-600' },
@@ -562,7 +594,16 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                   <InfoRow
                     icon={Briefcase}
                     label="Status"
-                    value={<Badge>{caseData.status.replace(/_/g, ' ')}</Badge>}
+                    value={
+                      <Badge
+                        className={cn(
+                          'flex items-center gap-1',
+                          statusConfig[caseData.status]?.className || ''
+                        )}
+                      >
+                        {statusConfig[caseData.status]?.label || caseData.status.replace(/_/g, ' ')}
+                      </Badge>
+                    }
                   />
                   <InfoRow
                     icon={Calendar}

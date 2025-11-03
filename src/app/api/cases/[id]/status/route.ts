@@ -46,11 +46,19 @@ const handler = asyncHandler(
     // Fetch case for resource-level authorization
     const existingCase = await prisma.case.findUnique({
       where: { id: params.id },
-      select: { assignedAgentId: true },
+      select: { assignedAgentId: true, status: true },
     });
 
     if (!existingCase) {
       throw new ApiError(ERROR_MESSAGES.NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    // Prevent updating approved cases (only ADMIN can update approved cases)
+    if (existingCase.status === 'APPROVED' && req.user.role !== 'ADMIN') {
+      throw new ApiError(
+        'Cannot update status of an approved case. Only administrators can modify approved cases.',
+        HttpStatus.BAD_REQUEST
+      );
     }
 
     // Resource-level authorization: only ADMIN or the assigned agent can update status

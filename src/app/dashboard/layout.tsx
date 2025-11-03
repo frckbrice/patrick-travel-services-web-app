@@ -144,7 +144,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                           href={item.href}
                           onClick={() => setMobileMenuOpen(false)}
                           className={cn(
-                            'flex items-center justify-between space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                            'flex items-center justify-between space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors cursor-pointer',
                             pathname === item.href
                               ? 'bg-primary text-primary-foreground'
                               : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -176,7 +176,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 </SheetContent>
               </Sheet>
 
-              <Link href="/dashboard" className="flex items-center space-x-3">
+              <Link href="/dashboard" className="flex items-center space-x-3 cursor-pointer">
                 <div className="relative flex items-center justify-center w-10 h-10 rounded-lg bg-white dark:bg-white p-1.5">
                   <Image
                     src="/images/app-logo.png"
@@ -228,19 +228,19 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/" className="flex items-center cursor-pointer">
+                    <Link href="/" className="flex items-center">
                       <Home className="mr-2 h-4 w-4" />
                       <span>{t('dashboard.goBackToSite')}</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard/profile" className="flex items-center cursor-pointer">
+                    <Link href="/dashboard/profile" className="flex items-center">
                       <User className="mr-2 h-4 w-4" />
                       <span>{t('profile.title')}</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard/settings" className="flex items-center cursor-pointer">
+                    <Link href="/dashboard/settings" className="flex items-center">
                       <SettingsIcon className="mr-2 h-4 w-4" />
                       <span>{t('settings.title')}</span>
                     </Link>
@@ -249,7 +249,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   <DropdownMenuItem
                     onClick={() => logoutMutation.mutate()}
                     disabled={logoutMutation.isPending}
-                    className="cursor-pointer text-red-600 focus:text-red-600"
+                    className="text-red-600 focus:text-red-600"
                   >
                     {logoutMutation.isPending ? (
                       <>
@@ -326,7 +326,7 @@ const NavLink = memo(function NavLink({
     <Link
       href={href}
       className={cn(
-        'flex items-center justify-between space-x-3 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+        'flex items-center justify-between space-x-3 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer',
         isActive
           ? 'bg-primary text-primary-foreground'
           : 'text-muted-foreground hover:bg-muted hover:text-foreground'

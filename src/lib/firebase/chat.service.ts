@@ -479,6 +479,49 @@ export async function sendMessage(params: SendMessageParams): Promise<string> {
       hasCaseId: !!params.caseId,
     });
 
+    // MIGRATION: If caseId is provided, check if old format chat exists and migrate it
+    if (params.caseId && chatRoomId !== params.caseId) {
+      // Check if old format chat exists (caseId used as room ID)
+      const oldFormatRef = ref(database, `chats/${params.caseId}/metadata`);
+      const oldFormatSnapshot = await get(oldFormatRef);
+
+      if (oldFormatSnapshot.exists()) {
+        logger.info('Detected old format chat room, attempting migration', {
+          caseId: params.caseId,
+          oldRoomId: params.caseId,
+          newRoomId: chatRoomId.substring(0, 12) + '...',
+        });
+
+        // Check if new format room already exists
+        const newFormatRef = ref(database, `chats/${chatRoomId}/metadata`);
+        const newFormatSnapshot = await get(newFormatRef);
+
+        if (
+          !newFormatSnapshot.exists() ||
+          (oldFormatSnapshot.exists() && newFormatSnapshot.exists())
+        ) {
+          // Migrate: Use consolidate function to merge old into new
+          try {
+            // consolidateChatConversations is defined in this file, so we can call it directly
+            await consolidateChatConversations(params.caseId, params.caseId, chatRoomId);
+            logger.info('Successfully migrated old chat to new format', {
+              caseId: params.caseId,
+              newRoomId: chatRoomId.substring(0, 12) + '...',
+            });
+          } catch (migrateError: any) {
+            // Migration failed - log but continue (non-critical)
+            logger.warn(
+              'Failed to auto-migrate old chat (non-critical, continuing with new format)',
+              {
+                caseId: params.caseId,
+                error: migrateError?.message,
+              }
+            );
+          }
+        }
+      }
+    }
+
     const timestamp = Date.now();
 
     // Use push() to generate unique IDs automatically - prevents collisions

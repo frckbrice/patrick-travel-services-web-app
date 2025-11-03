@@ -14,6 +14,8 @@ interface MessagesPageWithTabsProps {
   preselectedClientEmail?: string;
   caseReference?: string;
   initialMode?: 'email' | 'chat';
+  initialTab?: 'active' | 'received' | 'history';
+  preselectedMessageId?: string;
 }
 
 export function MessagesPageWithTabs({
@@ -22,17 +24,21 @@ export function MessagesPageWithTabs({
   preselectedClientEmail,
   caseReference,
   initialMode,
+  initialTab,
+  preselectedMessageId,
 }: MessagesPageWithTabsProps = {}) {
-  const [activeTab, setActiveTab] = useState<string>('active');
+  const [activeTab, setActiveTab] = useState<string>(initialTab || 'active');
 
   // If coming from case details with a specific client, show active tab
   useEffect(() => {
-    if (preselectedClientId || initialMode === 'chat') {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    } else if (preselectedClientId || initialMode === 'chat') {
       setActiveTab('active');
     } else if (initialMode === 'email') {
       setActiveTab('active'); // Stay on active tab for email mode too
     }
-  }, [preselectedClientId, initialMode]);
+  }, [preselectedClientId, initialMode, initialTab]);
 
   return (
     <div className="space-y-6">
@@ -63,7 +69,7 @@ export function MessagesPageWithTabs({
         </TabsContent>
 
         <TabsContent value="received" className="space-y-0">
-          <ReceivedEmailsTable />
+          <ReceivedEmailsTable preselectedMessageId={preselectedMessageId} />
         </TabsContent>
 
         <TabsContent value="history" className="space-y-0">

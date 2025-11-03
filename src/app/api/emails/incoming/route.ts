@@ -379,7 +379,7 @@ const postHandler = async (request: NextRequest) => {
         title: `Email reply from ${replySenderName}`,
         message: `Subject: ${finalSubject.substring(0, 100)}${finalSubject.length > 100 ? '...' : ''}`,
         isRead: false,
-        actionUrl: '/dashboard/messages',
+        actionUrl: `/dashboard/messages?tab=received&messageId=${replyMessage.id}`,
       },
     });
 
