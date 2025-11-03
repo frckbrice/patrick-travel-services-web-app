@@ -398,16 +398,29 @@ const postHandler = async (request: NextRequest) => {
     });
 
     // Send push notification to original sender (fire-and-forget)
-    sendPushNotificationToUser(originalMessage.senderId, {
-      title: notification.title,
-      body: notification.message,
-      data: {
-        type: notification.type,
-        notificationId: notification.id,
-        caseId: notification.caseId || undefined,
-        actionUrl: notification.actionUrl || undefined,
-      },
-    }).catch((error) => {
+    (async () => {
+      let badge: number | undefined;
+      try {
+        const unread = await prisma.notification.count({
+          where: { userId: originalMessage.senderId, isRead: false },
+        });
+        badge = unread > 0 ? unread : undefined;
+      } catch {}
+      await sendPushNotificationToUser(originalMessage.senderId, {
+        title: notification.title,
+        body: notification.message,
+        data: {
+          type: notification.type,
+          notificationId: notification.id,
+          caseId: notification.caseId || undefined,
+          actionUrl: notification.actionUrl || undefined,
+          screen: 'messages',
+          params: { caseId: notification.caseId || undefined, messageId: replyMessage.id },
+        },
+        badge,
+        channelId: 'emails',
+      });
+    })().catch((error) => {
       logger.warn('Failed to send push notification for email reply', {
         error,
         userId: originalMessage.senderId,

@@ -282,15 +282,28 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
       }),
 
       // 2. Send mobile push notification to CLIENT
-      sendPushNotificationToUser(newCase.clientId, {
-        title: '✅ Case Submitted Successfully',
-        body: `Your case ${referenceNumber} has been submitted. We'll assign an advisor soon.`,
-        data: {
-          type: 'CASE_SUBMITTED',
-          caseId: newCase.id,
-          caseRef: referenceNumber,
-        },
-      }),
+      (async () => {
+        let badge: number | undefined;
+        try {
+          const unread = await prisma.notification.count({
+            where: { userId: newCase.clientId, isRead: false },
+          });
+          badge = unread > 0 ? unread : undefined;
+        } catch {}
+        await sendPushNotificationToUser(newCase.clientId, {
+          title: 'Case Submitted',
+          body: `Your case ${referenceNumber} has been submitted.`,
+          data: {
+            type: 'CASE_SUBMITTED',
+            caseId: newCase.id,
+            actionUrl: NOTIFICATION_ACTION_URLS.CASE_SUBMISSION(newCase.id),
+            screen: 'cases',
+            params: { caseId: newCase.id },
+          },
+          badge,
+          channelId: 'cases',
+        });
+      })(),
 
       // 3. Send realtime notification to CLIENT
       createRealtimeNotification(newCase.clientId, {
@@ -313,17 +326,28 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
         }),
 
         // Send mobile push notification to admin
-        sendPushNotificationToUser(admin.id, {
-          title: '🔔 New Case Submitted',
-          body: `${clientFullName} submitted ${serviceType.replace(/_/g, ' ')} case. Ref: ${referenceNumber}`,
-          data: {
-            type: 'NEW_CASE_ADMIN',
-            caseId: newCase.id,
-            caseRef: referenceNumber,
-            clientId: newCase.clientId,
-            clientName: clientFullName,
-          },
-        })
+        (async () => {
+          let badge: number | undefined;
+          try {
+            const unread = await prisma.notification.count({
+              where: { userId: admin.id, isRead: false },
+            });
+            badge = unread > 0 ? unread : undefined;
+          } catch {}
+          await sendPushNotificationToUser(admin.id, {
+            title: 'New Case Submitted',
+            body: `${clientFullName} submitted ${serviceType.replace(/_/g, ' ')} case.`,
+            data: {
+              type: 'NEW_CASE_ADMIN',
+              caseId: newCase.id,
+              actionUrl: NOTIFICATION_ACTION_URLS.CASE_DETAILS(newCase.id),
+              screen: 'cases',
+              params: { caseId: newCase.id },
+            },
+            badge,
+            channelId: 'cases',
+          });
+        })()
       );
     }
 

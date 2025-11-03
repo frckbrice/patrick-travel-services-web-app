@@ -12,7 +12,7 @@ import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
 import { createRealtimeNotification } from '@/lib/firebase/notifications.service.server';
 import { sendPushNotificationToUser } from '@/lib/notifications/expo-push.service';
 import { sendEmail } from '@/lib/notifications/email.service';
-import { initializeFirebaseChat, sendWelcomeMessage } from '@/lib/firebase/chat.service';
+import { initializeFirebaseChat, sendWelcomeMessage } from '@/lib/firebase/chat.service.server';
 import { getAgentCaseAssignmentEmailTemplate } from '@/lib/notifications/email-templates';
 import { adminAuth } from '@/lib/firebase/firebase-admin';
 
@@ -251,6 +251,20 @@ const handler = asyncHandler(
           // Continue without chat initialization - non-critical
         }
 
+        // Optional: compute unread badge counts for agent and client
+        let agentBadge: number | undefined;
+        let clientBadge: number | undefined;
+        try {
+          const [agentUnread, clientUnread] = await Promise.all([
+            prisma.notification.count({ where: { userId: agentId, isRead: false } }),
+            prisma.notification.count({ where: { userId: caseData.clientId, isRead: false } }),
+          ]);
+          agentBadge = agentUnread > 0 ? agentUnread : undefined;
+          clientBadge = clientUnread > 0 ? clientUnread : undefined;
+        } catch (badgeErr) {
+          logger.warn('Failed to compute badge counts for push notifications', badgeErr);
+        }
+
         await Promise.all([
           // 1. Notify the AGENT (web dashboard)
           createRealtimeNotification(agentId, {
@@ -270,28 +284,32 @@ const handler = asyncHandler(
 
           // 3. Send mobile push notification to CLIENT
           sendPushNotificationToUser(caseData.clientId, {
-            title: '👤 Case Assigned!',
-            body: `Your case ${caseData.referenceNumber} has been assigned to ${agentFullName}. They will contact you soon.`,
+            title: 'Case Assigned',
+            body: `Your case ${caseData.referenceNumber} has been assigned to ${agentFullName}.`,
             data: {
               type: 'CASE_ASSIGNED',
               caseId: params.id,
-              caseRef: caseData.referenceNumber,
-              agentId: agentId,
-              agentName: agentFullName,
+              actionUrl: NOTIFICATION_ACTION_URLS.CASE_DETAILS(params.id),
+              screen: 'cases',
+              params: { caseId: params.id },
             },
+            badge: clientBadge,
+            channelId: 'cases',
           }),
 
           // 4. Send mobile push notification to AGENT
           sendPushNotificationToUser(agentId, {
-            title: '🎯 New Case Assigned',
-            body: `Case ${caseData.referenceNumber} from ${clientFullName} has been assigned to you. Priority: ${caseData.priority}`,
+            title: 'New Case Assigned',
+            body: `Case ${caseData.referenceNumber} from ${clientFullName}. Priority: ${caseData.priority}`,
             data: {
               type: 'CASE_ASSIGNED',
               caseId: params.id,
-              caseRef: caseData.referenceNumber,
-              clientId: caseData.clientId,
-              clientName: clientFullName,
+              actionUrl: NOTIFICATION_ACTION_URLS.CASE_DETAILS(params.id),
+              screen: 'cases',
+              params: { caseId: params.id },
             },
+            badge: agentBadge,
+            channelId: 'cases',
           }),
 
           // 5. Send email to CLIENT

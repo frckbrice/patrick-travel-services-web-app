@@ -178,16 +178,29 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
   });
 
   // Send push notification to mobile device (fire-and-forget)
-  sendPushNotificationToUser(userId, {
-    title: notification.title,
-    body: notification.message,
-    data: {
-      type: notification.type,
-      notificationId: notification.id,
-      caseId: notification.caseId || undefined,
-      actionUrl: notification.actionUrl || undefined,
-    },
-  }).catch((error) => {
+  (async () => {
+    let badge: number | undefined;
+    try {
+      const unread = await prisma.notification.count({
+        where: { userId, isRead: false },
+      });
+      badge = unread > 0 ? unread : undefined;
+    } catch {}
+    await sendPushNotificationToUser(userId, {
+      title: notification.title,
+      body: notification.message,
+      data: {
+        type: notification.type,
+        notificationId: notification.id,
+        caseId: notification.caseId || undefined,
+        actionUrl: notification.actionUrl || undefined,
+        screen: 'notifications',
+        params: { caseId: notification.caseId || undefined, notificationId: notification.id },
+      },
+      badge,
+      channelId: 'general',
+    });
+  })().catch((error) => {
     logger.warn('Failed to send push notification', { error, userId });
   });
 

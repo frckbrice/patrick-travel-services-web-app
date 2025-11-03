@@ -10,8 +10,7 @@ import { asyncHandler, ApiError, HttpStatus } from '@/lib/utils/error-handler';
 import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
-import { ref, get } from 'firebase/database';
-import { database } from '@/lib/firebase/firebase-client';
+import { adminDatabase } from '@/lib/firebase/firebase-admin';
 
 interface SyncFirebaseReadRequest {
   caseId: string;
@@ -63,9 +62,11 @@ const putHandler = asyncHandler(async (request: NextRequest) => {
       firebaseUid = user.firebaseId;
     }
 
-    // Get messages from Firebase
-    const messagesRef = ref(database, `chats/${body.caseId}/messages`);
-    const snapshot = await get(messagesRef);
+    if (!adminDatabase) {
+      throw new ApiError('Firebase Admin not initialized', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    // Get messages from Firebase (Admin SDK)
+    const snapshot = await adminDatabase.ref(`chats/${body.caseId}/messages`).get();
 
     if (!snapshot.exists()) {
       return successResponse({ count: 0, messageIds: [] }, 'No messages found in Firebase');

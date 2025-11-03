@@ -114,15 +114,27 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
           message: `${result.count} cases have been assigned to you`,
           actionUrl: NOTIFICATION_ACTION_URLS.CASES_MY_CASES,
         }),
-        sendPushNotificationToUser(data.assignedAgentId, {
-          title: '🎯 Bulk Assignment',
-          body: `${result.count} cases have been assigned to you. Check your dashboard.`,
-          data: {
-            type: 'BULK_CASE_ASSIGNED',
-            count: result.count,
-            agentId: data.assignedAgentId,
-          },
-        })
+        (async () => {
+          let badge: number | undefined;
+          try {
+            const unread = await prisma.notification.count({
+              where: { userId: data.assignedAgentId, isRead: false },
+            });
+            badge = unread > 0 ? unread : undefined;
+          } catch {}
+          await sendPushNotificationToUser(data.assignedAgentId, {
+            title: 'Bulk Assignment',
+            body: `${result.count} cases have been assigned to you.`,
+            data: {
+              type: 'BULK_CASE_ASSIGNED',
+              actionUrl: NOTIFICATION_ACTION_URLS.CASES_MY_CASES,
+              screen: 'cases',
+              params: {},
+            },
+            badge,
+            channelId: 'cases',
+          });
+        })()
       );
 
       // 2. Notify each client individually (batched for performance)
@@ -136,17 +148,28 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
             message: `Your case ${caseItem.referenceNumber} has been assigned to ${agentFullName}`,
             actionUrl: NOTIFICATION_ACTION_URLS.CASE_DETAILS(caseItem.id),
           }),
-          sendPushNotificationToUser(caseItem.clientId, {
-            title: '👤 Case Assigned',
-            body: `Your case ${caseItem.referenceNumber} has been assigned to ${agentFullName}`,
-            data: {
-              type: 'CASE_ASSIGNED',
-              caseId: caseItem.id,
-              caseRef: caseItem.referenceNumber,
-              agentId: data.assignedAgentId,
-              agentName: agentFullName,
-            },
-          })
+          (async () => {
+            let badge: number | undefined;
+            try {
+              const unread = await prisma.notification.count({
+                where: { userId: caseItem.clientId, isRead: false },
+              });
+              badge = unread > 0 ? unread : undefined;
+            } catch {}
+            await sendPushNotificationToUser(caseItem.clientId, {
+              title: 'Case Assigned',
+              body: `Your case ${caseItem.referenceNumber} has been assigned to ${agentFullName}.`,
+              data: {
+                type: 'CASE_ASSIGNED',
+                caseId: caseItem.id,
+                actionUrl: NOTIFICATION_ACTION_URLS.CASE_DETAILS(caseItem.id),
+                screen: 'cases',
+                params: { caseId: caseItem.id },
+              },
+              badge,
+              channelId: 'cases',
+            });
+          })()
         );
       }
 
@@ -346,14 +369,27 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
             message: `${agentCases.length} case${agentCases.length > 1 ? 's have' : ' has'} been unassigned from you`,
             actionUrl: NOTIFICATION_ACTION_URLS.CASES_LIST,
           }),
-          sendPushNotificationToUser(agentId, {
-            title: '📤 Cases Unassigned',
-            body: `${agentCases.length} case${agentCases.length > 1 ? 's have' : ' has'} been unassigned from you`,
-            data: {
-              type: 'BULK_CASE_UNASSIGNED',
-              count: agentCases.length,
-            },
-          })
+          (async () => {
+            let badge: number | undefined;
+            try {
+              const unread = await prisma.notification.count({
+                where: { userId: agentId, isRead: false },
+              });
+              badge = unread > 0 ? unread : undefined;
+            } catch {}
+            await sendPushNotificationToUser(agentId, {
+              title: 'Cases Unassigned',
+              body: `${agentCases.length} case${agentCases.length > 1 ? 's have' : ' has'} been unassigned from you`,
+              data: {
+                type: 'BULK_CASE_UNASSIGNED',
+                actionUrl: NOTIFICATION_ACTION_URLS.CASES_LIST,
+                screen: 'cases',
+                params: {},
+              },
+              badge,
+              channelId: 'cases',
+            });
+          })()
         );
 
         // Notify each client
@@ -367,15 +403,28 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
               message: `Your case ${caseItem.referenceNumber} is being reassigned. A new agent will be assigned soon.`,
               actionUrl: NOTIFICATION_ACTION_URLS.CASE_DETAILS(caseItem.id),
             }),
-            sendPushNotificationToUser(caseItem.clientId, {
-              title: '🔄 Case Update',
-              body: `Your case ${caseItem.referenceNumber} is being reassigned to another agent`,
-              data: {
-                type: 'CASE_UNASSIGNED',
-                caseId: caseItem.id,
-                caseRef: caseItem.referenceNumber,
-              },
-            })
+            (async () => {
+              let badge: number | undefined;
+              try {
+                const unread = await prisma.notification.count({
+                  where: { userId: caseItem.clientId, isRead: false },
+                });
+                badge = unread > 0 ? unread : undefined;
+              } catch {}
+              await sendPushNotificationToUser(caseItem.clientId, {
+                title: 'Case Update',
+                body: `Your case ${caseItem.referenceNumber} is being reassigned to another agent`,
+                data: {
+                  type: 'CASE_UNASSIGNED',
+                  caseId: caseItem.id,
+                  actionUrl: NOTIFICATION_ACTION_URLS.CASE_DETAILS(caseItem.id),
+                  screen: 'cases',
+                  params: { caseId: caseItem.id },
+                },
+                badge,
+                channelId: 'cases',
+              });
+            })()
           );
         }
       }

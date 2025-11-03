@@ -343,14 +343,16 @@ export async function sendCaseUpdateNotification(
   caseId: string
 ): Promise<void> {
   await sendPushNotificationToUser(userId, {
-    title: '📋 Case Status Updated',
+    title: 'Case Status Updated',
     body: `Your case ${caseRef} is now ${status}`,
     data: {
       type: 'CASE_STATUS_UPDATE',
       caseId,
-      caseRef,
-      status,
+      actionUrl: `/dashboard/cases/${caseId}`,
+      screen: 'cases',
+      params: { caseId },
     },
+    channelId: 'cases',
   });
 }
 
@@ -364,14 +366,15 @@ export async function sendNewMessageNotification(
   chatRoomId: string
 ): Promise<void> {
   await sendPushNotificationToUser(userId, {
-    title: `💬 Message from ${senderName}`,
+    title: `Message from ${senderName}`,
     body: messagePreview.substring(0, 100),
     data: {
       type: 'NEW_MESSAGE',
-      chatRoomId,
-      senderName,
+      actionUrl: '/dashboard/messages',
+      screen: 'messages',
+      params: { chatRoomId },
     },
-    badge: 1,
+    channelId: 'messages',
   });
 }
 
@@ -386,13 +389,15 @@ export async function sendDocumentStatusNotification(
 ): Promise<void> {
   const emoji = status === 'APPROVED' ? '✅' : '❌';
   await sendPushNotificationToUser(userId, {
-    title: `${emoji} Document ${status === 'APPROVED' ? 'Approved' : 'Rejected'}`,
+    title: `Document ${status === 'APPROVED' ? 'Approved' : 'Rejected'}`,
     body: `Your ${documentName} has been ${status.toLowerCase()}`,
     data: {
       type: 'DOCUMENT_STATUS_UPDATE',
-      documentId,
-      status,
+      actionUrl: `/dashboard/documents`,
+      screen: 'documents',
+      params: { documentId, status },
     },
+    channelId: 'documents',
   });
 }
 
@@ -406,12 +411,15 @@ export async function sendCaseAssignmentNotification(
   caseId: string
 ): Promise<void> {
   await sendPushNotificationToUser(agentId, {
-    title: '👤 New Case Assigned',
+    title: 'New Case Assigned',
     body: `Case ${caseRef} from ${clientName} has been assigned to you`,
     data: {
       type: 'CASE_ASSIGNED',
       caseId,
-      caseRef,
+      actionUrl: `/dashboard/cases/${caseId}`,
+      screen: 'cases',
+      params: { caseId },
     },
+    channelId: 'cases',
   });
 }
