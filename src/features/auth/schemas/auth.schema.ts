@@ -2,6 +2,16 @@
 
 import { z } from 'zod';
 
+// Coerce common truthy string values ("true", "on", "1") to boolean true
+const truthyBoolean = z.preprocess((val) => {
+  if (typeof val === 'string') {
+    const v = val.trim().toLowerCase();
+    if (v === 'true' || v === 'on' || v === '1' || v === 'yes') return true;
+    if (v === 'false' || v === 'off' || v === '0' || v === 'no') return false;
+  }
+  return val;
+}, z.boolean());
+
 export const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z
@@ -21,10 +31,10 @@ export const registerSchema = z.object({
 
   // GDPR Consent Fields (mobile and web compliance)
   consentedAt: z.string().datetime().optional(), // ISO timestamp when user consented
-  acceptedTerms: z.boolean().refine((val) => val === true, {
+  acceptedTerms: truthyBoolean.refine((val) => val === true, {
     message: 'You must accept the Terms & Conditions to create an account',
   }),
-  acceptedPrivacy: z.boolean().refine((val) => val === true, {
+  acceptedPrivacy: truthyBoolean.refine((val) => val === true, {
     message: 'You must accept the Privacy Policy to create an account',
   }),
 });

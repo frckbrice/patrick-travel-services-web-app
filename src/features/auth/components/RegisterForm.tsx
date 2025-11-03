@@ -48,7 +48,8 @@ export function RegisterForm() {
 
   // Always call useForm (hooks must be called in same order every render)
   const form = useForm<RegisterInput>({
-    resolver: zodResolver(registerSchema),
+    // Cast to align with react-hook-form Resolver typing and avoid TFieldValues mismatches
+    resolver: zodResolver(registerSchema) as any,
     defaultValues: {
       email: '',
       password: '',
