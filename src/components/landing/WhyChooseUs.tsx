@@ -26,30 +26,30 @@ function FeatureCard({
 
   return (
     <Card
-      className={`group relative overflow-hidden border-2 hover:border-primary/50 transition-all duration-200 hover:shadow-xl ${
+      className={`group relative overflow-hidden border-2 border-primary/30 transition-all duration-200 shadow-xl ${
         isDesktop
-          ? `absolute w-56 ${position} hover:scale-[1.02] z-20 bg-card/95 backdrop-blur-sm will-change-transform`
-          : 'hover:-translate-y-1 will-change-transform'
+          ? `absolute w-56 ${position} z-20 bg-card/95 backdrop-blur-sm will-change-transform`
+          : 'will-change-transform'
       }`}
     >
       <CardContent className="p-5 space-y-3">
         {/* Icon */}
         <div className="relative">
           <div
-            className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-200 will-change-transform`}
+            className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg scale-105 will-change-transform`}
             aria-label={t(titleKey)}
           >
             <Icon className="h-6 w-6 text-white" />
           </div>
           {/* Glow Effect */}
           <div
-            className={`absolute inset-0 bg-gradient-to-br ${gradient} rounded-2xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-200 pointer-events-none`}
+            className={`absolute inset-0 bg-gradient-to-br ${gradient} rounded-2xl blur-xl opacity-20 pointer-events-none`}
           />
         </div>
 
         {/* Content */}
         <div className={isDesktop ? 'space-y-2' : 'space-y-1'}>
-          <h3 className="text-lg font-bold group-hover:text-primary transition-colors duration-200">
+          <h3 className="text-lg font-bold text-primary">
             <span suppressHydrationWarning>{t(titleKey)}</span>
           </h3>
           <p className="text-xs text-muted-foreground leading-relaxed">
@@ -57,9 +57,9 @@ function FeatureCard({
           </p>
         </div>
 
-        {/* Hover Effect Gradient */}
+        {/* Background Gradient */}
         <div
-          className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-200 pointer-events-none`}
+          className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-5 pointer-events-none`}
         />
       </CardContent>
     </Card>
@@ -121,14 +121,14 @@ export function WhyChooseUs() {
   const { t } = useTranslation();
 
   return (
-    <section className="relative overflow-hidden py-16 md:py-20 lg:py-24">
+    <section className="relative overflow-hidden py-16 md:py-20 lg:py-24 bg-gradient-to-b from-slate-50 via-blue-500/30 to-slate-50 dark:from-transparent dark:via-transparent dark:to-transparent">
       {/* Background Elements */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-1/4 right-0 w-[600px] h-[600px] bg-gradient-to-bl from-primary/15 via-blue-500/15 to-transparent rounded-full blur-3xl opacity-40"></div>
         <div className="absolute bottom-1/4 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-purple-500/15 via-primary/15 to-transparent rounded-full blur-3xl opacity-40"></div>
       </div>
 
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-12 md:mb-16 lg:mb-20">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4">

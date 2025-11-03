@@ -129,7 +129,10 @@ export function FAQSection({
   };
 
   return (
-    <section className="py-12 md:py-20" id="faq">
+    <section
+      className="py-12 md:py-20 bg-gradient-to-b from-blue-200/30 via-indigo-200/20 to-purple-200/30 dark:from-transparent dark:via-transparent dark:to-transparent"
+      id="faq"
+    >
       {/* Schema.org markup for Google FAQ rich snippets */}
       <script
         type="application/ld+json"

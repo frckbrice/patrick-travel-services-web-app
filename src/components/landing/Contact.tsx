@@ -91,7 +91,7 @@ export function Contact() {
   };
 
   return (
-    <section className="relative py-16 md:py-20 lg:py-24">
+    <section className="relative py-16 md:py-20 lg:py-24 bg-gradient-to-b from-purple-200/20 via-emerald-200/20 to-teal-50/30 dark:from-transparent dark:via-transparent dark:to-transparent">
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-16">
