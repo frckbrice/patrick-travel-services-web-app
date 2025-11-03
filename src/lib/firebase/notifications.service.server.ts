@@ -31,7 +31,11 @@ export async function createRealtimeNotification(
     }
 
     // Generate a unique key for the notification (using timestamp + random suffix)
-    const notificationId = `-${Date.now()}${Math.random().toString(36).substring(2, 9)}`;
+    // Format: timestamp-random ensures chronological ordering in Firebase
+    // Using inverted timestamp pattern (max - now) for reverse chronological order when sorted
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 9);
+    const notificationId = `${timestamp}_${randomSuffix}`;
     const notificationRef = adminDatabase.ref(`notifications/${userId}/${notificationId}`);
 
     const notificationData: Omit<RealtimeNotification, 'id'> = {

@@ -1,6 +1,6 @@
 // Individual Email Message API - Get single email by ID
 // GET /api/emails/[id]
-// PUT /api/emails/[id]/read
+// PUT /api/emails/[id]
 
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
@@ -84,7 +84,13 @@ const getHandler = asyncHandler(async (request: NextRequest, context: RouteConte
       recipientId: email.recipientId,
     });
 
-    return successResponse({ email }, 'Email retrieved successfully');
+    // Map emailThreadId to threadId for mobile app compatibility
+    const emailWithThreadId = {
+      ...email,
+      threadId: email.emailThreadId || null,
+    };
+
+    return successResponse({ email: emailWithThreadId }, 'Email retrieved successfully');
   } catch (error) {
     logger.error('Failed to get email', {
       emailId: id,
@@ -95,7 +101,7 @@ const getHandler = asyncHandler(async (request: NextRequest, context: RouteConte
   }
 });
 
-// PUT /api/emails/[id]/read - Mark email as read
+// PUT /api/emails/[id] - Mark email as read
 const putHandler = asyncHandler(async (request: NextRequest, context: RouteContext) => {
   const req = request as AuthenticatedRequest;
 

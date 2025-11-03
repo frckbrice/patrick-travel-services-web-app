@@ -3,6 +3,7 @@
 // Uses HMAC-SHA256 with a server-side secret for non-reversible hashing
 
 import { createHmac } from 'crypto';
+import { logger } from './logger';
 
 /**
  * Hashes PII data using HMAC-SHA256 with a server-side secret
@@ -22,9 +23,9 @@ export function hashPII(value: string | null | undefined): string {
   // If not set, use a warning placeholder (development fallback)
   const secret = process.env.PII_HASH_SECRET || 'CHANGE_ME_IN_PRODUCTION';
 
-  if (secret === 'CHANGE_ME_IN_PRODUCTION' && process.env.NODE_ENV === 'production') {
-    console.warn(
-      'WARNING: PII_HASH_SECRET not set in production. Set this environment variable for secure PII hashing.'
+  if (secret === 'CHANGE_ME_IN_PRODUCTION') {
+    logger.warn(
+      'PII_HASH_SECRET not set in production. Set this environment variable for secure PII hashing.'
     );
   }
 

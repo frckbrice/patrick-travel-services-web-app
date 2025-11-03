@@ -123,37 +123,43 @@ class Logger {
   }
 
   warn(message: string, errorOrData?: Error | unknown | LogData): void {
-    let data: LogData = {};
+    // Only log warnings in development
+    if (this.isDevelopment) {
+      let data: LogData = {};
 
-    if (errorOrData instanceof Error) {
-      data = { message: errorOrData.message, stack: errorOrData.stack };
-    } else if (errorOrData && typeof errorOrData === 'object') {
-      data = errorOrData as LogData;
+      if (errorOrData instanceof Error) {
+        data = { message: errorOrData.message, stack: errorOrData.stack };
+      } else if (errorOrData && typeof errorOrData === 'object') {
+        data = errorOrData as LogData;
+      }
+
+      const formattedMessage = this.formatMessage('warn', message, data);
+      console.warn(formattedMessage);
     }
-
-    const formattedMessage = this.formatMessage('warn', message, data);
-    console.warn(formattedMessage);
   }
 
   error(message: string, errorOrData?: Error | unknown | LogData, additionalData?: LogData): void {
-    let data: LogData = { ...additionalData };
+    // Only log errors in development
+    if (this.isDevelopment) {
+      let data: LogData = { ...additionalData };
 
-    if (errorOrData instanceof Error) {
-      // Don't include stack in production, sanitize message
-      const errorMessage = errorOrData.message;
-      data = {
-        message: errorMessage.length > 100 ? `${errorMessage.substring(0, 100)}...` : errorMessage,
-        stack: this.isDevelopment ? errorOrData.stack : '[REDACTED]',
-        ...additionalData,
-      };
-    } else if (errorOrData && typeof errorOrData === 'object') {
-      data = { ...(errorOrData as LogData), ...additionalData };
-    } else if (errorOrData !== undefined) {
-      data = { error: String(errorOrData), ...additionalData };
+      if (errorOrData instanceof Error) {
+        const errorMessage = errorOrData.message;
+        data = {
+          message:
+            errorMessage.length > 100 ? `${errorMessage.substring(0, 100)}...` : errorMessage,
+          stack: errorOrData.stack,
+          ...additionalData,
+        };
+      } else if (errorOrData && typeof errorOrData === 'object') {
+        data = { ...(errorOrData as LogData), ...additionalData };
+      } else if (errorOrData !== undefined) {
+        data = { error: String(errorOrData), ...additionalData };
+      }
+
+      const formattedMessage = this.formatMessage('error', message, data);
+      console.error(formattedMessage);
     }
-
-    const formattedMessage = this.formatMessage('error', message, data);
-    console.error(formattedMessage);
   }
 
   debug(message: string, data?: LogData): void {

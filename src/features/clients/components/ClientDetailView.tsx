@@ -40,6 +40,7 @@ const statusConfig = {
   PROCESSING: { color: 'bg-purple-100 text-purple-800', icon: Clock },
   APPROVED: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
   REJECTED: { color: 'bg-red-100 text-red-800', icon: XCircle },
+  CLOSED: { color: 'bg-gray-100 text-gray-800', icon: XCircle },
 };
 
 export function ClientDetailView({ clientId }: ClientDetailViewProps) {
@@ -111,56 +112,53 @@ export function ClientDetailView({ clientId }: ClientDetailViewProps) {
       </div>
 
       {/* Client Info Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-3">
         {/* Status Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Status</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <Badge variant={client.isActive ? 'default' : 'secondary'}>
-                {client.isActive ? 'Active' : 'Inactive'}
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground">Status</span>
+            <CheckCircle className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant={client.isActive ? 'default' : 'secondary'}>
+              {client.isActive ? 'Active' : 'Inactive'}
+            </Badge>
+            {client.isVerified && (
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                Verified
               </Badge>
-              {client.isVerified && (
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                  Verified
-                </Badge>
-              )}
-            </div>
-          </CardContent>
+            )}
+          </div>
         </Card>
 
         {/* Cases Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Cases</CardTitle>
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{cases?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground">Total Cases</span>
+            <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold">{cases?.length || 0}</span>
+            <span className="text-xs text-muted-foreground">
               {cases?.filter((c) => c.status === 'APPROVED').length || 0} approved
-            </p>
-          </CardContent>
+            </span>
+          </div>
         </Card>
 
         {/* Member Since Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Member Since</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground">Member Since</span>
+            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold">
               {format(new Date(client.createdAt), 'MMM yyyy')}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Last login:{' '}
-              {client.lastLogin ? format(new Date(client.lastLogin), 'MMM dd, yyyy') : 'Never'}
-            </p>
-          </CardContent>
+            </span>
+            <span className="text-xs text-muted-foreground">
+              Last: {client.lastLogin ? format(new Date(client.lastLogin), 'MMM dd') : 'Never'}
+            </span>
+          </div>
         </Card>
       </div>
 
@@ -333,9 +331,9 @@ export function ClientDetailSkeleton() {
       </div>
 
       {/* Stats Cards Skeleton */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-3">
         {[1, 2, 3].map((i) => (
-          <SkeletonCard key={i} className="h-32" />
+          <SkeletonCard key={i} className="h-20" />
         ))}
       </div>
 

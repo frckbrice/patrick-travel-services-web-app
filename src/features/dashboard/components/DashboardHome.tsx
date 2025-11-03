@@ -57,7 +57,7 @@ export const DashboardHome = memo(function DashboardHome() {
         <p className="text-muted-foreground mt-2">Here is an overview of your immigration cases</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         {isLoading ? (
           <>
             <StatCardPlaceholder title="Total Cases" icon={Briefcase} />
@@ -70,56 +70,58 @@ export const DashboardHome = memo(function DashboardHome() {
           </>
         ) : (
           <>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Cases</CardTitle>
-                <Briefcase className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalCases || 0}</div>
-                <p className="text-xs text-muted-foreground">{stats.activeCases || 0} active</p>
-              </CardContent>
+            <Card className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-muted-foreground">Total Cases</span>
+                <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold">{stats.totalCases || 0}</span>
+                <span className="text-xs text-muted-foreground">
+                  {stats.activeCases || 0} active
+                </span>
+              </div>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending Documents</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.pendingDocuments || 0}</div>
-                <p className="text-xs text-muted-foreground">Documents to upload</p>
-              </CardContent>
+            <Card className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-muted-foreground">Pending Documents</span>
+                <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold">{stats.pendingDocuments || 0}</span>
+                <span className="text-xs text-muted-foreground">to upload</span>
+              </div>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Unread Messages</CardTitle>
-                <MessageSquare className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{unreadMessages}</div>
-                <p className="text-xs text-muted-foreground">From your advisor</p>
-              </CardContent>
+            <Card className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-muted-foreground">Unread Messages</span>
+                <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold">{unreadMessages}</span>
+                <span className="text-xs text-muted-foreground">from advisor</span>
+              </div>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
+            <Card className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-muted-foreground">
                   {user?.role === 'CLIENT' ? 'Completed' : 'Assigned Cases'}
-                </CardTitle>
-                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
+                </span>
+                <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold">
                   {user?.role === 'CLIENT'
                     ? stats.completedCases || 0
                     : ((stats as any)?.assignedCases ?? 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {user?.role === 'CLIENT' ? 'Successful cases' : 'Cases assigned to me'}
-                </p>
-              </CardContent>
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {user?.role === 'CLIENT' ? 'successful' : 'cases'}
+                </span>
+              </div>
             </Card>
           </>
         )}
@@ -200,10 +202,10 @@ export const DashboardHomeSkeleton = memo(function DashboardHomeSkeleton() {
         <SkeletonText size="sm" className="w-96" />
       </div>
 
-      {/* Stat Cards - Reduced from 4 to 3, simplified structure */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {[1, 2, 3].map((i) => (
-          <SimpleSkeleton key={i} className="h-28 rounded-lg" />
+      {/* Stat Cards - Compact design */}
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <SimpleSkeleton key={i} className="h-20 rounded-lg" />
         ))}
       </div>
 

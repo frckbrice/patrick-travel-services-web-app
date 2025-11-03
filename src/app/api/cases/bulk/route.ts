@@ -204,8 +204,6 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
         },
         data: {
           status: data.status,
-          ...(data.status === 'APPROVED' && { approvedAt: new Date() }),
-          ...(data.status === 'CLOSED' && { completedAt: new Date() }),
         },
       });
 

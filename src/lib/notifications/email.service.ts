@@ -19,6 +19,7 @@ interface EmailOptions {
   subject: string;
   html: string;
   text?: string;
+  headers?: Record<string, string>;
 }
 
 export async function sendEmail(options: EmailOptions) {
@@ -39,6 +40,7 @@ export async function sendEmail(options: EmailOptions) {
       subject: options.subject,
       html: options.html,
       text: options.text || options.html.replace(/<[^>]*>/g, ''),
+      headers: options.headers || {},
     });
     logger.info('Email sent successfully', { subject: options.subject });
   } catch (error) {
@@ -150,9 +152,21 @@ export async function sendUserEmail(options: {
 }) {
   const { to, from, fromEmail, subject, content, threadId, caseRef } = options;
 
+  // Include thread ID in subject for better compatibility (as fallback if headers are stripped)
+  // Format: [THREAD:threadId] Original Subject
+  const subjectWithThreadId = subject.includes('[THREAD:')
+    ? subject
+    : `[THREAD:${threadId}] ${subject}`;
+
   await sendEmail({
     to,
-    subject: escapeHtml(subject),
+    subject: escapeHtml(subjectWithThreadId),
+    headers: {
+      'In-Reply-To': `${threadId}@patricktravel.com`,
+      References: `${threadId}@patricktravel.com`,
+      'X-Thread-ID': threadId,
+      'Reply-To': process.env.SMTP_USER || '',
+    },
     html: `
       <!DOCTYPE html>
       <html>
@@ -192,9 +206,8 @@ export async function sendUserEmail(options: {
 
             <div class="metadata">
               <p><strong>How to Reply:</strong></p>
-              <p>• Reply through your dashboard for full tracking and history</p>
-              <p>• Or reply directly to this email (replies will be forwarded)</p>
-              <p style="margin-top: 10px;"><strong>Thread ID:</strong> <code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px;">${threadId}</code></p>
+              <p>• Reply through your dashboard (recommended) for full tracking and history</p>
+              <p>• Or simply reply to this email - your response will be received instantly</p>
             </div>
           </div>
           <div class="footer">

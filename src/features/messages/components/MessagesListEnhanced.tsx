@@ -131,7 +131,7 @@ export function MessagesList({
         return participantIds.includes(participantId);
       });
 
-      console.log(
+      logger.debug(
         `[Room Mapping] Virtual room ${selected.substring(0, 8)}... -> Real room ${realRoom?.id?.substring(0, 8) || 'null'}...`,
         {
           participantId: participantId.substring(0, 8) + '...',
@@ -294,11 +294,11 @@ export function MessagesList({
 
     // Debug logging
     if (transformedMessages.length > 0 || optimisticMessages.length > 0) {
-      console.log(
+      logger.debug(
         `[Messages] Room ${selected?.substring(0, 8)}... - API: ${transformedMessages.length}, Optimistic: ${optimisticMessages.length}, Pending: ${pendingOptimistic.length}`
       );
       if (transformedMessages.length > 0) {
-        console.log(`[Messages] Latest API message:`, {
+        logger.debug(`[Messages] Latest API message:`, {
           id: transformedMessages[transformedMessages.length - 1].id?.substring(0, 8) + '...',
           senderId:
             transformedMessages[transformedMessages.length - 1].senderId?.substring(0, 8) + '...',
@@ -377,21 +377,21 @@ export function MessagesList({
 
     const participantId = selected.replace('virtual-', '');
 
-    console.log('[Auto-switch] Checking for real room', {
+    logger.debug('[Auto-switch] Checking for real room', {
       virtualRoom: selected.substring(0, 8) + '...',
       participantId: participantId.substring(0, 8) + '...',
       apiConversationsCount: apiConversations?.length || 0,
     });
 
     if (!apiConversations || apiConversations.length === 0) {
-      console.log('[Auto-switch] No conversations available yet');
+      logger.debug('[Auto-switch] No conversations available yet');
       return;
     }
 
     const realRoom = apiConversations.find((room) => {
       const participantIds = Object.keys(room.participants || {});
       const matches = participantIds.some((id) => id === participantId);
-      console.log('[Auto-switch] Checking room', {
+      logger.debug('[Auto-switch] Checking room', {
         roomId: room.id?.substring(0, 8) + '...',
         participantIds: participantIds.map((id) => id.substring(0, 8) + '...'),
         searchingFor: participantId.substring(0, 8) + '...',
@@ -401,7 +401,7 @@ export function MessagesList({
     });
 
     if (realRoom && realRoom.id && realRoom.id !== selected) {
-      console.log('[Auto-switch] ⚡ Switching from virtual to real Firebase room', {
+      logger.debug('[Auto-switch] ⚡ Switching from virtual to real Firebase room', {
         from: selected.substring(0, 8) + '...',
         to: realRoom.id.substring(0, 8) + '...',
       });
@@ -420,7 +420,7 @@ export function MessagesList({
       // Switch to real room
       setSelected(realRoom.id);
     } else {
-      console.log('[Auto-switch] No real room found yet', {
+      logger.debug('[Auto-switch] No real room found yet', {
         foundRoom: realRoom?.id?.substring(0, 8) + '...' || 'null',
       });
     }

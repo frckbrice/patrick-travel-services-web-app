@@ -14,24 +14,23 @@ const auth = async (req: Request) => {
   const authHeader = req.headers.get('authorization');
   const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
 
-  // Log for debugging (remove in production)
-  console.log('[UploadThing Auth] Has Authorization header:', !!authHeader);
-  console.log('[UploadThing Auth] Has admin auth:', !!adminAuth);
-  console.log('[UploadThing Auth] Headers:', Object.fromEntries(req.headers.entries()));
+  // Log for debugging (logger only logs in development)
+  logger.debug('[UploadThing Auth] Has Authorization header:', { hasHeader: !!authHeader });
+  logger.debug('[UploadThing Auth] Has admin auth:', { hasAdminAuth: !!adminAuth });
 
   if (!adminAuth) {
-    console.error('[UploadThing Auth] Firebase Admin not initialized!');
+    logger.error('[UploadThing Auth] Firebase Admin not initialized!');
     throw new Error('Authentication service unavailable');
   }
 
   if (!token) {
-    console.error('[UploadThing Auth] No token found in request');
+    logger.error('[UploadThing Auth] No token found in request');
     throw new Error('Unauthorized: No authentication token provided');
   }
 
   try {
     const decodedToken = await adminAuth.verifyIdToken(token);
-    console.log('[UploadThing Auth] Token verified for user:', decodedToken.uid);
+    logger.debug('[UploadThing Auth] Token verified for user:', { uid: decodedToken.uid });
     return {
       uid: decodedToken.uid,
       email: decodedToken.email,
@@ -86,8 +85,8 @@ export const ourFileRouter = {
       return { userId: user.uid, uploadedBy: user.email };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      console.log('Document upload complete for user:', metadata.userId);
-      console.log('File URL:', file.ufsUrl);
+      logger.info('Document upload complete for user:', { userId: metadata.userId });
+      logger.info('File URL:', { fileUrl: file.ufsUrl });
 
       // Document metadata should be saved via /api/documents POST endpoint
       // This keeps the upload logic separate from metadata storage
@@ -120,7 +119,7 @@ export const ourFileRouter = {
       return { userId: user.uid, uploadedBy: user.email };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      console.log('Message attachment uploaded by:', metadata.userId);
+      logger.info('Message attachment uploaded by:', { userId: metadata.userId });
 
       return {
         uploadedBy: metadata.uploadedBy,

@@ -3,6 +3,8 @@
  * Use these functions to clear PWA cache when experiencing issues
  */
 
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 /**
  * Unregister all service workers and clear all caches
  * This is useful when the PWA is blocking API requests in development
@@ -14,7 +16,9 @@ export async function clearServiceWorkerAndCache(): Promise<void> {
       const registrations = await navigator.serviceWorker.getRegistrations();
       for (const registration of registrations) {
         await registration.unregister();
-        console.log('[SW] Unregistered service worker:', registration.scope);
+        if (isDevelopment) {
+          console.log('[SW] Unregistered service worker:', registration.scope);
+        }
       }
     }
 
@@ -24,14 +28,20 @@ export async function clearServiceWorkerAndCache(): Promise<void> {
       await Promise.all(
         cacheNames.map(async (cacheName) => {
           await caches.delete(cacheName);
-          console.log('[CACHE] Deleted cache:', cacheName);
+          if (isDevelopment) {
+            console.log('[CACHE] Deleted cache:', cacheName);
+          }
         })
       );
     }
 
-    console.log('[SW] All service workers and caches cleared successfully');
+    if (isDevelopment) {
+      console.log('[SW] All service workers and caches cleared successfully');
+    }
   } catch (error) {
-    console.error('[SW] Error clearing service workers and cache:', error);
+    if (isDevelopment) {
+      console.error('[SW] Error clearing service workers and cache:', error);
+    }
     throw error;
   }
 }
@@ -77,7 +87,9 @@ export async function clearApiCache(): Promise<void> {
     await Promise.all(
       apiCaches.map(async (cacheName) => {
         await caches.delete(cacheName);
-        console.log('[CACHE] Deleted API cache:', cacheName);
+        if (isDevelopment) {
+          console.log('[CACHE] Deleted API cache:', cacheName);
+        }
       })
     );
   }

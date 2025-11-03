@@ -185,7 +185,7 @@ export function UploadDialog({ open, onOpenChange, onUpload, isUploading }: Uplo
       setCaseId('');
     } catch (error) {
       toast.error(t('documents.uploadFailed'));
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
     }
   };
 

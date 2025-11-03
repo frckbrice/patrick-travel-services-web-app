@@ -7,6 +7,8 @@ import { authenticateToken, AuthenticatedRequest } from '@/lib/auth/middleware';
 import { asyncHandler, ApiError, HttpStatus } from '@/lib/utils/error-handler';
 import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
+import { createRealtimeNotification } from '@/lib/firebase/notifications.service.server';
+import { sendPushNotificationToUser } from '@/lib/notifications/expo-push.service';
 
 // POST /api/emails/send - Send email (tracked in PostgreSQL)
 const postHandler = asyncHandler(async (request: NextRequest) => {
@@ -97,7 +99,7 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
     // Verify case exists and get reference number
     const caseData = await prisma.case.findUnique({
       where: { id: caseId },
-      select: { 
+      select: {
         id: true,
         referenceNumber: true,
       },
@@ -195,18 +197,113 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
   }
 
   // Create notification for recipient (leverage existing notification system)
+  // Skip notifications for 'support' recipientId (system notifications)
   if (finalRecipientId && finalRecipientId !== 'support') {
-    await prisma.notification.create({
-      data: {
+    try {
+      const notification = await prisma.notification.create({
+        data: {
+          userId: finalRecipientId,
+          caseId: caseId, // caseId is now required for all emails
+          type: NotificationType.NEW_EMAIL,
+          title: `New email from ${senderName}`,
+          message: `Subject: ${subject.substring(0, 100)}${subject.length > 100 ? '...' : ''}`,
+          isRead: false,
+          actionUrl: '/dashboard/messages',
+        },
+      });
+
+      // Send Firebase realtime and Expo push notifications in parallel (fire-and-forget)
+      // These run asynchronously and won't block the email send response
+      const firebasePromise = createRealtimeNotification(finalRecipientId, {
+        type: notification.type,
+        title: notification.title,
+        message: notification.message,
+        actionUrl: notification.actionUrl || undefined,
+      }).catch((error) => {
+        logger.warn('Failed to create Firebase notification for email', {
+          error: error instanceof Error ? error.message : String(error),
+          notificationId: notification.id,
+          userId: finalRecipientId,
+          caseId: caseId,
+        });
+      });
+
+      // Calculate unread count for badge (optional - helps mobile apps show badge count)
+      // Note: This could be optimized by caching or passing from notification table
+      let badgeCount: number | undefined;
+      try {
+        const unreadCount = await prisma.notification.count({
+          where: {
+            userId: finalRecipientId,
+            isRead: false,
+          },
+        });
+        badgeCount = unreadCount > 0 ? unreadCount : undefined;
+      } catch (badgeError) {
+        // Non-critical - skip badge if query fails
+        logger.warn('Failed to calculate badge count', { userId: finalRecipientId });
+      }
+
+      // Send push notification (fire-and-forget)
+      logger.info('Attempting to send push notification for email', {
+        recipientId: finalRecipientId,
+        notificationId: notification.id,
+        messageId: message.id,
+        caseId: caseId,
+      });
+
+      const pushPromise = sendPushNotificationToUser(finalRecipientId, {
+        title: notification.title,
+        body: notification.message,
+        data: {
+          type: notification.type,
+          notificationId: notification.id,
+          messageId: message.id, // Add messageId at top level for easier access
+          caseId: notification.caseId || undefined,
+          actionUrl: notification.actionUrl || undefined,
+          // Add deep linking support
+          screen: 'messages',
+          params: {
+            caseId: notification.caseId || undefined,
+            messageId: message.id,
+          },
+        },
+        badge: badgeCount,
+        channelId: 'emails', // Android notification channel for email notifications
+      })
+        .then(() => {
+          logger.info('Push notification sent successfully for email', {
+            recipientId: finalRecipientId,
+            notificationId: notification.id,
+            messageId: message.id,
+          });
+        })
+        .catch((error) => {
+          logger.warn('Failed to send push notification for email', {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            userId: finalRecipientId,
+            notificationId: notification.id,
+            caseId: caseId,
+          });
+        });
+
+      // Fire both notifications in parallel (non-blocking)
+      Promise.allSettled([firebasePromise, pushPromise]).catch(() => {
+        // All errors already handled individually above
+      });
+    } catch (notificationError) {
+      // Log but don't fail email send if notification creation fails
+      logger.error('Failed to create notification for email', {
+        error:
+          notificationError instanceof Error
+            ? notificationError.message
+            : String(notificationError),
         userId: finalRecipientId,
-        caseId: caseId, // caseId is now required for all emails
-        type: NotificationType.NEW_EMAIL,
-        title: `New email from ${senderName}`,
-        message: `Subject: ${subject.substring(0, 100)}${subject.length > 100 ? '...' : ''}`,
-        isRead: false,
-        actionUrl: '/dashboard/messages',
-      },
-    });
+        caseId: caseId,
+        messageId: message.id,
+      });
+    }
   }
 
   return NextResponse.json({

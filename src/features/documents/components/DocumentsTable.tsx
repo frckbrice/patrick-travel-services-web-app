@@ -129,7 +129,7 @@ export function DocumentsTable() {
     documents.forEach((doc) => {
       // Skip documents without client info
       if (!doc.uploadedBy) {
-        console.warn('Document missing uploadedBy data:', doc.id);
+        logger.warn('Document missing uploadedBy data:', { docId: doc.id });
         return;
       }
 

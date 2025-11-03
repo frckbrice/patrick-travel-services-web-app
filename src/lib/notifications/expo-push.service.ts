@@ -25,6 +25,10 @@ interface ExpoPushReceipt {
 
 /**
  * Send push notification to a single user
+ *
+ * @param userId - The user ID to send notification to
+ * @param notification - Notification payload with title, body, optional data and badge
+ * @returns Promise that resolves when notification is sent (or no tokens found)
  */
 export async function sendPushNotificationToUser(
   userId: string,
@@ -33,9 +37,12 @@ export async function sendPushNotificationToUser(
     body: string;
     data?: Record<string, any>;
     badge?: number;
+    channelId?: string; // Android notification channel ID
   }
 ): Promise<void> {
   try {
+    logger.info('Looking up push tokens for user', { userId });
+
     // Get user's push tokens from database
     const pushTokenSettings = await prisma.systemSetting.findMany({
       where: {
@@ -50,13 +57,31 @@ export async function sendPushNotificationToUser(
       return;
     }
 
-    const tokens = pushTokenSettings.map((setting) => setting.value);
+    logger.info('Found push tokens for user', {
+      userId,
+      tokenCount: pushTokenSettings.length,
+      platforms: pushTokenSettings.map((s) => {
+        const match = s.key.match(/pushToken:([^:]+)/);
+        return match ? match[1] : 'unknown';
+      }),
+    });
 
-    await sendPushNotifications(tokens, notification);
+    const tokens = pushTokenSettings.map((setting) => setting.value);
+    const tokenSettingsMap = new Map(pushTokenSettings.map((setting) => [setting.value, setting]));
+
+    // Send notifications and get receipts for cleanup
+    const results = await sendPushNotificationsWithCleanup(
+      tokens,
+      notification,
+      tokenSettingsMap,
+      userId
+    );
 
     logger.info('Push notifications sent to user', {
       userId,
       tokenCount: tokens.length,
+      sentCount: results.sent,
+      failedCount: results.failed,
       title: notification.title,
     });
   } catch (error) {
@@ -75,6 +100,7 @@ export async function sendPushNotificationToUsers(
     body: string;
     data?: Record<string, any>;
     badge?: number;
+    channelId?: string; // Android notification channel ID
   }
 ): Promise<void> {
   try {
@@ -95,12 +121,36 @@ export async function sendPushNotificationToUsers(
     }
 
     const tokens = pushTokenSettings.map((setting) => setting.value);
+    const tokenSettingsMap = new Map(pushTokenSettings.map((setting) => [setting.value, setting]));
 
-    await sendPushNotifications(tokens, notification);
+    // Group tokens by userId for better tracking
+    // Extract userId from key: user:{userId}:pushToken:...
+    const tokensByUser = new Map<string, string[]>();
+    pushTokenSettings.forEach((setting) => {
+      const match = setting.key.match(/^user:([^:]+):pushToken:/);
+      if (match) {
+        const userId = match[1];
+        if (!tokensByUser.has(userId)) {
+          tokensByUser.set(userId, []);
+        }
+        tokensByUser.get(userId)!.push(setting.value);
+      }
+    });
+
+    // Send notifications for all users (tokens are sent together to Expo)
+    // Note: Cleanup will work per-token, not per-user
+    const results = await sendPushNotificationsWithCleanup(
+      tokens,
+      notification,
+      tokenSettingsMap,
+      'multiple_users'
+    );
 
     logger.info('Push notifications sent to multiple users', {
       userCount: userIds.length,
       tokenCount: tokens.length,
+      sentCount: results.sent,
+      failedCount: results.failed,
       title: notification.title,
     });
   } catch (error) {
@@ -110,9 +160,9 @@ export async function sendPushNotificationToUsers(
 }
 
 /**
- * Send push notifications via Expo Push API
+ * Send push notifications via Expo Push API with automatic cleanup of invalid tokens
  */
-async function sendPushNotifications(
+async function sendPushNotificationsWithCleanup(
   tokens: string[],
   notification: {
     title: string;
@@ -120,8 +170,11 @@ async function sendPushNotifications(
     data?: Record<string, any>;
     sound?: 'default' | null;
     badge?: number;
-  }
-): Promise<void> {
+    channelId?: string; // Android notification channel ID
+  },
+  tokenSettingsMap: Map<string, { id: string; key: string }>,
+  userId: string
+): Promise<{ sent: number; failed: number }> {
   // Filter valid Expo push tokens
   const validTokens = tokens.filter(
     (token) => token.startsWith('ExponentPushToken[') || token.startsWith('ExpoPushToken[')
@@ -129,26 +182,66 @@ async function sendPushNotifications(
 
   if (validTokens.length === 0) {
     logger.warn('No valid Expo push tokens found', { totalTokens: tokens.length });
-    return;
+    return { sent: 0, failed: 0 };
   }
 
-  // Prepare push messages
-  const messages: ExpoPushMessage[] = validTokens.map((token) => ({
-    to: token,
-    title: notification.title,
-    body: notification.body,
-    data: notification.data || {},
-    sound: notification.sound !== null ? 'default' : null,
-    badge: notification.badge,
-    priority: 'high',
-  }));
+  // Prepare push messages with Android channelId support
+  // Expo Push Notification format: https://docs.expo.dev/push-notifications/sending-notifications/
+  // Note: Expo handles conversion to FCM/APNS internally
+  // Payload sent to Expo API:
+  // {
+  //   "to": "ExponentPushToken[...]",
+  //   "title": "...",
+  //   "body": "...",
+  //   "data": {...},
+  //   "priority": "high",
+  //   "channelId": "emails"  // Android channel routing
+  // }
+  const messages: ExpoPushMessage[] = validTokens.map((token) => {
+    const message: ExpoPushMessage = {
+      to: token,
+      title: notification.title,
+      body: notification.body,
+      data: notification.data || {},
+      sound: notification.sound !== null ? 'default' : null,
+      badge: notification.badge !== undefined ? notification.badge : undefined,
+      priority: 'high',
+    };
+
+    // Always include channelId if provided (required for Android notification channel routing)
+    if (notification.channelId) {
+      message.channelId = notification.channelId;
+    }
+
+    return message;
+  });
+
+  logger.debug('Prepared push notification messages', {
+    messageCount: messages.length,
+    channelId: notification.channelId || 'default',
+    hasChannelId: messages.every((m) => m.channelId !== undefined),
+  });
 
   // Send to Expo Push API
   try {
+    logger.debug('Sending push notifications to Expo API', {
+      messageCount: messages.length,
+      channelId: notification.channelId || 'default',
+      sampleMessage: messages[0]
+        ? {
+            to: messages[0].to?.toString().substring(0, 30) + '...',
+            title: messages[0].title,
+            channelId: messages[0].channelId,
+            hasChannelId: !!messages[0].channelId,
+          }
+        : null,
+    });
+
     const response = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
       headers: {
         Accept: 'application/json',
+        'Accept-Encoding': 'gzip, deflate',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(messages),
@@ -161,26 +254,83 @@ async function sendPushNotifications(
 
     const receipts: { data: ExpoPushReceipt[] } = await response.json();
 
-    // Log any errors from Expo
+    const invalidTokenKeys: string[] = [];
+
+    // Process receipts and identify invalid tokens
     receipts.data.forEach((receipt, index) => {
+      const token = validTokens[index];
+      const tokenSetting = tokenSettingsMap.get(token);
+
       if (receipt.status === 'error') {
         logger.error('Push notification delivery error', {
-          token: validTokens[index],
+          tokenPrefix: token.substring(0, 20) + '...',
           error: receipt.message,
           details: receipt.details,
+          userId,
         });
+
+        // Clean up invalid/expired tokens
+        // Common Expo error codes that indicate invalid tokens:
+        const invalidTokenErrors = ['DeviceNotRegistered', 'InvalidCredentials', 'MessageTooBig'];
+
+        const errorCode = receipt.details?.error;
+        if (errorCode && invalidTokenErrors.includes(errorCode) && tokenSetting) {
+          invalidTokenKeys.push(tokenSetting.key);
+        }
       }
     });
 
+    // Remove invalid tokens from database
+    if (invalidTokenKeys.length > 0) {
+      await prisma.systemSetting.deleteMany({
+        where: {
+          key: {
+            in: invalidTokenKeys,
+          },
+        },
+      });
+
+      logger.info('Removed invalid push tokens from database', {
+        userId,
+        removedCount: invalidTokenKeys.length,
+      });
+    }
+
+    const successCount = receipts.data.filter((r) => r.status === 'ok').length;
+    const errorCount = receipts.data.filter((r) => r.status === 'error').length;
+
     logger.info('Push notifications sent to Expo', {
       totalSent: validTokens.length,
-      successCount: receipts.data.filter((r) => r.status === 'ok').length,
-      errorCount: receipts.data.filter((r) => r.status === 'error').length,
+      successCount,
+      errorCount,
+      invalidTokensRemoved: invalidTokenKeys.length,
     });
+
+    return { sent: successCount, failed: errorCount };
   } catch (error) {
     logger.error('Failed to send push notifications via Expo API', error);
     throw error;
   }
+}
+
+/**
+ * Send push notifications via Expo Push API (legacy function - kept for backward compatibility)
+ * @deprecated Use sendPushNotificationsWithCleanup instead
+ */
+async function sendPushNotifications(
+  tokens: string[],
+  notification: {
+    title: string;
+    body: string;
+    data?: Record<string, any>;
+    sound?: 'default' | null;
+    badge?: number;
+    channelId?: string; // Android notification channel ID
+  }
+): Promise<void> {
+  // For backward compatibility, create a dummy map
+  const dummyMap = new Map<string, { id: string; key: string }>();
+  await sendPushNotificationsWithCleanup(tokens, notification, dummyMap, 'unknown');
 }
 
 /**

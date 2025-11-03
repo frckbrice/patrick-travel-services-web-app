@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuthStore } from '@/features/auth/store';
 import { ref, onValue, off, query, orderByChild, equalTo } from 'firebase/database';
 import { database, auth } from '@/lib/firebase/firebase-client';
+import { logger } from '@/lib/utils/logger';
 
 // Type definitions
 export interface ChatMessage {
@@ -73,11 +74,11 @@ function subscribeToRoomMessages(
       }
 
       // Debug logging
-      console.log(
+      logger.debug(
         `[Firebase] Received ${messages.length} messages for room ${chatRoomId.substring(0, 8)}...`
       );
       if (messages.length > 0) {
-        console.log(`[Firebase] Latest message:`, {
+        logger.debug(`[Firebase] Latest message:`, {
           id: messages[messages.length - 1].id?.substring(0, 8) + '...',
           senderId: messages[messages.length - 1].senderId?.substring(0, 8) + '...',
           content: messages[messages.length - 1].content?.substring(0, 20) + '...',
@@ -89,7 +90,7 @@ function subscribeToRoomMessages(
       callback(sorted);
     },
     (error) => {
-      console.error(
+      logger.error(
         `[Firebase] Error listening to messages for room ${chatRoomId.substring(0, 8)}...`,
         error
       );
@@ -113,14 +114,14 @@ function subscribeToUserChatRooms(
 
       // Check if snapshot has data
       if (!snapshot.exists()) {
-        console.log(`[Chat Rooms] No rooms found for userId ${userId.substring(0, 8)}...`);
+        logger.debug(`[Chat Rooms] No rooms found for userId ${userId.substring(0, 8)}...`);
         callback([]);
         return;
       }
 
       // Use .size property instead of .numChildren() for modular SDK
       const roomsCount = snapshot.size;
-      console.log(`[Chat Rooms] Listening for userId ${userId.substring(0, 8)}...`, {
+      logger.debug(`[Chat Rooms] Listening for userId ${userId.substring(0, 8)}...`, {
         roomsFound: roomsCount,
       });
 
@@ -128,7 +129,7 @@ function subscribeToUserChatRooms(
         const metadata = childSnapshot.child('metadata').val();
         const roomId = childSnapshot.key!;
 
-        console.log(`[Chat Rooms] Checking room ${roomId.substring(0, 8)}...`, {
+        logger.debug(`[Chat Rooms] Checking room ${roomId.substring(0, 8)}...`, {
           hasMetadata: !!metadata,
           participants: metadata?.participants,
           matchesClient: metadata?.participants?.clientId === userId,
@@ -152,18 +153,18 @@ function subscribeToUserChatRooms(
             updatedAt: metadata.updatedAt || metadata.createdAt,
           };
 
-          console.log(`[Chat Rooms] Added room ${roomId.substring(0, 8)}...`);
+          logger.debug(`[Chat Rooms] Added room ${roomId.substring(0, 8)}...`);
           rooms.push(room);
         }
       });
 
-      console.log(
+      logger.debug(
         `[Chat Rooms] Returning ${rooms.length} rooms for userId ${userId.substring(0, 8)}...`
       );
       callback(rooms.sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0)));
     },
     (error) => {
-      console.error(
+      logger.error(
         `[Chat Rooms] Error listening to rooms for userId ${userId.substring(0, 8)}...`,
         error
       );

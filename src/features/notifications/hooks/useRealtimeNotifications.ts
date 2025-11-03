@@ -11,6 +11,7 @@ import { showNotification } from '@/lib/notifications/push-notifications';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { NOTIFICATIONS_KEY } from '../api/queries';
+import { logger } from '@/lib/utils/logger';
 
 export function useRealtimeNotifications() {
   const { user, isAuthenticated } = useAuthStore();
@@ -47,7 +48,7 @@ export function useRealtimeNotifications() {
               });
             } catch (error) {
               // Silently handle notification errors - don't break the app
-              console.warn('Failed to show browser notification:', error);
+              logger.warn('Failed to show browser notification:', error);
             }
           }
           // Optionally, you could request permission if it's 'default'

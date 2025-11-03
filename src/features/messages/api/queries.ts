@@ -10,6 +10,25 @@ import type { ChatRoom, Message } from '../types';
 
 export const MESSAGES_KEY = 'messages';
 
+// Get email messages (for tracking email replies)
+export function useEmails(filters?: { isRead?: boolean; limit?: number }) {
+  return useQuery({
+    queryKey: [MESSAGES_KEY, 'emails', filters],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filters?.isRead !== undefined) params.append('isRead', String(filters.isRead));
+      if (filters?.limit) params.append('limit', filters.limit.toString());
+
+      const response = await apiClient.get(`/api/emails?${params}`);
+      return response.data.data;
+    },
+    staleTime: 30 * 1000, // 30 seconds cache for recent emails
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
+}
+
 /**
  * @deprecated Use useRealtimeChatRooms() from ../hooks/useRealtimeChat.ts instead
  * This API call is slow (30s+ timeout) and redundant

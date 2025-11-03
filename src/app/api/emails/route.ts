@@ -17,14 +17,62 @@ const handler = asyncHandler(async (req: NextRequest) => {
   const page = parseInt(searchParams.get('page') || '1');
   const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
   const skip = (page - 1) * limit;
+  const isReadParam = searchParams.get('isRead'); // Support isRead filter
+  const direction = searchParams.get('direction'); // 'incoming' or 'outgoing'
+  const searchQuery = searchParams.get('search') || ''; // Search in subject/content
+  const sortBy = searchParams.get('sortBy') || 'sentAt'; // Sort column: sentAt, subject, etc.
+  const sortOrder = searchParams.get('sortOrder') || 'desc'; // Sort direction: asc or desc
+
+  // Build where clause with proper AND/OR logic
+  const where: any = {
+    AND: [
+      {
+        messageType: 'EMAIL', // Only get EMAIL type messages
+      },
+    ],
+  };
+
+  // Filter by direction: incoming (recipient) or outgoing (sender)
+  if (direction === 'incoming') {
+    where.AND.push({ recipientId: request.user.userId });
+  } else if (direction === 'outgoing') {
+    where.AND.push({ senderId: request.user.userId });
+  } else {
+    // Default: show both sent and received
+    where.AND.push({
+      OR: [{ senderId: request.user.userId }, { recipientId: request.user.userId }],
+    });
+  }
+
+  // isRead filter - only filter read status if parameter is provided
+  if (isReadParam !== null && isReadParam !== undefined && isReadParam !== '') {
+    const isReadValue = isReadParam === 'true';
+    where.AND.push({ isRead: isReadValue });
+  }
+
+  // Search filter - search in subject and content
+  if (searchQuery) {
+    where.AND.push({
+      OR: [
+        { subject: { contains: searchQuery, mode: 'insensitive' } },
+        { content: { contains: searchQuery, mode: 'insensitive' } },
+      ],
+    });
+  }
+
+  // Build orderBy clause
+  const orderBy: any = {};
+  if (sortBy === 'sentAt' || sortBy === 'subject' || sortBy === 'createdAt') {
+    orderBy[sortBy] = sortOrder === 'asc' ? 'asc' : 'desc';
+  } else {
+    // Default to sentAt desc
+    orderBy.sentAt = 'desc';
+  }
 
   // Fetch emails (sent or received by user) - only EMAIL type messages
   const [emails, total] = await Promise.all([
     prisma.message.findMany({
-      where: {
-        messageType: 'EMAIL', // Only get EMAIL type messages
-        OR: [{ senderId: request.user.userId }, { recipientId: request.user.userId }],
-      },
+      where,
       include: {
         sender: {
           select: {
@@ -50,24 +98,25 @@ const handler = asyncHandler(async (req: NextRequest) => {
           },
         },
       },
-      orderBy: {
-        sentAt: 'desc',
-      },
+      orderBy,
       skip,
       take: limit,
     }),
     prisma.message.count({
-      where: {
-        messageType: 'EMAIL', // Only count EMAIL type messages
-        OR: [{ senderId: request.user.userId }, { recipientId: request.user.userId }],
-      },
+      where,
     }),
   ]);
+
+  // Map emailThreadId to threadId for mobile app compatibility
+  const emailsWithThreadId = emails.map((email) => ({
+    ...email,
+    threadId: email.emailThreadId || null,
+  }));
 
   return NextResponse.json({
     success: true,
     data: {
-      emails,
+      emails: emailsWithThreadId,
       pagination: {
         page,
         limit,

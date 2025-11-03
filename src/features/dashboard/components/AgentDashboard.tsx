@@ -15,10 +15,12 @@ import {
   Users,
   FileCheck,
   AlertCircle,
+  Mail,
 } from 'lucide-react';
 import Link from 'next/link';
 import { StatCardPlaceholder, ListItemPlaceholder } from '@/components/ui/progressive-placeholder';
 import { SimpleSkeleton, SkeletonText } from '@/components/ui/simple-skeleton';
+import { format } from 'date-fns';
 
 export const AgentDashboard = memo(function AgentDashboard() {
   const { user } = useAuthStore();
@@ -66,8 +68,8 @@ export const AgentDashboard = memo(function AgentDashboard() {
       const status = String(c.status || '').toUpperCase();
       if (status !== 'APPROVED') return false;
 
-      // Use dedicated completion timestamp: completedAt or approvedAt, fallback to lastUpdated
-      const completionTimestamp = c.completedAt || c.approvedAt || c.lastUpdated;
+      // Use lastUpdated as completion timestamp
+      const completionTimestamp = c.lastUpdated;
       if (!completionTimestamp) return false;
 
       const completedDate = new Date(completionTimestamp);
