@@ -49,6 +49,8 @@ model User {
   transferredFrom      TransferHistory[]  @relation("TransferFrom")
   transferredTo        TransferHistory[]  @relation("TransferTo")
   transfersInitiated   TransferHistory[]  @relation("TransferInitiator")
+  payments             Payment[]
+  refunds              Refund[]
 
   @@index([email])
   @@index([role])
@@ -461,4 +463,89 @@ enum ContactStatus {
   REVIEWED
   RESPONDED
   CLOSED
+}
+
+model LegalDocument {
+  id          String     @id @default(uuid())
+  type        LegalType
+  language    String     @default("en") // Language code: en, fr, etc.
+  title       String
+  slug        String
+  version     String?
+  content     String     // Markdown or HTML content
+  isActive    Boolean    @default(true)
+  publishedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([type, language, slug])
+  @@index([type])
+  @@index([language])
+  @@index([type, language])
+  @@index([isActive])
+  @@index([publishedAt])
+}
+
+enum LegalType {
+  TERMS
+  PRIVACY
+}
+
+model Payment {
+  id                String    @id @default(uuid())
+  userId            String
+  stripeIntentId    String    @unique // Stripe PaymentIntent ID
+  amount            Decimal   @db.Decimal(10, 2) // Amount in major units (e.g., 150.00)
+  currency          String    @default("usd")
+  description       String?
+  status            PaymentStatus @default(PENDING)
+  caseNumber        String?
+  metadata          Json?     // Additional metadata (caseNumber, etc.)
+  clientSecret      String?   // Stripe client secret (for client-side confirmation)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refunds           Refund[]
+
+  @@index([userId])
+  @@index([stripeIntentId])
+  @@index([status])
+  @@index([caseNumber])
+  @@index([createdAt])
+}
+
+model Refund {
+  id                String    @id @default(uuid())
+  paymentId         String
+  userId            String
+  stripeRefundId    String?   @unique // Stripe Refund ID
+  amount            Decimal   @db.Decimal(10, 2) // Refund amount in major units
+  currency          String    @default("usd")
+  reason            String?
+  status            RefundStatus @default(PENDING)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  payment           Payment   @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([userId])
+  @@index([stripeRefundId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELED
+  REFUNDED
+}
+
+enum RefundStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
 }
