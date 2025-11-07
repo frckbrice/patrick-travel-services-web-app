@@ -69,6 +69,7 @@
     "react-i18next": "^15.7.4",
     "recharts": "^3.2.1",
     "sonner": "^2.0.7",
+    "stripe": "^17.3.1",
     "tailwind-merge": "^3.3.1",
     "uploadthing": "^7.4.1",
     "web-vitals": "^4.2.4",
