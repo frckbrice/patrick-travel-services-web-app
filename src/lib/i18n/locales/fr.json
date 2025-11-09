@@ -80,6 +80,46 @@
       "subLabel": "(Optionnel - pour l'inscription du personnel)",
       "placeholder": "agent-xxxxxxxxx ou admin-xxxxxxxxx",
       "helper": "Vous avez un code d'invitation? Entrez-le pour vous inscrire en tant que membre du personnel."
+    },
+    "loading": {
+      "authenticating": "Vérification de vos identifiants...",
+      "settingUp": "Configuration de votre session...",
+      "redirecting": "Préparation de votre tableau de bord...",
+      "creatingAccount": "Création de votre compte...",
+      "settingUpProfile": "Configuration de votre profil...",
+      "redirectingWelcome": "Bienvenue ! Redirection vers le tableau de bord...",
+      "successTitle": "Succès !",
+      "processing": "Veuillez patienter pendant que nous traitons votre demande...",
+      "successRedirect": "Redirection vers votre tableau de bord"
+    },
+    "placeholders": {
+      "firstName": "Jean",
+      "lastName": "Dupont",
+      "phone": "+33123456789",
+      "street": "123 rue Principale",
+      "city": "Paris",
+      "country": "France"
+    },
+    "address": {
+      "street": "Adresse postale",
+      "city": "Ville",
+      "country": "Pays"
+    },
+    "privacy": {
+      "title": "Confidentialité et conditions",
+      "acceptTermsPrefix": "J'accepte les",
+      "acceptPrivacyPrefix": "J'accepte la",
+      "termsLabel": "Conditions générales",
+      "privacyLabel": "Politique de confidentialité",
+      "requiredIndicator": "*",
+      "notice": "En créant un compte, vous consentez à la collecte et au traitement de vos données personnelles tels que décrits dans notre Politique de confidentialité. Vous pouvez retirer votre consentement ou demander la suppression de vos données à tout moment depuis les paramètres de votre compte."
+    },
+    "toasts": {
+      "resetEmailSent": "E-mail de réinitialisation envoyé"
+    },
+    "errors": {
+      "resetEmailUserNotFound": "Aucun compte trouvé avec cette adresse e-mail",
+      "resetEmailFailed": "Échec de l'envoi de l'e-mail de réinitialisation. Veuillez réessayer."
     }
   },
   "dashboard": {

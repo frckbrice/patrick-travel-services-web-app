@@ -12,6 +12,8 @@ import {
   User,
   Mail,
   Phone,
+  MapPin,
+  Globe,
   Shield,
   CheckCircle,
   XCircle,
@@ -60,6 +62,9 @@ const profileSchema = z.object({
     .refine((val) => val === '' || /^(\+\d{7,15}|0\d{6,14})$/.test(val), {
       message: 'Phone must be international (+1234567890) or national (0123456789) format',
     }),
+  street: z.string().max(255, 'Street must be 255 characters or less').optional(),
+  city: z.string().max(255, 'City must be 255 characters or less').optional(),
+  country: z.string().max(255, 'Country must be 255 characters or less').optional(),
 });
 
 type ProfileInput = z.infer<typeof profileSchema>;
@@ -79,6 +84,9 @@ export function ProfileView() {
       firstName: user?.firstName || '',
       lastName: user?.lastName || '',
       phone: user?.phone || '',
+      street: user?.street || '',
+      city: user?.city || '',
+      country: user?.country || '',
     },
   });
 
@@ -88,6 +96,9 @@ export function ProfileView() {
       firstName: user?.firstName || '',
       lastName: user?.lastName || '',
       phone: user?.phone || '',
+      street: user?.street || '',
+      city: user?.city || '',
+      country: user?.country || '',
     });
   }, [user, form]);
 
@@ -316,6 +327,45 @@ export function ProfileView() {
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="street"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Street address</FormLabel>
+                        <FormControl>
+                          <Input placeholder="123 Main St" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>City</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Paris" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="country"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Country</FormLabel>
+                        <FormControl>
+                          <Input placeholder="France" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <div className="flex items-center gap-2 pt-4">
                     <Button
                       type="submit"
@@ -345,6 +395,13 @@ export function ProfileView() {
                 <ProfileField icon={User} label="Last Name" value={user?.lastName || ''} />
                 <ProfileField icon={Mail} label="Email" value={user?.email || ''} />
                 <ProfileField icon={Phone} label="Phone" value={user?.phone || 'Not provided'} />
+                <ProfileField icon={MapPin} label="Street" value={user?.street || 'Not provided'} />
+                <ProfileField icon={MapPin} label="City" value={user?.city || 'Not provided'} />
+                <ProfileField
+                  icon={Globe}
+                  label="Country"
+                  value={user?.country || 'Not provided'}
+                />
               </div>
             )}
           </CardContent>

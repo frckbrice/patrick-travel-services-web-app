@@ -6,6 +6,9 @@ export interface User {
   firstName: string;
   lastName: string;
   phone?: string;
+  street?: string;
+  city?: string;
+  country?: string;
   role: UserRole;
   isActive: boolean;
   isVerified: boolean;
@@ -24,6 +27,9 @@ export interface UpdateUserInput {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  street?: string;
+  city?: string;
+  country?: string;
   role?: UserRole;
   isActive?: boolean;
   isVerified?: boolean;

@@ -55,6 +55,9 @@ export function RegisterForm() {
       firstName: '',
       lastName: '',
       phone: '',
+      street: '',
+      city: '',
+      country: '',
       inviteCode: '',
       acceptedTerms: false,
       acceptedPrivacy: false,
@@ -115,9 +118,9 @@ export function RegisterForm() {
         isLoading={isAuthLoading}
         isSuccess={isAuthenticated}
         steps={{
-          authenticating: 'Creating your account...',
-          settingUp: 'Setting up your profile...',
-          redirecting: 'Welcome! Redirecting to dashboard...',
+          authenticating: t('auth.loading.creatingAccount'),
+          settingUp: t('auth.loading.settingUpProfile'),
+          redirecting: t('auth.loading.redirectingWelcome'),
         }}
       />
 
@@ -141,9 +144,6 @@ export function RegisterForm() {
                   fill="#EA4335"
                   d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
                 />
-                {googleSignInMutation.isPending
-                  ? t('auth.signingIn')
-                  : t('auth.continueWithGoogle')}
                 <path
                   fill="#FBBC05"
                   d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
@@ -154,7 +154,7 @@ export function RegisterForm() {
                 />
                 <path fill="none" d="M0 0h48v48H0z" />
               </svg>
-              {googleSignInMutation.isPending ? 'Signing in...' : 'Continue with Google'}
+              {googleSignInMutation.isPending ? t('auth.signingIn') : t('auth.continueWithGoogle')}
             </Button>
 
             <div className="relative">
@@ -178,7 +178,7 @@ export function RegisterForm() {
                     <FormItem>
                       <FormLabel>{t('auth.firstName')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="John" {...field} />
+                        <Input placeholder={t('auth.placeholders.firstName')} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -193,7 +193,7 @@ export function RegisterForm() {
                     <FormItem>
                       <FormLabel>{t('auth.lastName')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Doe" {...field} />
+                        <Input placeholder={t('auth.placeholders.lastName')} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -208,7 +208,7 @@ export function RegisterForm() {
                     <FormItem>
                       <FormLabel>{t('auth.email')}</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="john@example.com" {...field} />
+                        <Input type="email" placeholder={t('auth.emailPlaceholder')} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -223,7 +223,52 @@ export function RegisterForm() {
                     <FormItem>
                       <FormLabel>{t('auth.phone')}</FormLabel>
                       <FormControl>
-                        <Input type="tel" placeholder="+1234567890" {...field} />
+                        <Input type="tel" placeholder={t('auth.placeholders.phone')} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Street (Optional) */}
+                <FormField
+                  control={form.control}
+                  name="street"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('auth.address.street')}</FormLabel>
+                      <FormControl>
+                        <Input placeholder={t('auth.placeholders.street')} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* City (Optional) */}
+                <FormField
+                  control={form.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('auth.address.city')}</FormLabel>
+                      <FormControl>
+                        <Input placeholder={t('auth.placeholders.city')} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Country (Optional) */}
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('auth.address.country')}</FormLabel>
+                      <FormControl>
+                        <Input placeholder={t('auth.placeholders.country')} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -287,7 +332,7 @@ export function RegisterForm() {
 
                 {/* GDPR Consent Section */}
                 <div className="space-y-4 pt-4 border-t">
-                  <p className="text-sm font-medium text-foreground">Privacy & Terms</p>
+                  <p className="text-sm font-medium text-foreground">{t('auth.privacy.title')}</p>
 
                   {/* Terms & Conditions Checkbox */}
                   <FormField
@@ -300,15 +345,17 @@ export function RegisterForm() {
                         </FormControl>
                         <div className="space-y-1 leading-none">
                           <FormLabel className="text-sm font-normal">
-                            I accept the{' '}
+                            {t('auth.privacy.acceptTermsPrefix')}{' '}
                             <Link
                               href="/terms"
                               target="_blank"
                               className="text-primary hover:underline font-medium"
                             >
-                              Terms & Conditions
+                              {t('auth.privacy.termsLabel')}
                             </Link>
-                            <span className="text-destructive ml-1">*</span>
+                            <span className="text-destructive ml-1">
+                              {t('auth.privacy.requiredIndicator')}
+                            </span>
                           </FormLabel>
                           <FormMessage />
                         </div>
@@ -327,15 +374,17 @@ export function RegisterForm() {
                         </FormControl>
                         <div className="space-y-1 leading-none">
                           <FormLabel className="text-sm font-normal">
-                            I accept the{' '}
+                            {t('auth.privacy.acceptPrivacyPrefix')}{' '}
                             <Link
                               href="/privacy"
                               target="_blank"
                               className="text-primary hover:underline font-medium"
                             >
-                              Privacy Policy
+                              {t('auth.privacy.privacyLabel')}
                             </Link>
-                            <span className="text-destructive ml-1">*</span>
+                            <span className="text-destructive ml-1">
+                              {t('auth.privacy.requiredIndicator')}
+                            </span>
                           </FormLabel>
                           <FormMessage />
                         </div>
@@ -343,11 +392,7 @@ export function RegisterForm() {
                     )}
                   />
 
-                  <FormDescription className="text-xs">
-                    By creating an account, you consent to the collection and processing of your
-                    personal data as described in our Privacy Policy. You can withdraw consent or
-                    request data deletion at any time from your account settings.
-                  </FormDescription>
+                  <FormDescription className="text-xs">{t('auth.privacy.notice')}</FormDescription>
                 </div>
 
                 {/* Submit Button */}

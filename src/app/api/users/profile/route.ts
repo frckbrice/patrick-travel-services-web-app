@@ -32,6 +32,9 @@ const updateProfileSchema = z.object({
       message: 'Phone must be international (+1234567890) or national (0123456789) format',
     })
     .optional(),
+  street: z.string().min(2).max(255).optional(),
+  city: z.string().min(2).max(255).optional(),
+  country: z.string().min(2).max(255).optional(),
   profilePicture: z
     .string()
     .url()
@@ -59,15 +62,26 @@ const handler = asyncHandler(async (request: NextRequest) => {
     );
   }
 
+  const { street, city, country, ...profileData } = validationResult.data;
+  const payload = {
+    ...profileData,
+    ...(street !== undefined ? { street: street.trim() || null } : {}),
+    ...(city !== undefined ? { city: city.trim() || null } : {}),
+    ...(country !== undefined ? { country: country.trim() || null } : {}),
+  };
+
   const updatedUser = await prisma.user.update({
     where: { id: req.user.userId },
-    data: validationResult.data,
+    data: payload,
     select: {
       id: true,
       email: true,
       firstName: true,
       lastName: true,
       phone: true,
+      street: true,
+      city: true,
+      country: true,
       profilePicture: true,
       role: true,
       isActive: true,

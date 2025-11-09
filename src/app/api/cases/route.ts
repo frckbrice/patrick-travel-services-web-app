@@ -135,6 +135,9 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
         firstName: true,
         lastName: true,
         phone: true,
+        street: true,
+        city: true,
+        country: true,
       },
     },
     assignedAgent: {
@@ -218,11 +221,24 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
   }
 
   const body = await request.json();
-  const { serviceType, priority } = body;
+  const { serviceType, destinationId, priority } = body;
 
   // Validation
   if (!serviceType) {
     throw new ApiError('serviceType is required', HttpStatus.BAD_REQUEST);
+  }
+  if (!destinationId || typeof destinationId !== 'string') {
+    throw new ApiError('destinationId is required', HttpStatus.BAD_REQUEST);
+  }
+
+  // Ensure destination exists and is active
+  const destination = await prisma.destination.findUnique({
+    where: { id: destinationId },
+    select: { id: true, isActive: true },
+  });
+
+  if (!destination || destination.isActive === false) {
+    throw new ApiError('Invalid destination', HttpStatus.BAD_REQUEST);
   }
 
   // Generate unique reference number
@@ -236,6 +252,7 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
       priority: priority || 'NORMAL',
       status: 'SUBMITTED',
       clientId: req.user.userId,
+      destinationId,
     },
     include: {
       client: {
@@ -268,10 +285,10 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
     });
 
     // Get all admin users for notification
-    const adminUsers = await prisma.user.findMany({
-      where: { role: 'ADMIN', isActive: true },
-      select: { id: true, email: true },
-    });
+    // const adminUsers = await prisma.user.findMany({
+    //   where: { role: 'ADMIN', isActive: true },
+    //   select: { id: true, email: true },
+    // });
 
     const notificationPromises = [
       // 1. Send confirmation email to CLIENT
@@ -315,48 +332,48 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
     ];
 
     // 4. Notify all ADMIN users (Dashboard + Push only, NO email for scalability)
-    for (const admin of adminUsers) {
-      notificationPromises.push(
-        // Send realtime web dashboard notification to admin
-        createRealtimeNotification(admin.id, {
-          type: 'CASE_STATUS_UPDATE',
-          title: 'New Case Submitted',
-          message: `${clientFullName} submitted case ${referenceNumber}`,
-          actionUrl: NOTIFICATION_ACTION_URLS.CASE_DETAILS(newCase.id),
-        }),
+    // for (const admin of adminUsers) {
+    //   notificationPromises.push(
+    //     // Send realtime web dashboard notification to admin
+    //     createRealtimeNotification(admin.id, {
+    //       type: 'CASE_STATUS_UPDATE',
+    //       title: 'New Case Submitted',
+    //       message: `${clientFullName} submitted case ${referenceNumber}`,
+    //       actionUrl: NOTIFICATION_ACTION_URLS.CASE_DETAILS(newCase.id),
+    //     }),
 
-        // Send mobile push notification to admin
-        (async () => {
-          let badge: number | undefined;
-          try {
-            const unread = await prisma.notification.count({
-              where: { userId: admin.id, isRead: false },
-            });
-            badge = unread > 0 ? unread : undefined;
-          } catch {}
-          await sendPushNotificationToUser(admin.id, {
-            title: 'New Case Submitted',
-            body: `${clientFullName} submitted ${serviceType.replace(/_/g, ' ')} case.`,
-            data: {
-              type: 'NEW_CASE_ADMIN',
-              caseId: newCase.id,
-              actionUrl: NOTIFICATION_ACTION_URLS.CASE_DETAILS(newCase.id),
-              screen: 'cases',
-              params: { caseId: newCase.id },
-            },
-            badge,
-            channelId: 'cases',
-          });
-        })()
-      );
-    }
+    //     // Send mobile push notification to admin
+    //     (async () => {
+    //       let badge: number | undefined;
+    //       try {
+    //         const unread = await prisma.notification.count({
+    //           where: { userId: admin.id, isRead: false },
+    //         });
+    //         badge = unread > 0 ? unread : undefined;
+    //       } catch {}
+    //       await sendPushNotificationToUser(admin.id, {
+    //         title: 'New Case Submitted',
+    //         body: `${clientFullName} submitted ${serviceType.replace(/_/g, ' ')} case.`,
+    //         data: {
+    //           type: 'NEW_CASE_ADMIN',
+    //           caseId: newCase.id,
+    //           actionUrl: NOTIFICATION_ACTION_URLS.CASE_DETAILS(newCase.id),
+    //           screen: 'cases',
+    //           params: { caseId: newCase.id },
+    //         },
+    //         badge,
+    //         channelId: 'cases',
+    //       });
+    //     })()
+    //   );
+    // }
 
     await Promise.all(notificationPromises);
 
     logger.info('Case submission notifications sent', {
       caseId: newCase.id,
       clientEmail: newCase.client.email,
-      adminCount: adminUsers.length,
+      // adminCount: adminUsers.length,
     });
   } catch (error) {
     logger.error('Failed to send case submission notifications', error, {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
@@ -30,15 +30,26 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 
-const forgotPasswordSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-});
+type ForgotPasswordSchema = z.ZodObject<{
+  email: z.ZodString;
+}>;
 
-type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+type ForgotPasswordInput = z.infer<ForgotPasswordSchema>;
 
 export default function ForgotPasswordPage() {
   const [emailSent, setEmailSent] = useState(false);
   const { t } = useTranslation();
+
+  const forgotPasswordSchema = useMemo<ForgotPasswordSchema>(
+    () =>
+      z.object({
+        email: z
+          .string()
+          .email({ message: t('validation.invalidEmail') })
+          .min(1, { message: t('validation.required') }),
+      }),
+    [t]
+  );
 
   const form = useForm<ForgotPasswordInput>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -51,17 +62,17 @@ export default function ForgotPasswordPage() {
     try {
       await sendPasswordResetEmail(auth, data.email);
       setEmailSent(true);
-      toast.success('Password reset email sent');
+      toast.success(t('auth.toasts.resetEmailSent'));
     } catch (error) {
       logger.error('Password reset error:', error);
       if (error instanceof Error) {
         if (error.message.includes('user-not-found')) {
-          toast.error('No account found with this email address');
+          toast.error(t('auth.errors.resetEmailUserNotFound'));
         } else {
-          toast.error(error.message);
+          toast.error(t('auth.errors.resetEmailFailed'));
         }
       } else {
-        toast.error('Failed to send reset email. Please try again.');
+        toast.error(t('auth.errors.resetEmailFailed'));
       }
     }
   };

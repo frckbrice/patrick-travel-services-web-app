@@ -88,6 +88,9 @@ export interface User {
   firstName: string;
   lastName: string;
   phone?: string | null;
+  street?: string | null;
+  city?: string | null;
+  country?: string | null;
   profilePicture?: string | null;
   role: Role;
   isActive: boolean;
@@ -272,6 +275,9 @@ export interface RegisterData {
   firstName: string;
   lastName: string;
   phone?: string;
+  street?: string;
+  city?: string;
+  country?: string;
 }
 
 export interface AuthResponse {

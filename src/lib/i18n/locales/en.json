@@ -81,6 +81,46 @@
       "subLabel": "(Optional - for staff registration)",
       "placeholder": "agent-xxxxxxxxx or admin-xxxxxxxxx",
       "helper": "Have an invite code? Enter it to register as staff member."
+    },
+    "loading": {
+      "authenticating": "Authenticating your credentials...",
+      "settingUp": "Setting up your session...",
+      "redirecting": "Preparing your dashboard...",
+      "creatingAccount": "Creating your account...",
+      "settingUpProfile": "Setting up your profile...",
+      "redirectingWelcome": "Welcome! Redirecting to dashboard...",
+      "successTitle": "Success!",
+      "processing": "Please wait while we process your request...",
+      "successRedirect": "Redirecting you to your dashboard"
+    },
+    "placeholders": {
+      "firstName": "John",
+      "lastName": "Doe",
+      "phone": "+1234567890",
+      "street": "123 Main St",
+      "city": "Paris",
+      "country": "France"
+    },
+    "address": {
+      "street": "Street Address",
+      "city": "City",
+      "country": "Country"
+    },
+    "privacy": {
+      "title": "Privacy & Terms",
+      "acceptTermsPrefix": "I accept the",
+      "acceptPrivacyPrefix": "I accept the",
+      "termsLabel": "Terms & Conditions",
+      "privacyLabel": "Privacy Policy",
+      "requiredIndicator": "*",
+      "notice": "By creating an account, you consent to the collection and processing of your personal data as described in our Privacy Policy. You can withdraw consent or request data deletion at any time from your account settings."
+    },
+    "toasts": {
+      "resetEmailSent": "Password reset email sent"
+    },
+    "errors": {
+      "resetEmailUserNotFound": "No account found with this email address",
+      "resetEmailFailed": "Failed to send reset email. Please try again."
     }
   },
   "dashboard": {
