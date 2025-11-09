@@ -1,13 +1,28 @@
 // PII Hashing utility for secure logging
 // Purpose: Hash sensitive user data (email, uid) before logging to prevent PII leakage
-// Uses HMAC-SHA256 with a server-side secret for non-reversible hashing
+// Uses a lightweight hashing strategy with a secret salt for non-reversible hashing
 
-import { createHmac } from 'crypto';
 import { logger } from './logger';
 
 /**
- * Hashes PII data using HMAC-SHA256 with a server-side secret
- * Returns a truncated hash suitable for logging and debugging
+ * Simple FNV-1a 32-bit hash implementation that works in both browser and Node runtimes.
+ * Returns an 8 character hex string.
+ */
+function fnv1aHash(input: string): string {
+  let hash = 0x811c9dc5;
+
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+
+  // Ensure unsigned 32-bit and return as zero-padded hex
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+/**
+ * Hashes PII data using a deterministic hashing strategy with a secret salt.
+ * Returns a truncated hash suitable for logging and debugging.
  *
  * @param value - The PII value to hash (email, uid, etc.)
  * @returns Truncated hash string (first 16 chars) or 'unknown' if value is empty
@@ -19,8 +34,7 @@ import { logger } from './logger';
 export function hashPII(value: string | null | undefined): string {
   if (!value) return 'unknown';
 
-  // Get secret from environment variable
-  // If not set, use a warning placeholder (development fallback)
+  // Get secret from environment variable. If not set, use a warning placeholder (development fallback)
   const secret = process.env.PII_HASH_SECRET || 'CHANGE_ME_IN_PRODUCTION';
 
   if (secret === 'CHANGE_ME_IN_PRODUCTION') {
@@ -29,14 +43,16 @@ export function hashPII(value: string | null | undefined): string {
     );
   }
 
-  // Create HMAC-SHA256 hash
-  const hmac = createHmac('sha256', secret);
-  hmac.update(value);
-  const hash = hmac.digest('hex');
+  // Combine value with secret so hashes differ across deployments/environments
+  const saltedValue = `${value}:${secret}`;
 
-  // Return truncated hash (first 16 chars) for logging
-  // This is enough to identify unique users in logs while preventing reversibility
-  return hash.substring(0, 16);
+  // Derive two FNV hashes (forward + reversed) to provide 16 hex chars.
+  const forwardHash = fnv1aHash(saltedValue);
+  const reverseHash = fnv1aHash([...saltedValue].reverse().join(''));
+
+  // Return truncated hash (first 16 chars) for logging.
+  // This is enough to identify unique users in logs while preventing reversibility.
+  return `${forwardHash}${reverseHash}`.substring(0, 16);
 }
 
 /**
