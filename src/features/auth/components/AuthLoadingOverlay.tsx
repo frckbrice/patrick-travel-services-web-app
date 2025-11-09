@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -17,6 +18,7 @@ interface AuthLoadingOverlayProps {
 export function AuthLoadingOverlay({ isLoading, isSuccess, steps }: AuthLoadingOverlayProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [show, setShow] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (isLoading) {
@@ -65,16 +67,16 @@ export function AuthLoadingOverlay({ isLoading, isSuccess, steps }: AuthLoadingO
             {/* Message */}
             <div className="text-center space-y-2">
               <h3 className="text-xl font-semibold">
-                {isSuccess ? 'Success!' : stepMessages[currentStep] || stepMessages[0]}
+                {isSuccess
+                  ? t('auth.loading.successTitle')
+                  : stepMessages[currentStep] || stepMessages[0]}
               </h3>
               {!isSuccess && (
-                <p className="text-sm text-muted-foreground">
-                  Please wait while we process your request...
-                </p>
+                <p className="text-sm text-muted-foreground">{t('auth.loading.processing')}</p>
               )}
               {isSuccess && (
                 <p className="text-sm text-green-600 dark:text-green-400 animate-in fade-in duration-300">
-                  Redirecting you to your dashboard
+                  {t('auth.loading.successRedirect')}
                 </p>
               )}
             </div>

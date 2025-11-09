@@ -107,6 +107,7 @@ export enum Priority {
 
 export interface CreateCaseInput {
   serviceType: string;
+  destinationId: string;
   priority?: Priority;
 }
 

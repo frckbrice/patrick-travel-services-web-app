@@ -10,6 +10,9 @@ export interface UpdateProfileInput {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  street?: string;
+  city?: string;
+  country?: string;
   profilePicture?: string;
 }
 

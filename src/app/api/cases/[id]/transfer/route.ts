@@ -56,6 +56,9 @@ const handler = asyncHandler(
             email: true,
             firstName: true,
             lastName: true,
+            street: true,
+            city: true,
+            country: true,
           },
         },
         assignedAgent: {
@@ -118,6 +121,9 @@ const handler = asyncHandler(
               firstName: true,
               lastName: true,
               phone: true,
+              street: true,
+              city: true,
+              country: true,
             },
           },
           assignedAgent: {

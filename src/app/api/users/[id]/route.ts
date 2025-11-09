@@ -75,6 +75,9 @@ const getHandler = asyncHandler(async (request: NextRequest, context: RouteConte
       firstName: true,
       lastName: true,
       phone: true,
+      street: true,
+      city: true,
+      country: true,
       role: true,
       isActive: true,
       isVerified: true,
@@ -124,9 +127,20 @@ const putHandler = asyncHandler(async (request: NextRequest, context: RouteConte
   const updateData: any = {};
 
   // Users can update their own basic info
-  if (body.firstName) updateData.firstName = body.firstName;
-  if (body.lastName) updateData.lastName = body.lastName;
-  if (body.phone) updateData.phone = body.phone;
+  if (body.firstName !== undefined) updateData.firstName = body.firstName;
+  if (body.lastName !== undefined) updateData.lastName = body.lastName;
+  if (body.phone !== undefined) updateData.phone = body.phone;
+  if (body.street !== undefined) {
+    updateData.street =
+      typeof body.street === 'string' && body.street.trim() ? body.street.trim() : null;
+  }
+  if (body.city !== undefined) {
+    updateData.city = typeof body.city === 'string' && body.city.trim() ? body.city.trim() : null;
+  }
+  if (body.country !== undefined) {
+    updateData.country =
+      typeof body.country === 'string' && body.country.trim() ? body.country.trim() : null;
+  }
 
   // Track if role is being changed (for Firebase claims update)
   let roleChanged = false;
@@ -152,6 +166,9 @@ const putHandler = asyncHandler(async (request: NextRequest, context: RouteConte
       firstName: true,
       lastName: true,
       phone: true,
+      street: true,
+      city: true,
+      country: true,
       role: true,
       isActive: true,
       isVerified: true,

@@ -103,18 +103,16 @@ export function LoginForm() {
         isLoading={isAuthLoading}
         isSuccess={isAuthenticated}
         steps={{
-          authenticating: 'Authenticating your credentials...',
-          settingUp: 'Setting up your session...',
-          redirecting: 'Preparing your dashboard...',
+          authenticating: t('auth.loading.authenticating'),
+          settingUp: t('auth.loading.settingUp'),
+          redirecting: t('auth.loading.redirecting'),
         }}
       />
 
       <div className="w-full max-w-md mx-auto">
         <Card>
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">
-              {t('auth.welcome')} {t('common.back')}
-            </CardTitle>
+            <CardTitle className="text-2xl text-center">{t('auth.welcomeBack')}</CardTitle>
             <CardDescription className="text-center">{t('auth.signInMessage')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -168,7 +166,7 @@ export function LoginForm() {
                     <FormItem>
                       <FormLabel>{t('auth.email')}</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="you@example.com" {...field} />
+                        <Input type="email" placeholder={t('auth.emailPlaceholder')} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -36,6 +36,9 @@ export const registerSchema = z.object({
       .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number')
       .optional()
   ),
+  street: z.string().max(255, 'Street must be 255 characters or less').optional(),
+  city: z.string().max(255, 'City must be 255 characters or less').optional(),
+  country: z.string().max(255, 'Country must be 255 characters or less').optional(),
   inviteCode: z.preprocess((val) => {
     if (typeof val === 'string') {
       const trimmed = val.trim();

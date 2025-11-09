@@ -66,8 +66,20 @@ export async function sendPushNotificationToUser(
       }),
     });
 
-    const tokens = pushTokenSettings.map((setting) => setting.value);
-    const tokenSettingsMap = new Map(pushTokenSettings.map((setting) => [setting.value, setting]));
+    // Flatten tokens but remove duplicates per token value
+    const uniqueTokenEntries = Array.from(
+      pushTokenSettings
+        .reduce((map, setting) => {
+          if (!map.has(setting.value)) {
+            map.set(setting.value, setting);
+          }
+          return map;
+        }, new Map<string, (typeof pushTokenSettings)[number]>())
+        .values()
+    );
+
+    const tokens = uniqueTokenEntries.map((setting) => setting.value);
+    const tokenSettingsMap = new Map(uniqueTokenEntries.map((setting) => [setting.value, setting]));
 
     // Send notifications and get receipts for cleanup
     const results = await sendPushNotificationsWithCleanup(
@@ -120,8 +132,19 @@ export async function sendPushNotificationToUsers(
       return;
     }
 
-    const tokens = pushTokenSettings.map((setting) => setting.value);
-    const tokenSettingsMap = new Map(pushTokenSettings.map((setting) => [setting.value, setting]));
+    const uniqueTokenEntries = Array.from(
+      pushTokenSettings
+        .reduce((map, setting) => {
+          if (!map.has(setting.value)) {
+            map.set(setting.value, setting);
+          }
+          return map;
+        }, new Map<string, (typeof pushTokenSettings)[number]>())
+        .values()
+    );
+
+    const tokens = uniqueTokenEntries.map((setting) => setting.value);
+    const tokenSettingsMap = new Map(uniqueTokenEntries.map((setting) => [setting.value, setting]));
 
     // Group tokens by userId for better tracking
     // Extract userId from key: user:{userId}:pushToken:...
@@ -249,64 +272,38 @@ async function sendPushNotificationsWithCleanup(
 
     if (!response.ok) {
       const errorText = await response.text();
+      if (response.status === 400 && errorText.includes('PUSH_TOO_MANY_EXPERIENCE_IDS')) {
+        logger.warn('Expo reported mixed experience IDs, retrying per token', {
+          userId,
+          tokenCount: validTokens.length,
+        });
+        return await sendNotificationsPerToken(
+          messages,
+          validTokens,
+          notification,
+          tokenSettingsMap,
+          userId
+        );
+      }
       throw new Error(`Expo API error: ${response.status} - ${errorText}`);
     }
 
     const receipts: { data: ExpoPushReceipt[] } = await response.json();
 
-    const invalidTokenKeys: string[] = [];
-
-    // Process receipts and identify invalid tokens
-    receipts.data.forEach((receipt, index) => {
-      const token = validTokens[index];
-      const tokenSetting = tokenSettingsMap.get(token);
-
-      if (receipt.status === 'error') {
-        logger.error('Push notification delivery error', {
-          tokenPrefix: token.substring(0, 20) + '...',
-          error: receipt.message,
-          details: receipt.details,
-          userId,
-        });
-
-        // Clean up invalid/expired tokens
-        // Common Expo error codes that indicate invalid tokens:
-        const invalidTokenErrors = ['DeviceNotRegistered', 'InvalidCredentials', 'MessageTooBig'];
-
-        const errorCode = receipt.details?.error;
-        if (errorCode && invalidTokenErrors.includes(errorCode) && tokenSetting) {
-          invalidTokenKeys.push(tokenSetting.key);
-        }
-      }
-    });
-
-    // Remove invalid tokens from database
-    if (invalidTokenKeys.length > 0) {
-      await prisma.systemSetting.deleteMany({
-        where: {
-          key: {
-            in: invalidTokenKeys,
-          },
-        },
-      });
-
-      logger.info('Removed invalid push tokens from database', {
-        userId,
-        removedCount: invalidTokenKeys.length,
-      });
-    }
-
-    const successCount = receipts.data.filter((r) => r.status === 'ok').length;
-    const errorCount = receipts.data.filter((r) => r.status === 'error').length;
+    const result = await processExpoReceipts(
+      receipts.data,
+      validTokens,
+      tokenSettingsMap,
+      userId,
+      notification.channelId
+    );
 
     logger.info('Push notifications sent to Expo', {
       totalSent: validTokens.length,
-      successCount,
-      errorCount,
-      invalidTokensRemoved: invalidTokenKeys.length,
+      ...result,
     });
 
-    return { sent: successCount, failed: errorCount };
+    return { sent: result.successCount, failed: result.errorCount };
   } catch (error) {
     logger.error('Failed to send push notifications via Expo API', error);
     throw error;
@@ -331,6 +328,131 @@ async function sendPushNotifications(
   // For backward compatibility, create a dummy map
   const dummyMap = new Map<string, { id: string; key: string }>();
   await sendPushNotificationsWithCleanup(tokens, notification, dummyMap, 'unknown');
+}
+
+async function sendNotificationsPerToken(
+  messages: ExpoPushMessage[],
+  validTokens: string[],
+  notification: {
+    title: string;
+    body: string;
+    data?: Record<string, any>;
+    sound?: 'default' | null;
+    badge?: number;
+    channelId?: string;
+  },
+  tokenSettingsMap: Map<string, { id: string; key: string }>,
+  userId: string
+): Promise<{ sent: number; failed: number }> {
+  const aggregatedReceipts: ExpoPushReceipt[] = [];
+  const aggregatedTokens: string[] = [];
+
+  for (let i = 0; i < messages.length; i++) {
+    const message = messages[i];
+    const token = validTokens[i];
+
+    try {
+      const response = await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Accept-Encoding': 'gzip, deflate',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify([message]),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        aggregatedReceipts.push({
+          status: 'error',
+          message: `HTTP ${response.status}: ${text}`,
+        });
+        aggregatedTokens.push(token);
+        continue;
+      }
+
+      const receipts: { data: ExpoPushReceipt[] } = await response.json();
+      aggregatedReceipts.push(receipts.data[0]);
+      aggregatedTokens.push(token);
+    } catch (err: any) {
+      aggregatedReceipts.push({
+        status: 'error',
+        message: err?.message || 'Unexpected error during per-token send',
+      });
+      aggregatedTokens.push(token);
+    }
+  }
+
+  const result = await processExpoReceipts(
+    aggregatedReceipts,
+    aggregatedTokens,
+    tokenSettingsMap,
+    userId,
+    notification.channelId
+  );
+
+  logger.info('Push notifications sent to Expo (per-token fallback)', {
+    totalSent: aggregatedTokens.length,
+    ...result,
+  });
+
+  return { sent: result.successCount, failed: result.errorCount };
+}
+
+async function processExpoReceipts(
+  receipts: ExpoPushReceipt[],
+  tokens: string[],
+  tokenSettingsMap: Map<string, { id: string; key: string }>,
+  userId: string,
+  channelId?: string
+): Promise<{ successCount: number; errorCount: number; invalidTokensRemoved: number }> {
+  const invalidTokenKeys: string[] = [];
+
+  receipts.forEach((receipt, index) => {
+    const token = tokens[index];
+    const tokenSetting = tokenSettingsMap.get(token);
+
+    if (receipt.status === 'error') {
+      logger.error('Push notification delivery error', {
+        tokenPrefix: token?.substring(0, 20) + '...',
+        error: receipt.message,
+        details: receipt.details,
+        userId,
+        channelId,
+      });
+
+      const invalidTokenErrors = ['DeviceNotRegistered', 'InvalidCredentials', 'MessageTooBig'];
+      const errorCode = receipt.details?.error;
+      if (errorCode && invalidTokenErrors.includes(errorCode) && tokenSetting) {
+        invalidTokenKeys.push(tokenSetting.key);
+      }
+    }
+  });
+
+  if (invalidTokenKeys.length > 0) {
+    await prisma.systemSetting.deleteMany({
+      where: {
+        key: {
+          in: invalidTokenKeys,
+        },
+      },
+    });
+
+    logger.info('Removed invalid push tokens from database', {
+      userId,
+      removedCount: invalidTokenKeys.length,
+    });
+  }
+
+  const successCount = receipts.filter((r) => r.status === 'ok').length;
+  const errorCount = receipts.filter((r) => r.status === 'error').length;
+
+  return {
+    successCount,
+    errorCount,
+    invalidTokensRemoved: invalidTokenKeys.length,
+  };
 }
 
 /**

@@ -39,6 +39,9 @@ const getHandler = asyncHandler(async (request: NextRequest, context: RouteConte
           firstName: true,
           lastName: true,
           phone: true,
+          street: true,
+          city: true,
+          country: true,
         },
       },
       assignedAgent: {
@@ -112,6 +115,14 @@ const putHandler = asyncHandler(async (request: NextRequest, context: RouteConte
     throw new ApiError(ERROR_MESSAGES.FORBIDDEN, HttpStatus.FORBIDDEN);
   }
 
+  // Only the client who owns the case can change the destination
+  if (body.destinationId !== undefined && existingCase.clientId !== req.user.userId) {
+    throw new ApiError(
+      'Only the submitting client can change the destination',
+      HttpStatus.FORBIDDEN
+    );
+  }
+
   // Update case
   const updatedCase = await prisma.case.update({
     where: { id },
@@ -130,6 +141,9 @@ const putHandler = asyncHandler(async (request: NextRequest, context: RouteConte
           firstName: true,
           lastName: true,
           phone: true,
+          street: true,
+          city: true,
+          country: true,
         },
       },
       assignedAgent: {

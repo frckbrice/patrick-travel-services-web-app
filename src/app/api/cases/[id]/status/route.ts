@@ -79,6 +79,9 @@ const handler = asyncHandler(
             firstName: true,
             lastName: true,
             phone: true,
+            street: true,
+            city: true,
+            country: true,
           },
         },
         assignedAgent: {
