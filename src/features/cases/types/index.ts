@@ -26,6 +26,31 @@ const AssignedAgentSchema = z.object({
   lastName: z.string(),
 });
 
+const AppointmentUserSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  role: z.string().optional().nullable(),
+});
+
+const AppointmentSchema = z.object({
+  id: z.string(),
+  caseId: z.string(),
+  clientId: z.string(),
+  createdById: z.string(),
+  assignedAgentId: z.string().optional().nullable(),
+  scheduledAt: z.string(),
+  location: z.string(),
+  notes: z.string().optional().nullable(),
+  status: z.enum(['SCHEDULED', 'RESCHEDULED', 'COMPLETED', 'CANCELLED']),
+  reminderSentAt: z.string().optional().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  assignedAgent: AppointmentUserSchema.optional().nullable(),
+  createdBy: AppointmentUserSchema.optional().nullable(),
+});
+
 export const CaseSchema = z
   .object({
     id: z.string(),
@@ -46,6 +71,7 @@ export const CaseSchema = z
     client: ClientSchema.optional(),
     assignedAgent: AssignedAgentSchema.optional().nullable(),
     formData: z.any().optional().nullable(),
+    appointments: z.array(AppointmentSchema).optional(),
   })
   .passthrough();
 
@@ -86,6 +112,7 @@ export interface Case {
     firstName: string;
     lastName: string;
   };
+  appointments?: Appointment[];
 }
 
 export enum CaseStatus {
@@ -116,4 +143,47 @@ export interface UpdateCaseInput {
   status?: CaseStatus;
   priority?: Priority;
   internalNotes?: string;
+}
+
+export interface Appointment {
+  id: string;
+  caseId: string;
+  clientId: string;
+  createdById: string;
+  assignedAgentId?: string | null;
+  scheduledAt: string;
+  location: string;
+  notes?: string | null;
+  status: AppointmentStatus;
+  reminderSentAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  assignedAgent?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role?: string | null;
+  } | null;
+  createdBy?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role?: string | null;
+  } | null;
+}
+
+export enum AppointmentStatus {
+  SCHEDULED = 'SCHEDULED',
+  RESCHEDULED = 'RESCHEDULED',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+}
+
+export interface CreateAppointmentInput {
+  scheduledAt: string;
+  location: string;
+  notes?: string;
+  assignedAgentId?: string;
 }

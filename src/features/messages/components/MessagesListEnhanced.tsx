@@ -72,6 +72,11 @@ export function MessagesList({
   const [isMounted, setIsMounted] = useState(false);
   const [emailComposerOpen, setEmailComposerOpen] = useState(false);
 
+  const relativeFormatter = useMemo(
+    () => new Intl.RelativeTimeFormat(i18n.language, { numeric: 'auto' }),
+    [i18n.language]
+  );
+
   // Refs
   const endRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -149,7 +154,7 @@ export function MessagesList({
     useRealtimeMessages(realChatRoomId);
 
   // REAL-TIME: Get typing status and control typing indicator
-  const { startTyping, stopTyping } = useTypingStatus(selected);
+  const { startTyping, stopTyping } = useTypingStatus(realChatRoomId);
 
   // Send message mutation
   const sendMessageMutation = useSendMessage();
@@ -169,7 +174,87 @@ export function MessagesList({
   const { presences } = useMultipleUserPresence(participantIds);
 
   // REAL-TIME: Track typing indicators for selected chat
-  const { typingUsers } = useTypingIndicators(selected);
+  const { typingUsers } = useTypingIndicators(realChatRoomId);
+
+  const formatRelativeTime = useCallback(
+    (timestamp?: number | null) => {
+      if (!timestamp || !isMounted) return '';
+      const diffMs = timestamp - Date.now();
+      const diffMinutes = Math.round(diffMs / (1000 * 60));
+
+      if (Math.abs(diffMinutes) < 1) {
+        return t('messages.justNow') || 'just now';
+      }
+
+      if (Math.abs(diffMinutes) < 60) {
+        return relativeFormatter.format(diffMinutes, 'minute');
+      }
+
+      const diffHours = Math.round(diffMinutes / 60);
+      if (Math.abs(diffHours) < 24) {
+        return relativeFormatter.format(diffHours, 'hour');
+      }
+
+      const diffDays = Math.round(diffHours / 24);
+      return relativeFormatter.format(diffDays, 'day');
+    },
+    [isMounted, relativeFormatter, t]
+  );
+
+  const getPresenceDetails = useCallback(
+    (participantId: string) => {
+      const presence = presences[participantId];
+
+      if (!presence) {
+        return {
+          status: 'offline' as const,
+          label: isMounted ? 'Offline' : '',
+          lastSeen: null,
+        };
+      }
+
+      const lastSeen =
+        typeof presence.lastSeen === 'number'
+          ? presence.lastSeen
+          : typeof presence.lastSeen === 'string'
+            ? Number(presence.lastSeen)
+            : null;
+
+      if (presence.status === 'online') {
+        return {
+          status: 'online' as const,
+          label: 'Online now',
+          lastSeen,
+        };
+      }
+
+      const relative = formatRelativeTime(lastSeen);
+      return {
+        status: 'offline' as const,
+        label: relative ? `Last seen ${relative}` : isMounted ? 'Offline' : '',
+        lastSeen,
+      };
+    },
+    [presences, formatRelativeTime, isMounted]
+  );
+
+  const typingNames = useMemo(
+    () =>
+      typingUsers
+        .map((typing) => typing.userName)
+        .filter((name): name is string => Boolean(name && name.trim().length > 0)),
+    [typingUsers]
+  );
+
+  const isParticipantTyping = typingUsers.length > 0;
+
+  const typingLabel = useMemo(() => {
+    if (!isParticipantTyping) return '';
+    if (typingNames.length === 0) return 'Someone is typing…';
+    if (typingNames.length === 1) return `${typingNames[0]} is typing…`;
+    if (typingNames.length === 2) return `${typingNames[0]} and ${typingNames[1]} are typing…`;
+    return `${typingNames[0]}, ${typingNames[1]} and others are typing…`;
+  }, [isParticipantTyping, typingNames]);
 
   // Transform ChatRoom to Conversation format for UI (fully memoized)
   const conversations = useMemo(() => {
@@ -325,6 +410,21 @@ export function MessagesList({
 
     return found;
   }, [conversations, selected]);
+
+  const selectedPresence = useMemo(
+    () => (selectedConversation ? getPresenceDetails(selectedConversation.participantId) : null),
+    [selectedConversation, getPresenceDetails]
+  );
+
+  const headerStatusLabel = isParticipantTyping
+    ? typingLabel
+    : selectedPresence?.label || (isMounted ? 'Offline' : '');
+
+  const headerStatusClass = isParticipantTyping
+    ? 'text-primary font-medium'
+    : selectedPresence?.status === 'online'
+      ? 'text-emerald-600 font-medium'
+      : 'text-muted-foreground';
 
   // Filter conversations by search query
   const filteredConversations = useMemo(() => {
@@ -700,56 +800,79 @@ export function MessagesList({
                 </div>
               </div>
             ) : (
-              filteredConversations.map((conv) => (
-                <button
-                  key={conv.id}
-                  onClick={() => setSelected(conv.id)}
-                  role="option"
-                  aria-selected={selected === conv.id}
-                  aria-label={`Conversation with ${conv.participantName}`}
-                  className={cn(
-                    'w-full p-4 text-left hover:bg-muted/50 transition border-b',
-                    selected === conv.id && 'bg-muted'
-                  )}
-                >
-                  <div className="flex gap-3">
-                    <div className="relative">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback>{getInitials(conv.participantName)}</AvatarFallback>
-                      </Avatar>
-                      {/* Online status indicator */}
-                      {presences[conv.participantId]?.status === 'online' && (
-                        <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-white" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between mb-1">
-                        <div className="flex items-center gap-1">
+              filteredConversations.map((conv) => {
+                const presenceDetails = getPresenceDetails(conv.participantId);
+                const presenceLabel =
+                  presenceDetails.status === 'online'
+                    ? 'Online now'
+                    : presenceDetails.label || (isMounted ? 'Offline' : '');
+
+                return (
+                  <button
+                    key={conv.id}
+                    onClick={() => setSelected(conv.id)}
+                    role="option"
+                    aria-selected={selected === conv.id}
+                    aria-label={`Conversation with ${conv.participantName}`}
+                    className={cn(
+                      'w-full p-4 text-left hover:bg-muted/50 transition border-b',
+                      selected === conv.id && 'bg-muted'
+                    )}
+                  >
+                    <div className="flex gap-3">
+                      <div className="relative">
+                        <Avatar className="h-10 w-10">
+                          <AvatarFallback>{getInitials(conv.participantName)}</AvatarFallback>
+                        </Avatar>
+                        <div
+                          className={cn(
+                            'absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white dark:border-slate-900',
+                            presenceDetails.status === 'online'
+                              ? 'bg-emerald-500'
+                              : 'bg-muted-foreground/40'
+                          )}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between mb-1">
                           <h4 className="text-sm font-semibold truncate">{conv.participantName}</h4>
-                          {presences[conv.participantId]?.status === 'online' && (
-                            <span className="text-xs text-green-600">•</span>
+                          {conv.unreadCount > 0 && (
+                            <Badge variant="default" className="ml-2">
+                              {conv.unreadCount}
+                            </Badge>
                           )}
                         </div>
-                        {conv.unreadCount > 0 && (
-                          <Badge variant="default" className="ml-2">
-                            {conv.unreadCount}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground mb-1">{conv.participantRole}</p>
-                      <p className="text-xs text-muted-foreground truncate">{conv.lastMessage}</p>
-                      {isMounted && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <Clock className="h-3 w-3" />
-                          <span className="text-xs" suppressHydrationWarning>
-                            {formatTime(conv.lastMessageTime)}
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
+                          <span className="text-xs text-muted-foreground">
+                            {conv.participantRole}
+                          </span>
+                          <span className="hidden sm:inline text-xs text-muted-foreground">•</span>
+                          <span
+                            className={cn(
+                              'text-xs',
+                              presenceDetails.status === 'online'
+                                ? 'text-emerald-600 font-medium'
+                                : 'text-muted-foreground'
+                            )}
+                            suppressHydrationWarning
+                          >
+                            {presenceLabel}
                           </span>
                         </div>
-                      )}
+                        <p className="text-xs text-muted-foreground truncate">{conv.lastMessage}</p>
+                        {isMounted && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <Clock className="h-3 w-3" />
+                            <span className="text-xs" suppressHydrationWarning>
+                              {formatTime(conv.lastMessageTime)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </button>
-              ))
+                  </button>
+                );
+              })
             )}
           </CardContent>
         </Card>
@@ -766,23 +889,42 @@ export function MessagesList({
                         {getInitials(selectedConversation.participantName)}
                       </AvatarFallback>
                     </Avatar>
-                    {/* Online status indicator */}
-                    {presences[selectedConversation.participantId]?.status === 'online' && (
-                      <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-white" />
-                    )}
+                    <div
+                      className={cn(
+                        'absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white dark:border-slate-900',
+                        selectedPresence?.status === 'online'
+                          ? 'bg-emerald-500'
+                          : 'bg-muted-foreground/40'
+                      )}
+                    />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-semibold">{selectedConversation.participantName}</h3>
-                      {presences[selectedConversation.participantId]?.status === 'online' && (
-                        <Badge variant="outline" className="text-xs">
-                          Online
+                      {isParticipantTyping ? (
+                        <Badge
+                          variant="outline"
+                          className="text-xs border-primary text-primary bg-primary/10"
+                        >
+                          Typing…
                         </Badge>
+                      ) : (
+                        selectedPresence?.status === 'online' && (
+                          <Badge variant="outline" className="text-xs">
+                            Online
+                          </Badge>
+                        )
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {selectedConversation.participantRole}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+                      <span className="text-xs text-muted-foreground">
+                        {selectedConversation.participantRole}
+                      </span>
+                      <span className="hidden sm:inline text-xs text-muted-foreground">•</span>
+                      <span className={cn('text-xs', headerStatusClass)} suppressHydrationWarning>
+                        {headerStatusLabel}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </CardHeader>
@@ -1009,14 +1151,20 @@ export function MessagesList({
 
                     {/* Typing indicator */}
                     {typingUsers.length > 0 && (
-                      <div className="flex gap-2 items-center">
+                      <div className="flex gap-2 items-start">
                         <Avatar className="h-8 w-8">
                           <AvatarFallback className="text-xs">
-                            {getInitials(typingUsers[0].userName)}
+                            {getInitials(typingUsers[0]?.userName || 'Typing')}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="bg-muted rounded-lg p-3">
-                          <div className="flex gap-1">
+                        <div className="bg-muted rounded-lg px-3 py-2">
+                          <p
+                            className="text-xs text-muted-foreground mb-1"
+                            suppressHydrationWarning
+                          >
+                            {typingLabel || 'Typing…'}
+                          </p>
+                          <div className="flex gap-1 text-muted-foreground">
                             <Circle
                               className="h-2 w-2 fill-current animate-bounce"
                               style={{ animationDelay: '0ms' }}

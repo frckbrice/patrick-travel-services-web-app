@@ -3,6 +3,7 @@
 import nodemailer from 'nodemailer';
 import { logger } from '@/lib/utils/logger';
 import { escapeHtml } from '@/lib/utils/helpers';
+import { getAppointmentScheduledEmailTemplate } from './email-templates';
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -219,5 +220,34 @@ export async function sendUserEmail(options: {
       </body>
       </html>
     `,
+  });
+}
+
+export async function sendAppointmentScheduledEmail(options: {
+  to: string;
+  clientName: string;
+  caseReference: string;
+  caseId: string;
+  appointmentId: string;
+  scheduledAt: Date | string;
+  location: string;
+  advisorName?: string;
+  notes?: string;
+}) {
+  const template = getAppointmentScheduledEmailTemplate({
+    clientName: options.clientName,
+    caseReference: options.caseReference,
+    caseId: options.caseId,
+    appointmentId: options.appointmentId,
+    scheduledAt: options.scheduledAt,
+    location: options.location,
+    advisorName: options.advisorName,
+    notes: options.notes,
+  });
+
+  await sendEmail({
+    to: options.to,
+    subject: template.subject,
+    html: template.html,
   });
 }

@@ -13,6 +13,7 @@ import { randomBytes } from 'crypto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { setCustomClaimsWithRetry, rollbackUserCreation } from '@/lib/utils/firebase-claims';
 import { createSafeLogIdentifier, hashPII } from '@/lib/utils/pii-hash';
+import { normalizeEmail } from '@/lib/utils/email';
 
 const handler = asyncHandler(async (request: NextRequest) => {
   // Check if Firebase Admin is initialized
@@ -51,6 +52,8 @@ const handler = asyncHandler(async (request: NextRequest) => {
     throw new ApiError('Email is required', HttpStatus.BAD_REQUEST);
   }
 
+  const normalizedEmail = normalizeEmail(email);
+
   // Check if user exists in database by firebaseId
   let user = await prisma.user.findUnique({
     where: { firebaseId: firebaseUid },
@@ -80,7 +83,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
     });
 
     user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
       select: {
         id: true,
         email: true,
@@ -196,7 +199,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
     user = await prisma.user.create({
       data: {
         id: firebaseUid,
-        email,
+        email: normalizedEmail,
         password: randomBytes(32).toString('hex'), // Random value for OAuth users
         firstName,
         lastName,

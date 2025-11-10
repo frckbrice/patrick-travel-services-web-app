@@ -4,9 +4,16 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuthStore } from '@/features/auth/store';
-import { ref, onValue, off, query, orderByChild, equalTo } from 'firebase/database';
+import { ref, onValue, off, query, orderByChild } from 'firebase/database';
 import { database, auth } from '@/lib/firebase/firebase-client';
 import { logger } from '@/lib/utils/logger';
+import {
+  clearTyping,
+  registerTypingOnDisconnect,
+  setTyping,
+  setUserOffline,
+  setUserOnline,
+} from '@/lib/firebase/presence.service';
 
 // Type definitions
 export interface ChatMessage {
@@ -211,7 +218,7 @@ function subscribeToMultipleUserPresence(
 
 function subscribeToTyping(
   chatRoomId: string,
-  currentUserId: string,
+  currentUserId: string | null,
   callback: (typingUsers: TypingIndicator[]) => void
 ): () => void {
   const typingRef = ref(database, `typing/${chatRoomId}`);
@@ -224,6 +231,7 @@ function subscribeToTyping(
       const typing = childSnapshot.val() as TypingIndicator;
       if (
         typing &&
+        typing.userId &&
         typing.userId !== currentUserId &&
         typing.isTyping &&
         now - typing.timestamp < 5000
@@ -235,18 +243,6 @@ function subscribeToTyping(
   });
 
   return () => off(typingRef);
-}
-
-async function setUserOnline(userId: string, platform: 'web' | 'mobile' | 'desktop' = 'web') {
-  // Stub - not critical for now
-}
-
-async function setUserOffline(userId: string) {
-  // Stub - not critical for now
-}
-
-async function setTyping(userId: string, userName: string, chatRoomId: string, isTyping: boolean) {
-  // Stub - not critical for now
 }
 
 async function sendMessage(message: any) {
@@ -496,23 +492,21 @@ export function useMultipleUserPresence(userIds: string[]) {
  * Shows "X is typing..." in real-time
  */
 export function useTypingIndicators(chatRoomId: string | null) {
-  const { user } = useAuthStore();
   const [typingUsers, setTypingUsers] = useState<TypingIndicator[]>([]);
+  const firebaseUserId = auth.currentUser?.uid ?? null;
 
   useEffect(() => {
-    if (!chatRoomId || !user?.id) {
+    if (!chatRoomId || !firebaseUserId) {
       setTypingUsers([]);
       return;
     }
 
-    const unsubscribe = subscribeToTyping(chatRoomId, user.id, (typing) => {
-      setTypingUsers(typing);
-    });
+    const unsubscribe = subscribeToTyping(chatRoomId, firebaseUserId, setTypingUsers);
 
     return () => {
       unsubscribe();
     };
-  }, [chatRoomId, user?.id]);
+  }, [chatRoomId, firebaseUserId]);
 
   return { typingUsers };
 }
@@ -526,16 +520,24 @@ export function useTypingStatus(chatRoomId: string | null) {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
   const lastTypingUpdateRef = useRef<number>(0);
+  const userName = useMemo(() => {
+    if (!user) return undefined;
+    const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+    if (fullName) return fullName;
+    return user.email ?? undefined;
+  }, [user]);
+
+  const firebaseUserId = auth.currentUser?.uid ?? null;
 
   const startTyping = useCallback(() => {
-    if (!chatRoomId || !user?.id || !user?.email) return;
+    if (!chatRoomId || !firebaseUserId) return;
 
     const now = Date.now();
     const timeSinceLastUpdate = now - lastTypingUpdateRef.current;
 
     // PERFORMANCE: Only update Firebase if more than 1 second since last update
     if (!isTypingRef.current || timeSinceLastUpdate > 1000) {
-      setTyping(user.id, user.email, chatRoomId, true);
+      setTyping(firebaseUserId, userName, chatRoomId, true);
       lastTypingUpdateRef.current = now;
       isTypingRef.current = true;
     }
@@ -547,14 +549,15 @@ export function useTypingStatus(chatRoomId: string | null) {
 
     // Auto-stop typing after 3 seconds of no activity
     typingTimeoutRef.current = setTimeout(() => {
-      if (!user?.id || !user?.email || !chatRoomId) return;
-      setTyping(user.id, user.email, chatRoomId, false);
+      const currentFirebaseUserId = auth.currentUser?.uid ?? firebaseUserId;
+      if (!currentFirebaseUserId || !chatRoomId) return;
+      setTyping(currentFirebaseUserId, userName, chatRoomId, false);
       isTypingRef.current = false;
     }, 3000);
-  }, [chatRoomId, user?.id, user?.email]);
+  }, [chatRoomId, firebaseUserId, userName]);
 
   const stopTyping = useCallback(() => {
-    if (!chatRoomId || !user?.id || !user?.email) return;
+    if (!chatRoomId || !firebaseUserId) return;
 
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
@@ -562,23 +565,26 @@ export function useTypingStatus(chatRoomId: string | null) {
     }
 
     if (isTypingRef.current) {
-      if (!user?.id || !user?.email || !chatRoomId) return;
-      setTyping(user.id, user.email, chatRoomId, false);
+      setTyping(firebaseUserId, userName, chatRoomId, false);
       isTypingRef.current = false;
     }
-  }, [chatRoomId, user?.id, user?.email]);
+  }, [chatRoomId, firebaseUserId, userName]);
 
   // Cleanup on unmount
   useEffect(() => {
+    if (!chatRoomId || !firebaseUserId) return;
+
+    registerTypingOnDisconnect(chatRoomId, firebaseUserId);
+
     return () => {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
-      if (chatRoomId && user?.id && user?.email) {
-        setTyping(user.id, user.email, chatRoomId, false);
-      }
+      const currentFirebaseUserId = auth.currentUser?.uid ?? firebaseUserId;
+      if (!chatRoomId || !currentFirebaseUserId) return;
+      clearTyping(chatRoomId, currentFirebaseUserId);
     };
-  }, [chatRoomId, user?.id, user?.email]);
+  }, [chatRoomId, firebaseUserId]);
 
   return { startTyping, stopTyping };
 }
@@ -589,20 +595,18 @@ export function useTypingStatus(chatRoomId: string | null) {
  */
 export function usePresenceManagement(platform: 'web' | 'mobile' | 'desktop' = 'web') {
   const { user } = useAuthStore();
+  const firebaseUserId = auth.currentUser?.uid ?? null;
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !firebaseUserId) return;
 
-    // Set user online
-    setUserOnline(user.id, platform);
+    const detach = setUserOnline(firebaseUserId, platform);
 
-    // Set user offline on unmount
     return () => {
-      if (user?.id) {
-        setUserOffline(user.id);
-      }
+      detach();
+      setUserOffline(firebaseUserId, platform);
     };
-  }, [user?.id, platform]);
+  }, [user?.id, platform, firebaseUserId]);
 }
 
 /**

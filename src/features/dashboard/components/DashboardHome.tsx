@@ -5,12 +5,22 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/features/auth/store';
 import { useRealtimeChatRooms } from '@/features/messages/hooks/useRealtimeChat';
 import { apiClient } from '@/lib/utils/axios';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Briefcase, FileText, MessageSquare, CheckCircle2, AlertCircle } from 'lucide-react';
+import {
+  Briefcase,
+  FileText,
+  MessageSquare,
+  CheckCircle2,
+  AlertCircle,
+  Calendar,
+  Clock,
+  MapPin,
+} from 'lucide-react';
 import Link from 'next/link';
 import { StatCardPlaceholder } from '@/components/ui/progressive-placeholder';
 import { SimpleSkeleton, SkeletonText } from '@/components/ui/simple-skeleton';
+import { formatDateTime } from '@/lib/utils/helpers';
 
 // Case status constants
 const TERMINAL_STATUSES = ['APPROVED', 'REJECTED', 'CLOSED'] as const;
@@ -31,6 +41,26 @@ export const DashboardHome = memo(function DashboardHome() {
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
+
+  const isClient = user?.role === 'CLIENT';
+
+  const {
+    data: upcomingAppointmentData,
+    isLoading: isLoadingUpcoming,
+    isFetching: isFetchingUpcoming,
+  } = useQuery({
+    queryKey: ['dashboard-upcoming-appointment'],
+    queryFn: async () => {
+      const response = await apiClient.get('/api/appointments/upcoming');
+      return response.data.data;
+    },
+    enabled: isClient,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+  const upcomingAppointment = upcomingAppointmentData?.appointment ?? null;
 
   // REAL-TIME: Use Firebase real-time hook for unread messages
   const { chatRooms: conversations } = useRealtimeChatRooms();
@@ -56,6 +86,97 @@ export const DashboardHome = memo(function DashboardHome() {
         </h1>
         <p className="text-muted-foreground mt-2">Here is an overview of your immigration cases</p>
       </div>
+
+      {isClient && (
+        <Card>
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary" />
+                Upcoming Appointment
+              </CardTitle>
+              <CardDescription>Stay prepared for your next visit to our office</CardDescription>
+            </div>
+            {upcomingAppointment?.actionUrl && (
+              <Button asChild variant="outline" size="sm">
+                <Link href={upcomingAppointment.actionUrl}>View Details</Link>
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent>
+            {isLoadingUpcoming || isFetchingUpcoming ? (
+              <div className="space-y-3">
+                <SimpleSkeleton className="h-5 w-48 rounded" />
+                <SimpleSkeleton className="h-4 w-56 rounded" />
+                <SimpleSkeleton className="h-4 w-40 rounded" />
+              </div>
+            ) : upcomingAppointment ? (
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Case</p>
+                  <p className="text-lg font-semibold">
+                    {upcomingAppointment.case.referenceNumber}
+                  </p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="flex items-start gap-3">
+                    <Calendar className="mt-1 h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-xs uppercase font-semibold text-muted-foreground">
+                        Date &amp; Time
+                      </p>
+                      <p className="text-sm font-medium">
+                        {formatDateTime(upcomingAppointment.scheduledAt)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <MapPin className="mt-1 h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-xs uppercase font-semibold text-muted-foreground">
+                        Location
+                      </p>
+                      <p className="text-sm font-medium leading-tight">
+                        {upcomingAppointment.location}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Clock className="mt-1 h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-xs uppercase font-semibold text-muted-foreground">Advisor</p>
+                    <p className="text-sm font-medium">
+                      {upcomingAppointment.assignedAgent
+                        ? `${upcomingAppointment.assignedAgent.firstName ?? ''} ${upcomingAppointment.assignedAgent.lastName ?? ''}`.trim() ||
+                          upcomingAppointment.assignedAgent.email
+                        : 'Advisor to be confirmed'}
+                    </p>
+                  </div>
+                </div>
+                {upcomingAppointment.notes && (
+                  <div className="rounded-md border border-dashed border-muted p-3 text-sm text-muted-foreground">
+                    <p className="font-medium text-foreground mb-1">Notes</p>
+                    {upcomingAppointment.notes}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold">No appointment scheduled yet</p>
+                  <p className="text-sm text-muted-foreground">
+                    You will see your next office visit here once your advisor schedules it.
+                  </p>
+                </div>
+                <Button asChild variant="default">
+                  <Link href="/dashboard/messages">Message Advisor</Link>
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         {isLoading ? (

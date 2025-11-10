@@ -3,7 +3,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/utils/axios';
 import { toast } from 'sonner';
-import type { Case, CreateCaseInput, UpdateCaseInput } from '../types';
+import type {
+  Case,
+  Appointment,
+  CreateAppointmentInput,
+  CreateCaseInput,
+  UpdateCaseInput,
+} from '../types';
 import { CASES_KEY } from './queries';
 
 // Create case mutation
@@ -171,6 +177,25 @@ export function useTransferCase() {
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error || 'Failed to transfer case');
+    },
+  });
+}
+
+export function useCreateAppointment(caseId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateAppointmentInput) => {
+      const response = await apiClient.post(`/api/cases/${caseId}/appointments`, data);
+      return response.data.data.appointment as Appointment;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [CASES_KEY] });
+      queryClient.invalidateQueries({ queryKey: [CASES_KEY, caseId] });
+      toast.success('Appointment scheduled successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to schedule appointment');
     },
   });
 }

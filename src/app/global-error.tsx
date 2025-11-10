@@ -37,8 +37,14 @@ export default function GlobalError({
   const [locale, setLocale] = useState<'en' | 'fr'>('en');
 
   useEffect(() => {
-    // Log to monitoring service
-    logger.error('Global error:', error);
+    const shouldSuppress =
+      (typeof error?.message === 'string' && error.message.includes('installHook.js')) ||
+      (typeof error?.stack === 'string' && error.stack.includes('installHook.js'));
+
+    if (!shouldSuppress) {
+      // Log to monitoring service
+      logger.error('Global error:', error);
+    }
 
     // Detect browser language
     const browserLang = navigator.language.toLowerCase();

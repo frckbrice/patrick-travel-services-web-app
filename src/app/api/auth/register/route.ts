@@ -52,7 +52,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
   }
 
   const {
-    email,
+    email: normalizedEmail,
     password,
     firstName,
     lastName,
@@ -68,16 +68,18 @@ const handler = asyncHandler(async (request: NextRequest) => {
 
   // SECURITY: Check if email already exists in Firebase before any operations
   try {
-    await adminAuth.getUserByEmail(email);
+    await adminAuth.getUserByEmail(normalizedEmail);
     // If we get here, user exists - log with hashed email to prevent PII leakage
-    logger.warn('Registration attempt with existing email', { emailHash: hashPII(email) });
+    logger.warn('Registration attempt with existing email', {
+      emailHash: hashPII(normalizedEmail),
+    });
     return errorResponse(ERROR_MESSAGES.USER_ALREADY_EXISTS, 409);
   } catch (error: any) {
     // Error code 'auth/user-not-found' means email is available (expected path)
     if (error.code !== 'auth/user-not-found') {
       // Log with hashed email to prevent PII leakage
       logger.error('Error checking existing user', {
-        emailHash: hashPII(email),
+        emailHash: hashPII(normalizedEmail),
         error: error.message,
       });
       throw new ApiError('Failed to validate user', HttpStatus.INTERNAL_SERVER_ERROR);
@@ -107,7 +109,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
   let firebaseUid: string;
   try {
     const firebaseUser = await adminAuth.createUser({
-      email,
+      email: normalizedEmail,
       password,
       emailVerified: false,
       disabled: false,
@@ -119,13 +121,13 @@ const handler = asyncHandler(async (request: NextRequest) => {
     // Log with hashed identifiers to prevent PII leakage
     logger.info('Firebase user created server-side', {
       firebaseUidHash: hashPII(firebaseUid),
-      emailHash: hashPII(email),
+      emailHash: hashPII(normalizedEmail),
       role: userRole,
     });
   } catch (error: any) {
     // Log with hashed email to prevent PII leakage
     logger.error('Failed to create Firebase user', {
-      emailHash: hashPII(email),
+      emailHash: hashPII(normalizedEmail),
       error: error.message,
       code: error.code,
     });
@@ -157,7 +159,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
         // Create the database user
         const newUser = await tx.user.create({
           data: {
-            email,
+            email: normalizedEmail,
             password: randomBytes(32).toString('hex'), // Not used for Firebase auth
             firstName,
             lastName,
@@ -238,7 +240,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
       // No invite code - create user with default CLIENT role
       user = await prisma.user.create({
         data: {
-          email,
+          email: normalizedEmail,
           password: randomBytes(32).toString('hex'), // Not used for Firebase auth
           firstName,
           lastName,
@@ -288,7 +290,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
     // Log with hashed identifiers to prevent PII leakage
     logger.error('Database user creation failed, rolling back Firebase user', {
       firebaseUidHash: hashPII(firebaseUid),
-      emailHash: hashPII(email),
+      emailHash: hashPII(normalizedEmail),
       error: error instanceof Error ? error.message : String(error),
     });
 
@@ -303,7 +305,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
       // Log with hashed identifiers to prevent PII leakage
       logger.error('CRITICAL: Failed to rollback Firebase user after DB failure', {
         firebaseUidHash: hashPII(firebaseUid),
-        emailHash: hashPII(email),
+        emailHash: hashPII(normalizedEmail),
         rollbackError:
           rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
       });
@@ -336,7 +338,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
     // Log with hashed identifiers to prevent PII leakage
     logger.error('Claims setting failed, rolling back Firebase user', {
       firebaseUidHash: hashPII(firebaseUid),
-      emailHash: hashPII(email),
+      emailHash: hashPII(normalizedEmail),
     });
 
     try {
@@ -349,7 +351,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
       // Log with hashed identifiers to prevent PII leakage
       logger.error('CRITICAL: Failed to rollback Firebase user after claims failure', {
         firebaseUidHash: hashPII(firebaseUid),
-        emailHash: hashPII(email),
+        emailHash: hashPII(normalizedEmail),
         rollbackError:
           rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
       });

@@ -110,6 +110,8 @@ export const NOTIFICATION_TYPE_LABELS = {
   DOCUMENT_REJECTED: 'Document Rejected',
   CASE_ASSIGNED: 'Case Assigned',
   SYSTEM_ANNOUNCEMENT: 'System Announcement',
+  NEW_EMAIL: 'New Email',
+  APPOINTMENT_SCHEDULED: 'Appointment Scheduled',
 };
 
 export const ROLE_LABELS = {
@@ -170,6 +172,8 @@ export const NOTIFICATION_ACTION_URLS = {
   CASE_ASSIGNED: (id: string) => `/dashboard/cases/${id}`,
   CASE_STATUS_UPDATE: (id: string) => `/dashboard/cases/${id}`,
   CASE_UNASSIGNED: '/dashboard/cases',
+  APPOINTMENT_DETAILS: (caseId: string, appointmentId: string) =>
+    `/dashboard/cases/${caseId}?appointmentId=${appointmentId}`,
 
   // Document-related notifications
   DOCUMENTS_PAGE: '/dashboard/documents',

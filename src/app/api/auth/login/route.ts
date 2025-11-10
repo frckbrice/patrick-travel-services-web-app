@@ -14,6 +14,7 @@ import { withCorsMiddleware } from '@/lib/middleware/cors';
 import { withRateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit';
 import { createSafeLogIdentifier } from '@/lib/utils/pii-hash';
 import { setCustomClaimsWithRetry } from '@/lib/utils/firebase-claims';
+import { normalizeEmail } from '@/lib/utils/email';
 
 const handler = asyncHandler(async (request: NextRequest) => {
   // Check if Firebase Admin is initialized
@@ -76,6 +77,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
 
   // Get user email from Firebase token
   const firebaseEmail = decodedToken.email;
+  const normalizedFirebaseEmail = firebaseEmail ? normalizeEmail(firebaseEmail) : undefined;
 
   // Try to find user by Firebase UID first
   let user = await prisma.user.findUnique({
@@ -100,13 +102,13 @@ const handler = asyncHandler(async (request: NextRequest) => {
   });
 
   // If user not found by firebaseId, try to find by email and update firebaseId
-  if (!user && firebaseEmail) {
+  if (!user && normalizedFirebaseEmail) {
     logger.info('User not found by firebaseId, attempting to find by email', {
-      firebaseEmail: firebaseEmail.substring(0, 5) + '...',
+      firebaseEmail: firebaseEmail?.substring(0, 5) + '...',
     });
 
     user = await prisma.user.findUnique({
-      where: { email: firebaseEmail },
+      where: { email: normalizedFirebaseEmail },
       select: {
         id: true,
         email: true,
@@ -146,14 +148,14 @@ const handler = asyncHandler(async (request: NextRequest) => {
 
   if (!user) {
     // Auto-provision minimal user if verified token and email exist
-    if (firebaseEmail) {
+    if (normalizedFirebaseEmail) {
       logger.info('Auto-provisioning user from Firebase token', {
-        hint: firebaseEmail.substring(0, 5) + '...',
+        hint: firebaseEmail?.substring(0, 5) + '...',
       });
 
       const created = await prisma.user.create({
         data: {
-          email: firebaseEmail,
+          email: normalizedFirebaseEmail,
           password: '',
           firstName: 'User',
           lastName: '',

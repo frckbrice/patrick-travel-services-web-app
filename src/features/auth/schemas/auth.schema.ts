@@ -1,6 +1,7 @@
 // Authentication validation schemas using Zod
 
 import { z } from 'zod';
+import { normalizeEmail } from '@/lib/utils/email';
 
 // Coerce common truthy string values ("true", "on", "1") to boolean true
 const truthyBoolean = z.preprocess((val) => {
@@ -12,8 +13,15 @@ const truthyBoolean = z.preprocess((val) => {
   return val;
 }, z.boolean());
 
+const normalizedEmailSchema = z
+  .string()
+  .trim()
+  .min(1, 'Email is required')
+  .email('Invalid email address')
+  .transform((email) => normalizeEmail(email));
+
 export const registerSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: normalizedEmailSchema,
   password: z
     .string()
     .min(8, 'Password must be at least 8 characters')
@@ -58,13 +66,13 @@ export const registerSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: normalizedEmailSchema,
   password: z.string().min(1, 'Password is required'),
   rememberMe: z.boolean().optional(),
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: normalizedEmailSchema,
 });
 
 export const resetPasswordSchema = z.object({
