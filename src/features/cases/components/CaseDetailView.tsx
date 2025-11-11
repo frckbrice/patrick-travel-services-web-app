@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/features/auth/store';
-import { useCase, useUpdateCaseStatus, useAddInternalNote, useCreateAppointment } from '../api';
+import { useCase, useUpdateCaseStatus, useAddInternalNote } from '../api';
 import { useApproveDocument, useRejectDocument } from '@/features/documents/api';
 import { AssignCaseDialog } from './AssignCaseDialog';
 import { CaseTransferDialog } from './CaseTransferDialog';
@@ -65,6 +65,7 @@ import { cn } from '@/lib/utils';
 import { logger } from '@/lib/utils/logger';
 import { getErrorMessage } from '@/lib/utils/error-handler';
 import { formatDateTime } from '@/lib/utils/helpers';
+import { ScheduleAppointmentDialog } from './ScheduleAppointmentDialog';
 
 interface CaseDetailViewProps {
   caseId: string;
@@ -143,7 +144,6 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const { data, isLoading, error, refetch } = useCase(caseId);
   const updateCaseStatus = useUpdateCaseStatus(caseId);
   const addInternalNote = useAddInternalNote(caseId);
-  const createAppointment = useCreateAppointment(caseId);
   const approveDocument = useApproveDocument();
   const rejectDocument = useRejectDocument();
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
@@ -157,9 +157,6 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
-  const [appointmentScheduledAt, setAppointmentScheduledAt] = useState('');
-  const [appointmentLocation, setAppointmentLocation] = useState('');
-  const [appointmentNotes, setAppointmentNotes] = useState('');
 
   if (isLoading) return <CaseDetailSkeleton />;
   if (error || !data)
@@ -213,29 +210,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const shouldShowAppointmentCard =
     caseData.status === 'APPROVED' || (caseData.appointments?.length ?? 0) > 0;
 
-  const { upcomingAppointment, otherAppointments } = useMemo<{
-    upcomingAppointment: Appointment | null;
-    otherAppointments: Appointment[];
-  }>(() => {
-    if (!caseData.appointments || caseData.appointments.length === 0) {
-      return { upcomingAppointment: null, otherAppointments: [] };
-    }
-
-    const sorted = [...caseData.appointments].sort(
-      (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
-    );
-    const now = Date.now();
-    const upcoming =
-      sorted.find(
-        (appointment) =>
-          new Date(appointment.scheduledAt).getTime() >= now &&
-          appointment.status !== AppointmentStatus.CANCELLED
-      ) ?? sorted[0];
-
-    const remaining = sorted.filter((appointment) => appointment.id !== upcoming.id);
-
-    return { upcomingAppointment: upcoming, otherAppointments: remaining };
-  }, [caseData.appointments]);
+  const { upcomingAppointment, otherAppointments } = splitAppointments(caseData.appointments);
 
   const handleStatusUpdate = async () => {
     try {
@@ -424,40 +399,8 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
     );
   };
 
-  const handleCreateAppointment = async () => {
-    if (!appointmentScheduledAt) {
-      toast.error('Please select a date and time for the appointment');
-      return;
-    }
-
-    const scheduledDate = new Date(appointmentScheduledAt);
-
-    if (Number.isNaN(scheduledDate.getTime())) {
-      toast.error('Invalid appointment date');
-      return;
-    }
-
-    if (scheduledDate.getTime() <= Date.now()) {
-      toast.error('Appointment must be scheduled in the future');
-      return;
-    }
-
-    if (!appointmentLocation.trim()) {
-      toast.error('Appointment location is required');
-      return;
-    }
-
-    try {
-      await createAppointment.mutateAsync({
-        scheduledAt: scheduledDate.toISOString(),
-        location: appointmentLocation.trim(),
-        notes: appointmentNotes.trim() ? appointmentNotes.trim() : undefined,
-      });
-      handleAppointmentDialogToggle(false);
-      refetch();
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    }
+  const handleAppointmentScheduled = () => {
+    refetch();
   };
 
   const getAppointmentAdvisorDetails = (appointment: Appointment) => {
@@ -482,15 +425,6 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
         )}
       </div>
     );
-  };
-
-  const handleAppointmentDialogToggle = (open: boolean) => {
-    setAppointmentDialogOpen(open);
-    if (!open) {
-      setAppointmentScheduledAt('');
-      setAppointmentLocation('');
-      setAppointmentNotes('');
-    }
   };
 
   return (
@@ -626,90 +560,31 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
               </Tooltip>
             )}
             {isAgent && caseData.status === 'APPROVED' && (
-              <Tooltip>
-                <Dialog open={appointmentDialogOpen} onOpenChange={handleAppointmentDialogToggle}>
+              <>
+                <Tooltip>
                   <TooltipTrigger asChild>
-                    <DialogTrigger asChild>
-                      <Button variant="secondary">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Schedule Appointment
-                      </Button>
-                    </DialogTrigger>
+                    <Button variant="secondary" onClick={() => setAppointmentDialogOpen(true)}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Manage Appointment
+                    </Button>
                   </TooltipTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Schedule Appointment</DialogTitle>
-                      <DialogDescription>
-                        Set up an office appointment with the client and notify them instantly.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="appointment-datetime">Date &amp; Time</Label>
-                        <Input
-                          id="appointment-datetime"
-                          type="datetime-local"
-                          value={appointmentScheduledAt}
-                          onChange={(event) => setAppointmentScheduledAt(event.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="appointment-location">Location</Label>
-                        <Input
-                          id="appointment-location"
-                          placeholder="Patrick Travel Services HQ, 123 Main Street"
-                          value={appointmentLocation}
-                          onChange={(event) => setAppointmentLocation(event.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="appointment-notes">Notes (optional)</Label>
-                        <Textarea
-                          id="appointment-notes"
-                          placeholder="Add any instructions or documents the client should bring..."
-                          value={appointmentNotes}
-                          onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
-                            setAppointmentNotes(event.target.value)
-                          }
-                          rows={4}
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button
-                        variant="outline"
-                        onClick={() => handleAppointmentDialogToggle(false)}
-                        disabled={createAppointment.isPending}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={handleCreateAppointment}
-                        disabled={
-                          createAppointment.isPending ||
-                          !appointmentScheduledAt ||
-                          !appointmentLocation.trim()
-                        }
-                      >
-                        {createAppointment.isPending ? (
-                          <>
-                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                            Scheduling...
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Schedule
-                          </>
-                        )}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
                   <TooltipContent>
-                    <p>Create an in-person appointment for this case</p>
+                    <p>Create or update the in-person appointment for this case</p>
                   </TooltipContent>
-                </Dialog>
-              </Tooltip>
+                </Tooltip>
+                <ScheduleAppointmentDialog
+                  caseId={caseData.id}
+                  caseReference={caseData.referenceNumber}
+                  clientName={
+                    caseData.client
+                      ? `${caseData.client.firstName ?? ''} ${caseData.client.lastName ?? ''}`.trim()
+                      : undefined
+                  }
+                  open={appointmentDialogOpen}
+                  onOpenChange={setAppointmentDialogOpen}
+                  onAppointmentScheduled={handleAppointmentScheduled}
+                />
+              </>
             )}
           </div>
         </div>
@@ -1224,6 +1099,30 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
       </div>
     </TooltipProvider>
   );
+}
+
+function splitAppointments(appointments?: Appointment[] | null) {
+  if (!appointments || appointments.length === 0) {
+    return {
+      upcomingAppointment: null as Appointment | null,
+      otherAppointments: [] as Appointment[],
+    };
+  }
+
+  const sorted = [...appointments].sort(
+    (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+  );
+  const now = Date.now();
+  const upcoming =
+    sorted.find(
+      (appointment) =>
+        new Date(appointment.scheduledAt).getTime() >= now &&
+        appointment.status !== AppointmentStatus.CANCELLED
+    ) ?? sorted[0];
+
+  const remaining = sorted.filter((appointment) => appointment.id !== upcoming.id);
+
+  return { upcomingAppointment: upcoming, otherAppointments: remaining };
 }
 
 function InfoRow({

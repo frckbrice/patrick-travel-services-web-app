@@ -5,3 +5,4 @@ export * from './CaseDetailView';
 export * from './AgentCasesList';
 export * from './AssignCaseDialog';
 export * from './CaseTransferDialog';
+export * from './ScheduleAppointmentDialog';
