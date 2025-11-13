@@ -134,32 +134,25 @@ export function CasesList() {
     });
   }, [cases, searchQuery]);
 
-  // PERFORMANCE: Only show skeleton on first load (no cached data)
-  const isFirstLoad = isLoading && !data;
-  if (isFirstLoad) return <CasesListSkeleton />;
-  if (error)
-    return (
-      <div className="text-center py-12">
-        <p className="text-red-600">Error loading cases. Please try again.</p>
-      </div>
-    );
-
-  // Pagination calculations
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedCases = filtered.slice(startIndex, endIndex);
+  // Pagination calculations (memoized to avoid recalculating on every render)
+  const pagination = useMemo(() => {
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedCases = filtered.slice(startIndex, endIndex);
+    return { totalPages, startIndex, endIndex, paginatedCases };
+  }, [filtered, currentPage, itemsPerPage]);
 
   // Reset to page 1 when filters change
-  const handleSearchChange = (value: string) => {
+  const handleSearchChange = useCallback((value: string) => {
     setSearchQuery(value);
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handleStatusChange = (value: string) => {
+  const handleStatusChange = useCallback((value: string) => {
     setStatusFilter(value);
     setCurrentPage(1);
-  };
+  }, []);
 
   const handleManageAppointment = useCallback((caseItem: Case) => {
     setSelectedCase(caseItem);
@@ -188,12 +181,13 @@ export function CasesList() {
 
   type UpdateStatusVariables = { caseId: string; status: CaseStatus };
   type UpdateStatusContext = {
-    previousQueries: Array<[unknown, CasesApiResponse | undefined]>;
+    previousQueries: Array<[readonly unknown[], CasesApiResponse | undefined]>;
   };
+  type UpdateStatusResponse = Case;
 
   const updateCaseStatusMutation = useMutation<
-    any,
-    any,
+    UpdateStatusResponse,
+    Error,
     UpdateStatusVariables,
     UpdateStatusContext
   >({
@@ -222,10 +216,12 @@ export function CasesList() {
       closingCaseIdRef.current = caseId;
       return { previousQueries };
     },
-    onError: (error: any, variables, context) => {
+    onError: (error: Error, variables, context) => {
       if (context?.previousQueries) {
         context.previousQueries.forEach(([queryKey, previousData]) => {
-          queryClient.setQueryData(queryKey as any, previousData);
+          if (Array.isArray(queryKey)) {
+            queryClient.setQueryData(queryKey, previousData);
+          }
         });
       }
       setOptimisticClosedCases((prev) => {
@@ -233,9 +229,10 @@ export function CasesList() {
         delete next[variables.caseId];
         return next;
       });
-      toast.error(
-        error?.response?.data?.error || 'Failed to update case status. Please try again.'
-      );
+      const errorMessage =
+        (error as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+        'Failed to update case status. Please try again.';
+      toast.error(errorMessage);
     },
     onSuccess: (_, variables) => {
       toast.success('Case marked as closed.');
@@ -268,6 +265,17 @@ export function CasesList() {
     },
     [updateCaseStatusMutation]
   );
+
+  // PERFORMANCE: Only show skeleton on first load (no cached data)
+  // IMPORTANT: Early returns must come AFTER all hooks
+  const isFirstLoad = isLoading && !data;
+  if (isFirstLoad) return <CasesListSkeleton />;
+  if (error)
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-600">Error loading cases. Please try again.</p>
+      </div>
+    );
 
   const isClient = user?.role === 'CLIENT';
 
@@ -344,7 +352,7 @@ export function CasesList() {
       ) : (
         <>
           <div className="grid gap-4">
-            {paginatedCases.map((c: Case) => {
+            {pagination.paginatedCases.map((c: Case) => {
               const optimisticAppointment = optimisticAppointments[c.id];
               const appointmentInfo = optimisticAppointment ?? c.appointments?.[0] ?? null;
               const hasAppointment = Boolean(appointmentInfo);
@@ -482,13 +490,13 @@ export function CasesList() {
           </div>
 
           {/* Pagination Controls - Mobile Optimized */}
-          {totalPages > 1 && (
+          {pagination.totalPages > 1 && (
             <Card>
               <CardContent className="py-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="text-sm text-muted-foreground">
-                    Showing {startIndex + 1}-{Math.min(endIndex, filtered.length)} of{' '}
-                    {filtered.length}
+                    Showing {pagination.startIndex + 1}-
+                    {Math.min(pagination.endIndex, filtered.length)} of {filtered.length}
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -501,11 +509,13 @@ export function CasesList() {
                       <span className="hidden sm:inline ml-1">Previous</span>
                     </Button>
                     <div className="flex items-center gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
                         .filter((page) => {
                           // Show first, last, current, and adjacent pages
                           return (
-                            page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1
+                            page === 1 ||
+                            page === pagination.totalPages ||
+                            Math.abs(page - currentPage) <= 1
                           );
                         })
                         .map((page, index, array) => (
@@ -527,8 +537,8 @@ export function CasesList() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))}
+                      disabled={currentPage === pagination.totalPages}
                     >
                       <span className="hidden sm:inline mr-1">Next</span>
                       <ChevronRight className="h-4 w-4" />

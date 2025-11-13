@@ -78,7 +78,7 @@ export function ScheduleAppointmentDialog({
           },
         }
       );
-    } catch (error) {
+    } catch {
       // Error toast handled by mutation's onError callback.
     }
   };
