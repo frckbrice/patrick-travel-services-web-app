@@ -88,6 +88,7 @@ export default function RootLayout({
                     // Only suppress if it's from content_script.js (browser extensions) OR contains both grammarly and Cannot read properties
                     if (
                       errorStr.includes('content_script.js') ||
+                      errorStr.includes('installHook.js') ||
                       (errorStr.includes('grammarly') && errorStr.includes('Cannot read properties of undefined')) ||
                       (errorStr.includes('shouldOfferCompletionListForField') && errorStr.includes('content_script.js'))
                     ) {
@@ -107,6 +108,7 @@ export default function RootLayout({
                       // Only suppress if it's from content_script.js OR grammarly
                       if (
                         errorStr.includes('content_script.js') ||
+                        errorStr.includes('installHook.js') ||
                         (errorStr.includes('grammarly') && errorStr.includes('Cannot read properties of undefined'))
                       ) {
                         event.preventDefault(); // Suppress the error
@@ -151,6 +153,7 @@ export default function RootLayout({
                   // Only suppress if it's from content_script.js (browser extensions) OR contains both grammarly and Cannot read properties
                   if (
                     errorStr.includes('content_script.js') ||
+                    errorStr.includes('installHook.js') ||
                     (errorStr.includes('grammarly') && errorStr.includes('Cannot read properties of undefined')) ||
                     (errorStr.includes('shouldOfferCompletionListForField') && errorStr.includes('content_script.js'))
                   ) {
@@ -170,6 +173,7 @@ export default function RootLayout({
                     // Only suppress if it's from content_script.js OR grammarly
                     if (
                       errorStr.includes('content_script.js') ||
+                      errorStr.includes('installHook.js') ||
                       (errorStr.includes('grammarly') && errorStr.includes('Cannot read properties of undefined'))
                     ) {
                       event.preventDefault(); // Suppress the error

@@ -3,6 +3,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { nanoid } from 'nanoid';
+import { normalizeEmail } from '../src/lib/utils/email';
 
 const prisma = new PrismaClient();
 
@@ -11,27 +12,51 @@ async function main() {
 
   // Create first ADMIN user (to be manually created in Firebase Auth first)
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@patricktravel.com';
+  const normalizedAdminEmail = normalizeEmail(adminEmail);
   const adminId = process.env.ADMIN_FIREBASE_UID;
   if (!adminId) {
     throw new Error('ADMIN_FIREBASE_UID environment variable is required');
   }
   const adminUserId: string = adminId; // Type assertion after validation
 
-  const existingAdmin = await prisma.user.findUnique({
-    where: { id: adminUserId },
-  });
+  const [existingAdminById, adminsWithEmail] = await prisma.$transaction([
+    prisma.user.findUnique({
+      where: { id: adminUserId },
+    }),
+    prisma.user.findMany({
+      where: { email: normalizedAdminEmail },
+      orderBy: { createdAt: 'asc' },
+    }),
+  ]);
 
-  if (existingAdmin) {
-    console.log('✅ Admin user already exists');
+  let adminRecord = existingAdminById || adminsWithEmail[0];
+
+  if (adminRecord) {
+    // Ensure canonical admin record is up to date
+    if (adminRecord.email !== normalizedAdminEmail || adminRecord.firebaseId !== adminUserId) {
+      adminRecord = await prisma.user.update({
+        where: { id: adminRecord.id },
+        data: {
+          email: normalizedAdminEmail,
+          firebaseId: adminUserId,
+          role: 'ADMIN',
+          isActive: true,
+          isVerified: true,
+        },
+      });
+      console.log('✅ Admin user synced with latest configuration');
+    } else {
+      console.log('✅ Admin user already exists');
+    }
   } else {
-    console.log(`📧 Creating admin user: ${adminEmail}`);
+    console.log(`📧 Creating admin user: ${normalizedAdminEmail}`);
     console.log(`⚠️  Firebase UID: ${adminUserId}`);
     console.log(`⚠️  Note: You must create this user in Firebase Auth with the same UID!`);
 
-    await prisma.user.create({
+    adminRecord = await prisma.user.create({
       data: {
         id: adminUserId,
-        email: adminEmail,
+        email: normalizedAdminEmail,
         password: '', // Password managed by Firebase Auth, not stored in DB
         firstName: 'System',
         lastName: 'Administrator',
@@ -39,10 +64,57 @@ async function main() {
         role: 'ADMIN',
         isActive: true,
         isVerified: true,
+        firebaseId: adminUserId,
       },
     });
 
     console.log('✅ Admin user created in database');
+  }
+
+  // Clean up duplicate admin seed records (if any)
+  const duplicateAdmins = adminsWithEmail.filter((admin) => admin.id !== adminRecord?.id);
+
+  if (duplicateAdmins.length > 0) {
+    const removableIds: string[] = [];
+    const protectedIds: string[] = [];
+
+    for (const duplicate of duplicateAdmins) {
+      const [caseCount, notificationCount, activityCount] = await Promise.all([
+        prisma.case.count({
+          where: {
+            OR: [{ clientId: duplicate.id }, { assignedAgentId: duplicate.id }],
+          },
+        }),
+        prisma.notification.count({ where: { userId: duplicate.id } }),
+        prisma.activityLog.count({ where: { userId: duplicate.id } }),
+      ]);
+
+      const hasRelations = caseCount > 0 || notificationCount > 0 || activityCount > 0;
+
+      if (
+        !hasRelations &&
+        duplicate.firstName === 'System' &&
+        duplicate.lastName === 'Administrator'
+      ) {
+        removableIds.push(duplicate.id);
+      } else {
+        protectedIds.push(duplicate.id);
+      }
+    }
+
+    if (removableIds.length > 0) {
+      await prisma.user.deleteMany({
+        where: { id: { in: removableIds } },
+      });
+      console.warn('♻️  Removed duplicate admin seed record(s)', { removedIds: removableIds });
+    }
+
+    if (protectedIds.length > 0) {
+      console.warn(
+        '⚠️  Found admin email duplicates that reference existing data. Please review manually.',
+        { duplicateIds: protectedIds }
+      );
+    }
   }
 
   // Create sample invite codes with idempotent strategy

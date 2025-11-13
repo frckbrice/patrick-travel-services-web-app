@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase/firebase-admin';
 import { logger } from '@/lib/utils/logger';
 import { z } from 'zod';
+import { normalizeEmail } from '@/lib/utils/email';
 
 const resendVerificationSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email } = validation.data;
+    const email = normalizeEmail(validation.data.email);
 
     if (!adminAuth) {
       logger.error('Firebase Admin not initialized');

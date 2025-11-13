@@ -2,6 +2,7 @@
 // Centralized email template management
 
 import { minifyForProduction } from '../utils/html-minifier';
+import { formatDateTime, textToSafeHtml } from '../utils/helpers';
 
 export interface CaseAssignmentEmailData {
   clientName: string;
@@ -29,6 +30,17 @@ export interface DocumentStatusEmailData {
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.patricktravel.com';
 const COMPANY_NAME = 'Patrick Travel Services';
+
+export interface AppointmentScheduledEmailData {
+  clientName: string;
+  caseReference: string;
+  caseId: string;
+  appointmentId: string;
+  scheduledAt: Date | string;
+  location: string;
+  advisorName?: string;
+  notes?: string;
+}
 
 /**
  * Email template for case assignment notification
@@ -574,6 +586,109 @@ export function getAdminNewCaseNotificationEmailTemplate(data: {
 
   return {
     subject: `[ADMIN] New Case Submitted: ${data.caseReference} - ${data.clientName}`,
+    html: minifyForProduction(html),
+  };
+}
+
+/**
+ * Email template for appointment scheduling notification
+ */
+export function getAppointmentScheduledEmailTemplate(data: AppointmentScheduledEmailData): {
+  subject: string;
+  html: string;
+} {
+  const formattedDateTime = formatDateTime(data.scheduledAt);
+  const advisorLine = data.advisorName
+    ? `
+        <tr>
+          <td style="padding: 8px 0; font-weight: 600; color: #666; width: 40%;">Advisor:</td>
+          <td style="padding: 8px 0; font-weight: 700; color: #333;">${data.advisorName}</td>
+        </tr>
+      `
+    : '';
+
+  const notesSection =
+    data.notes && data.notes.trim().length > 0
+      ? `
+      <div style="background: #f8f9fa; padding: 16px; border-radius: 12px; margin: 24px 0;">
+        <p style="margin: 0 0 8px 0; font-weight: 600; color: #333;">Appointment Notes</p>
+        <p style="margin: 0; color: #555; line-height: 1.6;">${textToSafeHtml(data.notes)}</p>
+      </div>
+    `
+      : '';
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Appointment Scheduled</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+
+  <div style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; padding: 30px 20px; border-radius: 12px 12px 0 0; text-align: center;">
+    <h1 style="margin: 0; font-size: 26px; font-weight: 700;">📅 Appointment Scheduled</h1>
+    <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.95;">We're looking forward to seeing you at our office</p>
+  </div>
+
+  <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 12px 12px;">
+    <p style="font-size: 16px; margin-top: 0;">Dear <strong>${data.clientName}</strong>,</p>
+
+    <p style="font-size: 16px;">Your appointment for case <strong>${data.caseReference}</strong> has been scheduled. Below are the details:</p>
+
+    <div style="background: #f8f9fa; padding: 24px; border-radius: 12px; margin: 24px 0; border-left: 4px solid #0ea5e9;">
+      <h3 style="margin: 0 0 16px 0; color: #0284c7; font-size: 18px;">Appointment Details</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; font-weight: 600; color: #666; width: 40%;">Date & Time:</td>
+          <td style="padding: 8px 0; font-weight: 700; color: #333;">${formattedDateTime}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; font-weight: 600; color: #666;">Location:</td>
+          <td style="padding: 8px 0; font-weight: 700; color: #333;">${data.location}</td>
+        </tr>
+        ${advisorLine}
+      </table>
+    </div>
+
+    ${notesSection}
+
+    <div style="background: #e0f2fe; padding: 16px; border-radius: 12px; margin: 24px 0;">
+      <p style="margin: 0; color: #0369a1; font-size: 15px;">
+        ✅ <strong>Remember:</strong> Please bring all required documents and arrive 10 minutes early for check-in.
+      </p>
+    </div>
+
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${APP_URL}/dashboard/cases/${data.caseId}?appointmentId=${data.appointmentId}"
+         style="background: #0284c7; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 16px;">
+        View Appointment Details
+      </a>
+    </div>
+
+    <p style="color: #666; font-size: 14px; margin-top: 24px;">
+      If you need to reschedule, please contact your advisor or reply to this email at least 24 hours in advance.
+    </p>
+
+    <div style="border-top: 1px solid #e0e0e0; margin-top: 32px; padding-top: 24px;">
+      <p style="color: #666; font-size: 14px; margin: 0;">
+        Best regards,<br/>
+        <strong style="color: #333;">The ${COMPANY_NAME} Team</strong>
+      </p>
+    </div>
+  </div>
+
+  <div style="text-align: center; padding: 20px; color: #999; font-size: 12px;">
+    <p style="margin: 0;">© ${new Date().getFullYear()} ${COMPANY_NAME}. All rights reserved.</p>
+  </div>
+
+</body>
+</html>
+  `;
+
+  return {
+    subject: `Appointment Scheduled - Case ${data.caseReference}`,
     html: minifyForProduction(html),
   };
 }

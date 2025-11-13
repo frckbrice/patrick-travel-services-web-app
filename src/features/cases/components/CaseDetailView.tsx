@@ -7,11 +7,13 @@ import { useCase, useUpdateCaseStatus, useAddInternalNote } from '../api';
 import { useApproveDocument, useRejectDocument } from '@/features/documents/api';
 import { AssignCaseDialog } from './AssignCaseDialog';
 import { CaseTransferDialog } from './CaseTransferDialog';
-import type { Case, Document } from '../types';
+import type { Appointment, Case, Document } from '../types';
+import { AppointmentStatus } from '../types';
 import { CaseSchema } from '../types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -55,11 +57,15 @@ import {
   UserPlus,
   RefreshCw,
   Send,
+  MapPin,
+  Plus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/utils/logger';
 import { getErrorMessage } from '@/lib/utils/error-handler';
+import { formatDateTime } from '@/lib/utils/helpers';
+import { ScheduleAppointmentDialog } from './ScheduleAppointmentDialog';
 
 interface CaseDetailViewProps {
   caseId: string;
@@ -106,6 +112,25 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   },
 };
 
+const appointmentStatusConfig: Record<AppointmentStatus, { label: string; className: string }> = {
+  [AppointmentStatus.SCHEDULED]: {
+    label: 'Scheduled',
+    className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+  },
+  [AppointmentStatus.RESCHEDULED]: {
+    label: 'Rescheduled',
+    className: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300',
+  },
+  [AppointmentStatus.COMPLETED]: {
+    label: 'Completed',
+    className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+  },
+  [AppointmentStatus.CANCELLED]: {
+    label: 'Cancelled',
+    className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+  },
+};
+
 const priorityOptions = [
   { value: 'LOW', label: 'Low', color: 'text-gray-600' },
   { value: 'NORMAL', label: 'Normal', color: 'text-blue-600' },
@@ -131,6 +156,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const [rejectReason, setRejectReason] = useState('');
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
 
   if (isLoading) return <CaseDetailSkeleton />;
   if (error || !data)
@@ -180,6 +206,11 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const isAgent = user?.role === 'AGENT' || user?.role === 'ADMIN';
   const isAdmin = user?.role === 'ADMIN';
   const isUnassigned = !caseData.assignedAgentId;
+
+  const shouldShowAppointmentCard =
+    caseData.status === 'APPROVED' || (caseData.appointments?.length ?? 0) > 0;
+
+  const { upcomingAppointment, otherAppointments } = splitAppointments(caseData.appointments);
 
   const handleStatusUpdate = async () => {
     try {
@@ -368,6 +399,34 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
     );
   };
 
+  const handleAppointmentScheduled = () => {
+    refetch();
+  };
+
+  const getAppointmentAdvisorDetails = (appointment: Appointment) => {
+    const source = appointment.assignedAgent ?? appointment.createdBy;
+    if (!source) {
+      return { name: 'Advisor', email: undefined as string | undefined };
+    }
+    const displayName = `${source.firstName ?? ''} ${source.lastName ?? ''}`.trim();
+    return {
+      name: displayName || source.email || 'Advisor',
+      email: source.email || undefined,
+    };
+  };
+
+  const renderAppointmentAdvisor = (appointment: Appointment) => {
+    const details = getAppointmentAdvisorDetails(appointment);
+    return (
+      <div className="flex flex-col">
+        <span className="font-semibold">{details.name}</span>
+        {details.email && (
+          <span className="font-normal text-xs text-muted-foreground">{details.email}</span>
+        )}
+      </div>
+    );
+  };
+
   return (
     <TooltipProvider>
       <div className="space-y-6">
@@ -500,6 +559,33 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                 </Dialog>
               </Tooltip>
             )}
+            {isAgent && caseData.status === 'APPROVED' && (
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="secondary" onClick={() => setAppointmentDialogOpen(true)}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Manage Appointment
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Create or update the in-person appointment for this case</p>
+                  </TooltipContent>
+                </Tooltip>
+                <ScheduleAppointmentDialog
+                  caseId={caseData.id}
+                  caseReference={caseData.referenceNumber}
+                  clientName={
+                    caseData.client
+                      ? `${caseData.client.firstName ?? ''} ${caseData.client.lastName ?? ''}`.trim()
+                      : undefined
+                  }
+                  open={appointmentDialogOpen}
+                  onOpenChange={setAppointmentDialogOpen}
+                  onAppointmentScheduled={handleAppointmentScheduled}
+                />
+              </>
+            )}
           </div>
         </div>
 
@@ -585,6 +671,114 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
+            {shouldShowAppointmentCard && (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <div>
+                    <CardTitle className="text-base">Appointments</CardTitle>
+                    <CardDescription>Office meetings scheduled for this case</CardDescription>
+                  </div>
+                  {isAgent && caseData.status === 'APPROVED' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setAppointmentDialogOpen(true)}
+                    >
+                      <Plus className="mr-1.5 h-4 w-4" />
+                      Schedule
+                    </Button>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {upcomingAppointment ? (
+                    <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            Next Appointment
+                          </p>
+                          <p className="text-lg font-semibold">
+                            {formatDateTime(upcomingAppointment.scheduledAt)}
+                          </p>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'capitalize',
+                            appointmentStatusConfig[upcomingAppointment.status].className
+                          )}
+                        >
+                          {appointmentStatusConfig[upcomingAppointment.status].label}
+                        </Badge>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <InfoRow
+                          icon={MapPin}
+                          label="Location"
+                          value={upcomingAppointment.location}
+                        />
+                        <InfoRow
+                          icon={User}
+                          label="Advisor"
+                          value={renderAppointmentAdvisor(upcomingAppointment)}
+                        />
+                      </div>
+                      {upcomingAppointment.notes && (
+                        <InfoRow icon={FileText} label="Notes" value={upcomingAppointment.notes} />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-muted p-4 text-sm text-muted-foreground">
+                      No appointments scheduled yet. Schedule one to coordinate the next steps with
+                      the client.
+                    </div>
+                  )}
+
+                  {otherAppointments.length > 0 && (
+                    <div className="space-y-3">
+                      <Separator />
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Appointment History
+                      </p>
+                      <div className="space-y-2">
+                        {otherAppointments.map((appointment) => {
+                          const details = getAppointmentAdvisorDetails(appointment);
+                          return (
+                            <div
+                              key={appointment.id}
+                              className="flex items-center justify-between rounded-lg border border-border bg-background p-3"
+                            >
+                              <div>
+                                <p className="text-sm font-semibold">
+                                  {formatDateTime(appointment.scheduledAt)}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {appointment.location}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {details.name}
+                                  {details.email ? ` • ${details.email}` : ''}
+                                </p>
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  'capitalize',
+                                  appointmentStatusConfig[appointment.status].className
+                                )}
+                              >
+                                {appointmentStatusConfig[appointment.status].label}
+                              </Badge>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             <div className="grid gap-4 md:grid-cols-2">
               <Card>
                 <CardHeader>
@@ -907,6 +1101,30 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   );
 }
 
+function splitAppointments(appointments?: Appointment[] | null) {
+  if (!appointments || appointments.length === 0) {
+    return {
+      upcomingAppointment: null as Appointment | null,
+      otherAppointments: [] as Appointment[],
+    };
+  }
+
+  const sorted = [...appointments].sort(
+    (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+  );
+  const now = Date.now();
+  const upcoming =
+    sorted.find(
+      (appointment) =>
+        new Date(appointment.scheduledAt).getTime() >= now &&
+        appointment.status !== AppointmentStatus.CANCELLED
+    ) ?? sorted[0];
+
+  const remaining = sorted.filter((appointment) => appointment.id !== upcoming.id);
+
+  return { upcomingAppointment: upcoming, otherAppointments: remaining };
+}
+
 function InfoRow({
   icon: Icon,
   label,
@@ -961,6 +1179,16 @@ export function CaseDetailSkeleton() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-12 w-full" />
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="mt-2 h-4 w-64" />
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </CardContent>
+      </Card>
       <div className="grid gap-4 md:grid-cols-2">
         {[1, 2].map((i) => (
           <Card key={i}>

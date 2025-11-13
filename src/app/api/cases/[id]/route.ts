@@ -66,6 +66,27 @@ const getHandler = asyncHandler(async (request: NextRequest, context: RouteConte
         },
       },
       formData: true,
+      appointments: {
+        orderBy: { scheduledAt: 'asc' },
+        include: {
+          assignedAgent: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          createdBy: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -168,6 +189,27 @@ const putHandler = asyncHandler(async (request: NextRequest, context: RouteConte
         },
       },
       formData: true,
+      appointments: {
+        orderBy: { scheduledAt: 'asc' },
+        include: {
+          assignedAgent: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          createdBy: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
     },
   });
 

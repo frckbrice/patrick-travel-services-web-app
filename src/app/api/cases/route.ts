@@ -3,6 +3,7 @@
 
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
+import { Prisma } from '@prisma/client';
 import {
   ERROR_MESSAGES,
   SUCCESS_MESSAGES,
@@ -148,15 +149,55 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
         lastName: true,
       },
     },
-  };
+    appointments: {
+      orderBy: {
+        scheduledAt: 'desc' as const,
+      },
+      take: 1,
+      select: {
+        id: true,
+        caseId: true,
+        clientId: true,
+        createdById: true,
+        assignedAgentId: true,
+        scheduledAt: true,
+        location: true,
+        notes: true,
+        status: true,
+        reminderSentAt: true,
+        createdAt: true,
+        updatedAt: true,
+        assignedAgent: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            role: true,
+          },
+        },
+        createdBy: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            role: true,
+          },
+        },
+      },
+    },
+  } satisfies Prisma.CaseInclude;
 
-  let cases;
-  let total;
+  type CaseWithRelations = Prisma.CaseGetPayload<{ include: typeof includeClause }>;
+
+  let cases: CaseWithRelations[];
+  let total: number;
 
   if (searchCondition) {
     // Search requires fetching all matching cases first, then paginating
     const searchTerm = search.trim();
-    const allCases = await prisma.case.findMany({
+    const allCases: CaseWithRelations[] = await prisma.case.findMany({
       where,
       include: includeClause,
       orderBy: { submissionDate: 'desc' },
@@ -183,7 +224,7 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
         orderBy: { submissionDate: 'desc' },
         skip,
         take: limit,
-      }),
+      }) as Promise<CaseWithRelations[]>,
       prisma.case.count({ where }),
     ]);
   }

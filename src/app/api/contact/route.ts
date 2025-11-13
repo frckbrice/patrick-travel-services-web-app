@@ -66,7 +66,35 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
     // Send notification email to admin (don't block the response on email sending)
     // Use a fire-and-forget approach for email notification
     const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER;
+    const adminRecipients: string[] = [];
+
     if (adminEmail) {
+      adminRecipients.push(adminEmail);
+    }
+
+    const dynamicAdmins = await prisma.user.findMany({
+      where: {
+        role: 'ADMIN',
+        isActive: true,
+      },
+      select: {
+        email: true,
+      },
+      take: 5,
+    });
+
+    dynamicAdmins
+      .map((admin) => admin.email)
+      .filter((emailValue): emailValue is string =>
+        Boolean(emailValue && emailValue.trim().length > 0)
+      )
+      .forEach((emailValue) => {
+        if (!adminRecipients.includes(emailValue)) {
+          adminRecipients.push(emailValue);
+        }
+      });
+
+    if (adminRecipients.length > 0) {
       // Sanitize all user-controlled values to prevent XSS/HTML injection
       const safeName = escapeHtml(name);
       const safeEmail = escapeHtml(email);
@@ -74,8 +102,7 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
       const safeSubject = subject ? escapeHtml(subject) : 'General Inquiry';
       const safeMessage = textToSafeHtml(message); // Convert newlines to <br/> after escaping
 
-      sendEmail({
-        to: adminEmail,
+      const emailPayload = {
         subject: `Contact Form: ${safeSubject} - ${safeName}`,
         html: `
                     <!DOCTYPE html>
@@ -145,10 +172,18 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
                     </body>
                     </html>
                 `,
-      }).catch((error) => {
-        // Log email error but don't fail the request
-        logger.error('Failed to send contact notification email', error);
-      });
+      };
+
+      await Promise.all(
+        adminRecipients.map((recipient) =>
+          sendEmail({
+            to: recipient,
+            ...emailPayload,
+          }).catch((error) => {
+            logger.error('Failed to send contact notification email', { recipient, error });
+          })
+        )
+      );
     }
 
     return successResponse(

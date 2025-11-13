@@ -57,6 +57,7 @@ requirements.md
 create_project_db
 
 *.sql
+!prisma/migrations/**/*.sql
 migrate-to-neon.ts
 local_db_data_export.dump
 test-messaging-manual

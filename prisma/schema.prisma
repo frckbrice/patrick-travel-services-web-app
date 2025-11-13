@@ -54,6 +54,9 @@ model User {
   transfersInitiated   TransferHistory[]  @relation("TransferInitiator")
   payments             Payment[]
   refunds              Refund[]
+  appointmentsCreated  Appointment[]      @relation("CreatedAppointments")
+  clientAppointments   Appointment[]      @relation("ClientAppointments")
+  assignedAppointments Appointment[]      @relation("AssignedAgentAppointments")
 
   @@index([email])
   @@index([role])
@@ -79,6 +82,7 @@ model Case {
   documents           Document[]
   messages            Message[]
   notifications       Notification[]
+  appointments        Appointment[]
   statusHistory       StatusHistory[]
   transferHistory     TransferHistory[]
 
@@ -164,6 +168,7 @@ model Notification {
   id        String           @id @default(uuid())
   userId    String
   caseId    String?
+  appointmentId String?
   type      NotificationType
   title     String
   message   String
@@ -172,11 +177,13 @@ model Notification {
   createdAt DateTime         @default(now())
   actionUrl String?
   case      Case?            @relation(fields: [caseId], references: [id])
+  appointment Appointment?   @relation(fields: [appointmentId], references: [id])
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([isRead])
   @@index([createdAt])
+  @@index([appointmentId])
 }
 
 model ActivityLog {
@@ -351,6 +358,33 @@ model ChatRoom {
   @@index([lastMessageAt])
 }
 
+model Appointment {
+  id               String             @id @default(uuid())
+  caseId           String
+  clientId         String
+  createdById      String
+  assignedAgentId  String?
+  scheduledAt      DateTime
+  location         String
+  notes            String?
+  status           AppointmentStatus  @default(SCHEDULED)
+  reminderSentAt   DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  case             Case               @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  client           User               @relation("ClientAppointments", fields: [clientId], references: [id], onDelete: Cascade)
+  createdBy        User               @relation("CreatedAppointments", fields: [createdById], references: [id])
+  assignedAgent    User?              @relation("AssignedAgentAppointments", fields: [assignedAgentId], references: [id])
+  notifications    Notification[]
+
+  @@index([caseId])
+  @@index([clientId])
+  @@index([createdById])
+  @@index([assignedAgentId])
+  @@index([scheduledAt])
+  @@index([status])
+}
+
 model Contact {
   id        String        @id @default(uuid())
   name      String
@@ -451,6 +485,14 @@ enum NotificationType {
   CASE_ASSIGNED
   SYSTEM_ANNOUNCEMENT
   NEW_EMAIL
+  APPOINTMENT_SCHEDULED
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  RESCHEDULED
+  COMPLETED
+  CANCELLED
 }
 
 enum TransferReason {
