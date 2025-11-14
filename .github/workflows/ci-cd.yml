@@ -10,10 +10,6 @@ env:
     NODE_VERSION: "22.x"
     PNPM_VERSION: "8.x"
 
-defaults:
-    run:
-        working-directory: web
-
 jobs:
     # Code Quality Checks
     quality:
@@ -93,8 +89,8 @@ jobs:
               with:
                   name: build-artifacts
                   path: |
-                      web/.next
-                      web/public
+                      .next
+                      public
                   retention-days: 1
 
     # Docker Build and Push
@@ -133,8 +129,8 @@ jobs:
             - name: Build and push Docker image
               uses: docker/build-push-action@v5
               with:
-                  context: ./web
-                  file: ./web/Dockerfile
+                  context: .
+                  file: ./Dockerfile
                   push: true
                   tags: ${{ steps.meta.outputs.tags }}
                   labels: ${{ steps.meta.outputs.labels }}
