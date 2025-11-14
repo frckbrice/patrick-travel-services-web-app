@@ -10,6 +10,10 @@ env:
     NODE_VERSION: "22.x"
     PNPM_VERSION: "8.x"
 
+defaults:
+    run:
+        working-directory: ../web
+
 jobs:
     # Code Quality Checks
     quality:
@@ -19,6 +23,8 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
+              with:
+                  path: ../web
 
             - name: Setup pnpm
               uses: pnpm/action-setup@v2
@@ -33,19 +39,15 @@ jobs:
 
             - name: Install dependencies
               run: pnpm install --no-frozen-lockfile
-              working-directory: web
 
             - name: Run ESLint
               run: pnpm lint
-              working-directory: web
 
             - name: Check code formatting
               run: pnpm format:check
-              working-directory: web
 
             - name: Type checking
               run: pnpm type-check
-              working-directory: web
 
     # Build Application
     build:
@@ -56,6 +58,8 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
+              with:
+                  path: ../web
 
             - name: Setup pnpm
               uses: pnpm/action-setup@v2
@@ -70,15 +74,12 @@ jobs:
 
             - name: Install dependencies
               run: pnpm install --no-frozen-lockfile
-              working-directory: web
 
             - name: Generate Prisma Client
               run: pnpm prisma:generate
-              working-directory: web
 
             - name: Build application
               run: pnpm build
-              working-directory: web
               env:
                   NEXT_TELEMETRY_DISABLED: 1
                   NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
@@ -96,8 +97,8 @@ jobs:
               with:
                   name: build-artifacts
                   path: |
-                      web/.next
-                      web/public
+                      ${{ github.workspace }}/../web/.next
+                      ${{ github.workspace }}/../web/public
                   retention-days: 1
 
     # Docker Build and Push
@@ -110,6 +111,8 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
+              with:
+                  path: ../web
 
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3
@@ -136,8 +139,8 @@ jobs:
             - name: Build and push Docker image
               uses: docker/build-push-action@v5
               with:
-                  context: ./web
-                  file: ./web/Dockerfile
+                  context: ${{ github.workspace }}/../web
+                  file: ${{ github.workspace }}/../web/Dockerfile
                   push: true
                   tags: ${{ steps.meta.outputs.tags }}
                   labels: ${{ steps.meta.outputs.labels }}
@@ -154,6 +157,8 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
+              with:
+                  path: ../web
 
             - name: Setup pnpm
               uses: pnpm/action-setup@v2
@@ -168,11 +173,9 @@ jobs:
 
             - name: Install dependencies
               run: pnpm install --no-frozen-lockfile
-              working-directory: web
 
             - name: Run security audit
               run: pnpm audit --audit-level=moderate
-              working-directory: web
               continue-on-error: true
 
     # Deployment (Optional - configure based on your deployment target)
@@ -187,6 +190,8 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
+              with:
+                  path: ../web
 
             - name: Setup pnpm
               uses: pnpm/action-setup@v2
@@ -201,7 +206,6 @@ jobs:
 
             - name: Install dependencies
               run: pnpm install --no-frozen-lockfile
-              working-directory: web
 
             - name: Deploy to Vercel (Production)
               env:
@@ -209,5 +213,4 @@ jobs:
                   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
                   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
               run: npx vercel deploy --prod --yes --token "$VERCEL_TOKEN"
-              working-directory: web
    
