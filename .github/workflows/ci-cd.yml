@@ -31,7 +31,8 @@ jobs:
               with:
                   node-version: ${{ env.NODE_VERSION }}
                   cache: "pnpm"
-                  cache-dependency-path: web/pnpm-lock.yaml
+                  cache-dependency-path: |
+                      web/pnpm-lock.yaml
 
             - name: Install dependencies
               run: pnpm install --no-frozen-lockfile
@@ -70,7 +71,8 @@ jobs:
               with:
                   node-version: ${{ env.NODE_VERSION }}
                   cache: "pnpm"
-                  cache-dependency-path: web/pnpm-lock.yaml
+                  cache-dependency-path: |
+                      web/pnpm-lock.yaml
 
             - name: Install dependencies
               run: pnpm install --no-frozen-lockfile
@@ -170,7 +172,8 @@ jobs:
               with:
                   node-version: ${{ env.NODE_VERSION }}
                   cache: "pnpm"
-                  cache-dependency-path: web/pnpm-lock.yaml
+                  cache-dependency-path: |
+                      web/pnpm-lock.yaml
 
             - name: Install dependencies
               run: pnpm install --no-frozen-lockfile
@@ -205,7 +208,8 @@ jobs:
               with:
                   node-version: ${{ env.NODE_VERSION }}
                   cache: "pnpm"
-                  cache-dependency-path: web/pnpm-lock.yaml
+                  cache-dependency-path: |
+                      web/pnpm-lock.yaml
 
             - name: Install dependencies
               run: pnpm install --no-frozen-lockfile
