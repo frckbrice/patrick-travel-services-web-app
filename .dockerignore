@@ -61,6 +61,10 @@ requirements.md
 
 # Firebase credentials (should be passed as env vars)
 *.json
+!package.json
+!pnpm-lock.yaml
+!pnpm-lock.yaml*
+!tsconfig.json
 !components.json
 
 # Prettier
