@@ -12,7 +12,7 @@ env:
 
 defaults:
     run:
-        working-directory: ../web
+        working-directory: web
 
 jobs:
     # Code Quality Checks
@@ -23,8 +23,6 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
-              with:
-                  path: ../web
 
             - name: Setup pnpm
               uses: pnpm/action-setup@v2
@@ -97,8 +95,8 @@ jobs:
               with:
                   name: build-artifacts
                   path: |
-                      ${{ github.workspace }}/../web/.next
-                      ${{ github.workspace }}/../web/public
+                      .next
+                      public
                   retention-days: 1
 
     # Docker Build and Push
@@ -111,8 +109,6 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
-              with:
-                  path: ../web
 
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3
@@ -139,8 +135,8 @@ jobs:
             - name: Build and push Docker image
               uses: docker/build-push-action@v5
               with:
-                  context: ${{ github.workspace }}/../web
-                  file: ${{ github.workspace }}/../web/Dockerfile
+                  context: ./web
+                  file: ./web/Dockerfile
                   push: true
                   tags: ${{ steps.meta.outputs.tags }}
                   labels: ${{ steps.meta.outputs.labels }}
@@ -157,8 +153,6 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
-              with:
-                  path: ../web
 
             - name: Setup pnpm
               uses: pnpm/action-setup@v2
@@ -190,8 +184,6 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
-              with:
-                  path: ../web
 
             - name: Setup pnpm
               uses: pnpm/action-setup@v2
