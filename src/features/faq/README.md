@@ -4,15 +4,15 @@
 
 A modern, performant FAQ management system following 2025 web standards with:
 
-- ✅ Database-driven content (Neon PostgreSQL)
-- ✅ Admin CRUD interface
-- ✅ Public-facing display with SEO
-- ✅ Schema.org FAQPage markup for Google rich snippets
-- ✅ Client-side search (no API calls needed)
-- ✅ Category-based organization
-- ✅ React Query caching (1-hour stale time)
-- ✅ Mobile-first responsive design
-- ✅ ISR (Incremental Static Regeneration) support
+-  Database-driven content (Neon PostgreSQL)
+-  Admin CRUD interface
+-  Public-facing display with SEO
+-  Schema.org FAQPage markup for Google rich snippets
+-  Client-side search (no API calls needed)
+-  Category-based organization
+-  React Query caching (1-hour stale time)
+-  Mobile-first responsive design
+-  ISR (Incremental Static Regeneration) support
 
 ## Architecture
 
@@ -115,13 +115,13 @@ Access at `/dashboard/faq` (ADMIN role required)
 
 Features:
 
-- ✅ Create new FAQs
-- ✅ Edit existing FAQs
-- ✅ Delete FAQs
-- ✅ Toggle active/inactive
-- ✅ Set display order
-- ✅ Organize by category
-- ✅ Search and filter
+-  Create new FAQs
+-  Edit existing FAQs
+-  Delete FAQs
+-  Toggle active/inactive
+-  Set display order
+-  Organize by category
+-  Search and filter
 
 ## API Endpoints
 
@@ -197,9 +197,9 @@ The FAQ section includes **Schema.org FAQPage** markup for Google rich snippets:
 
 This enables:
 
-- 🔍 Rich snippets in Google search results
-- 🚀 Improved CTR from search
-- 📈 Better SEO ranking
+-  Rich snippets in Google search results
+-  Improved CTR from search
+-  Better SEO ranking
 
 ## Categories
 

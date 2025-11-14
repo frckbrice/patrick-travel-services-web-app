@@ -11,7 +11,7 @@ Result: Messages appear in different chat rooms, breaking conversation continuit
 
 ## Solution Implemented
 
-### 1. Automatic Migration in `sendMessage` ✅
+### 1. Automatic Migration in `sendMessage` 
 
 Updated `src/lib/firebase/chat.service.ts` to automatically detect and migrate old format chats when sending messages:
 
@@ -21,7 +21,7 @@ Updated `src/lib/firebase/chat.service.ts` to automatically detect and migrate o
 
 **Code location**: Lines 482-519 in `src/lib/firebase/chat.service.ts`
 
-### 2. Migration API Endpoint ✅
+### 2. Migration API Endpoint 
 
 Created `/api/chat/migrate` endpoint for bulk migration:
 
@@ -61,7 +61,7 @@ POST /api/chat/migrate
 - Number of messages merged
 - Any errors encountered
 
-### 3. Migration Function ✅
+### 3. Migration Function 
 
 Created `migrateChatFromOldToNew()` function that:
 
@@ -73,7 +73,7 @@ Created `migrateChatFromOldToNew()` function that:
 
 ## Recommended Approach
 
-### Option 1: Automatic Migration (Recommended) ✅
+### Option 1: Automatic Migration (Recommended) 
 
 The automatic migration in `sendMessage` will handle migrations on-the-fly as users send messages. This is the least disruptive approach.
 
@@ -123,7 +123,7 @@ curl -X POST https://your-domain.com/api/chat/migrate \
 2. Keep automatic migration for edge cases
 3. Clean up old format rooms after verification
 
-## Mobile App Update Required ⚠️
+## Mobile App Update Required 
 
 **Critical**: The mobile app must also use the new `clientId-agentId` format for chat room IDs.
 
@@ -238,7 +238,7 @@ New format includes:
 
 ## Next Steps
 
-1. ✅ Automatic migration is already active in `sendMessage`
-2. ⚠️ **Update mobile app** to use new chatRoomId format (critical)
-3. 🔄 Optionally run bulk migration API for existing chats
-4. 🧹 Clean up old format rooms after verification period
+1.  Automatic migration is already active in `sendMessage`
+2.  **Update mobile app** to use new chatRoomId format (critical)
+3.  Optionally run bulk migration API for existing chats
+4.  Clean up old format rooms after verification period

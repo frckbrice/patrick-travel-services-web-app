@@ -282,7 +282,7 @@ docker-compose up -d --build
 # Stop services
 docker-compose down
 
-# Stop and remove volumes (⚠️ deletes database data)
+# Stop and remove volumes ( deletes database data)
 docker-compose down -v
 
 # View logs
@@ -755,10 +755,10 @@ See [UploadThing Documentation](https://docs.uploadthing.com) for more informati
 
 This project is proprietary and confidential.
 
-## 👥 Support
+##  Support
 
 For support and questions, please contact the me at https://maebrieporfolio.vercel.app.
 
 ---
 
-\*_Built with ❤️ by Avom Brice _ check at https://maebrieporfolio.vercel.app
+\*_Built with  by Avom Brice _ check at https://maebrieporfolio.vercel.app
