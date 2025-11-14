@@ -18,7 +18,6 @@ const handler = asyncHandler(async (request: NextRequest) => {
   }
 
   const now = new Date();
-  // Buffer to avoid edge cases where appointments within the next few minutes display as past
   const edgeBuffer = addMinutes(now, -5);
 
   const role = req.user.role;
@@ -71,25 +70,19 @@ const handler = asyncHandler(async (request: NextRequest) => {
     },
   });
 
-  if (!appointment) {
-    return successResponse(
-      { appointment: null },
-      'No upcoming appointments scheduled',
-      HttpStatus.OK
-    );
-  }
-
   return successResponse(
     {
-      appointment: {
-        ...appointment,
-        actionUrl: NOTIFICATION_ACTION_URLS.APPOINTMENT_DETAILS(
-          appointment.case.id,
-          appointment.id
-        ),
-      },
+      appointment: appointment
+        ? {
+            ...appointment,
+            actionUrl: NOTIFICATION_ACTION_URLS.APPOINTMENT_DETAILS(
+              appointment.case.id,
+              appointment.id
+            ),
+          }
+        : null,
     },
-    'Upcoming appointment retrieved successfully'
+    appointment ? 'Upcoming appointment retrieved successfully' : 'No upcoming appointments'
   );
 });
 

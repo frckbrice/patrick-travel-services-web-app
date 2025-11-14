@@ -200,7 +200,7 @@ export function handleApiError(error: unknown): NextResponse<ApiResponse> {
 
   // Handle Prisma errors
   if ((error as { code?: string }).code?.startsWith('P')) {
-    const prismaError = error as { code: string; meta?: { target?: string[] } };
+    const prismaError = error as { code: string; meta?: { target?: string[] }; message?: string };
 
     if (prismaError.code === 'P2002') {
       return NextResponse.json(
@@ -215,6 +215,9 @@ export function handleApiError(error: unknown): NextResponse<ApiResponse> {
       );
     }
 
+    // P2025 = Record not found (from findUnique/findFirst with no result)
+    // However, for queries like findFirst that should return null, we shouldn't return 404
+    // Only return 404 for operations that expect a record to exist (update, delete)
     if (prismaError.code === 'P2025') {
       return NextResponse.json(
         {
@@ -225,6 +228,31 @@ export function handleApiError(error: unknown): NextResponse<ApiResponse> {
           },
         },
         { status: HttpStatus.NOT_FOUND }
+      );
+    }
+
+    // Handle Prisma connection errors (P1001, P1017, etc.)
+    // These should return 503 Service Unavailable, not 404
+    if (
+      prismaError.code === 'P1001' ||
+      prismaError.code === 'P1017' ||
+      prismaError.message?.includes('connection') ||
+      prismaError.message?.includes('database') ||
+      prismaError.message?.includes('timeout')
+    ) {
+      logger.error('Database connection error', {
+        code: prismaError.code,
+        message: prismaError.message,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Database connection error. Please try again later.',
+          meta: {
+            timestamp: new Date().toISOString(),
+          },
+        },
+        { status: HttpStatus.SERVICE_UNAVAILABLE }
       );
     }
   }
