@@ -1,5 +1,5 @@
 # =========================
-# 1) Dependencies Stage
+# Stage 1: Dependencies
 # =========================
 FROM node:22-alpine AS deps
 RUN apk add --no-cache libc6-compat
@@ -8,65 +8,58 @@ WORKDIR /app
 # Install pnpm globally
 RUN npm install -g pnpm
 
-# Copy package files only
+# Copy package files + Prisma schema (needed if postinstall scripts use Prisma)
 COPY package.json pnpm-lock.yaml* ./
+COPY prisma ./prisma
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
-
 # =========================
-# 2) Builder Stage
+# Stage 2: Builder
 # =========================
 FROM node:22-alpine AS builder
 WORKDIR /app
 
-# Install pnpm globally
 RUN npm install -g pnpm
 
-# Copy node_modules from deps stage
+# Copy installed node_modules from deps
 COPY --from=deps /app/node_modules ./node_modules
 
 # Copy full project files
 COPY . .
 
-# Environment variables for build
+# Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
 # Generate Prisma Client
 RUN pnpm prisma generate
 
-# Build Next.js (standalone mode will create .next/standalone)
+# Build Next.js application in standalone mode
 RUN pnpm build
 
-
 # =========================
-# 3) Production Runner
+# Stage 3: Runner
 # =========================
 FROM node:22-alpine AS runner
 WORKDIR /app
 
-# Production environment
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Add non-root user
+# Create non-root user
 RUN addgroup --system --gid 1001 nodejs \
     && adduser --system --uid 1001 nextjs
 
-# Copy Next.js standalone output
+# Copy necessary files from builder
 COPY --from=builder /app/.next/standalone ./
-
-# Copy static assets
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-
-# Copy Prisma runtime files (optional but recommended)
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# Set permissions
+# Set correct permissions
 RUN chown -R nextjs:nodejs /app
 USER nextjs
 
@@ -79,5 +72,5 @@ ENV HOSTNAME="0.0.0.0"
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
     CMD wget -qO- http://localhost:3000/api/health || exit 1
 
-# Start Next.js server (standalone mode)
+# Start Next.js server
 CMD ["node", "server.js"]
