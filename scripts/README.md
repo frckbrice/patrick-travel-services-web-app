@@ -4,7 +4,7 @@ This directory contains utility scripts for managing the Patrick Travel Services
 
 ---
 
-## 📋 Available Scripts
+##  Available Scripts
 
 ### 1. GDPR Scheduled Deletion Script
 
@@ -34,27 +34,27 @@ npx tsx scripts/process-scheduled-deletions.ts
 **Output example:**
 
 ```
-🗑️  Starting scheduled account deletions...
-📅 Date: 2025-01-20T02:00:00.000Z
-📋 Found 3 account(s) to delete.
+  Starting scheduled account deletions...
+ Date: 2025-01-20T02:00:00.000Z
+ Found 3 account(s) to delete.
 
-🔄 Processing user: abc-123
+ Processing user: abc-123
    Email: deleted_abc-123@deleted.local
    Name: John Doe
    Scheduled: 2025-01-20T02:00:00.000Z
    Reason: No longer needed
-   ✅ Firebase account deleted
-   ✅ User permanently deleted
+    Firebase account deleted
+    User permanently deleted
 
 ==================================================
-📊 DELETION SUMMARY
+ DELETION SUMMARY
 ==================================================
-✅ Users deleted:         3
-📁 Cases deleted:         5
-📄 Documents deleted:     15
-💬 Messages deleted:      42
-🔔 Notifications deleted: 23
-❌ Errors:                0
+ Users deleted:         3
+ Cases deleted:         5
+ Documents deleted:     15
+ Messages deleted:      42
+ Notifications deleted: 23
+ Errors:                0
 ==================================================
 ```
 
@@ -134,7 +134,7 @@ node scripts/generate-pwa-icons.js
 
 ---
 
-## 🚀 Deployment Options
+##  Deployment Options
 
 ### Option 1: Vercel Cron (Recommended for Vercel deployments)
 
@@ -216,7 +216,7 @@ jobs:
 
 ---
 
-## 🧪 Testing the Deletion Script
+##  Testing the Deletion Script
 
 ### Test with staging data:
 
@@ -265,7 +265,7 @@ SELECT * FROM "User" WHERE email LIKE '%test-delete%';
 
 ---
 
-## 📊 Monitoring & Logs
+##  Monitoring & Logs
 
 ### View logs (traditional cron):
 
@@ -297,7 +297,7 @@ WHERE "deletionScheduledFor" IS NOT NULL
 
 ---
 
-## 🔐 Security Considerations
+##  Security Considerations
 
 ### Vercel Cron Security:
 
@@ -320,7 +320,7 @@ WHERE "deletionScheduledFor" IS NOT NULL
 
 ---
 
-## 🆘 Troubleshooting
+##  Troubleshooting
 
 ### Problem: Cron job not running
 
@@ -368,7 +368,7 @@ npx prisma studio
 
 ---
 
-## 📞 Support
+##  Support
 
 For issues or questions:
 

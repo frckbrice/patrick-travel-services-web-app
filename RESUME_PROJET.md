@@ -945,13 +945,13 @@ Plateforme complète de gestion des services d'immigration permettant aux client
 
 Cette plateforme offre une solution complète pour la gestion des services d'immigration avec:
 
-- ✅ Gestion complète du cycle de vie des dossiers
-- ✅ Communication en temps réel entre clients et agents
-- ✅ Gestion sécurisée des documents
-- ✅ Analytics et rapports pour les administrateurs
-- ✅ Interface utilisateur moderne et intuitive
-- ✅ Performance optimisée
-- ✅ Sécurité renforcée
+-  Gestion complète du cycle de vie des dossiers
+-  Communication en temps réel entre clients et agents
+-  Gestion sécurisée des documents
+-  Analytics et rapports pour les administrateurs
+-  Interface utilisateur moderne et intuitive
+-  Performance optimisée
+-  Sécurité renforcée
 
 Le projet est prêt pour le MVP.
 

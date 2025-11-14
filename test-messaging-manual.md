@@ -87,21 +87,21 @@ console.log('Database:', database);
 
 ## Expected Behavior
 
-✅ **Agent sends message:**
+ **Agent sends message:**
 
 - Message appears immediately in agent's chat
 - Message is sent to Firebase Realtime Database
 - Message is archived to PostgreSQL
 - Console shows: "Message sent and archived"
 
-✅ **Client receives message:**
+ **Client receives message:**
 
 - Message appears in real-time without refresh
 - No delay (sub-second)
 - Message is readable
 - Console shows no errors
 
-❌ **Common Issues:**
+ **Common Issues:**
 
 1. **"Firebase user not authenticated"**
    - Solution: Refresh the page, re-login
