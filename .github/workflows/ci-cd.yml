@@ -176,4 +176,19 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: npx vercel deploy --prod --yes --token "$VERCEL_TOKEN"
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "Vercel deployment skipped: missing VERCEL_TOKEN, VERCEL_ORG_ID, or VERCEL_PROJECT_ID secrets."
+            exit 1
+          fi
+
+          echo "Linking Vercel project..."
+          npx vercel link --yes --project "$VERCEL_PROJECT_ID" --org "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN"
+
+          echo "Deploying to Vercel..."
+          npx vercel deploy \
+            --prod \
+            --yes \
+            --token "$VERCEL_TOKEN" \
+            --scope "$VERCEL_ORG_ID" \
+            --project "$VERCEL_PROJECT_ID"
