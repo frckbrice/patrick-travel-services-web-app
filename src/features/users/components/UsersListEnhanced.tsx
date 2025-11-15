@@ -215,6 +215,20 @@ export function UsersListEnhanced() {
   }, []);
 
   // Define table columns with TanStack Table - MOVED BEFORE EARLY RETURN
+  const getRoleLabel = useCallback(
+    (role: string) => {
+      const roleKeyMap: Record<string, string> = {
+        ADMIN: 'users.admin',
+        AGENT: 'users.agent',
+        CLIENT: 'users.client',
+      };
+
+      const translationKey = roleKeyMap[role];
+      return translationKey ? t(translationKey) : role;
+    },
+    [t]
+  );
+
   const columns = useMemo<ColumnDef<UserData>[]>(
     () => [
       {
@@ -280,12 +294,12 @@ export function UsersListEnhanced() {
         cell: ({ row }) => (
           <div className="space-y-1 text-sm min-w-[180px]">
             <div className="flex items-center gap-1 text-muted-foreground">
-              <Mail className="h-3 w-3 flex-shrink-0" />
+              <Mail className="h-3 w-3 shrink-0" />
               <span className="truncate max-w-[200px]">{row.original.email}</span>
             </div>
             {row.original.phone && (
               <div className="flex items-center gap-1 text-muted-foreground">
-                <Phone className="h-3 w-3 flex-shrink-0" />
+                <Phone className="h-3 w-3 shrink-0" />
                 <span>{row.original.phone}</span>
               </div>
             )}
@@ -315,7 +329,7 @@ export function UsersListEnhanced() {
         },
         cell: ({ row }) => (
           <Badge className={getRoleBadgeColor(row.original.role)} variant="secondary">
-            {row.original.role}
+            {getRoleLabel(row.original.role)}
           </Badge>
         ),
         enableSorting: true,
@@ -394,7 +408,7 @@ export function UsersListEnhanced() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
                   <MoreHorizontal className="h-4 w-4" />
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">{t('users.actionMenuLabel')}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -423,7 +437,7 @@ export function UsersListEnhanced() {
         enableSorting: false,
       },
     ],
-    [t, getRoleBadgeColor, handleEdit, handleToggleActive, handleDelete, user?.id]
+    [t, getRoleBadgeColor, handleEdit, handleToggleActive, handleDelete, user?.id, getRoleLabel]
   );
 
   // Prepare data for table - MOVED BEFORE EARLY RETURNS
@@ -469,10 +483,10 @@ export function UsersListEnhanced() {
         <Card>
           <CardContent className="py-12 text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
-            <p className="text-destructive mb-4">Failed to load users. Please try again.</p>
+            <p className="text-destructive mb-4">{t('users.loadError')}</p>
             <Button onClick={() => refetch()}>
               <RefreshCw className="mr-2 h-4 w-4" />
-              Retry
+              {t('common.retry')}
             </Button>
           </CardContent>
         </Card>
@@ -583,7 +597,11 @@ export function UsersListEnhanced() {
             <CardContent className="border-t py-4">
               <div className="flex items-center justify-between gap-4">
                 <div className="text-sm text-muted-foreground">
-                  Page {currentPage} of {totalPages} ({totalUsers} total)
+                  {t('users.paginationSummary', {
+                    currentPage,
+                    totalPages,
+                    totalUsers,
+                  })}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -593,7 +611,7 @@ export function UsersListEnhanced() {
                     disabled={currentPage === 1 || isLoading}
                   >
                     <ChevronLeft className="h-4 w-4" />
-                    <span className="hidden sm:inline ml-1">Previous</span>
+                    <span className="hidden sm:inline ml-1">{t('common.previous')}</span>
                   </Button>
                   <div className="flex items-center gap-1">
                     {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -622,7 +640,7 @@ export function UsersListEnhanced() {
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages || isLoading}
                   >
-                    <span className="hidden sm:inline mr-1">Next</span>
+                    <span className="hidden sm:inline mr-1">{t('common.next')}</span>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -642,7 +660,7 @@ export function UsersListEnhanced() {
           {selectedUser && (
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label>User</Label>
+                <Label>{t('users.editUserDialog.userLabel')}</Label>
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
                   <Avatar>
                     <AvatarFallback>
@@ -704,7 +722,9 @@ export function UsersListEnhanced() {
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleConfirmDelete}
         title={t('users.deleteUserDialog.title')}
-        description={`Are you sure you want to delete ${selectedUser?.firstName} ${selectedUser?.lastName}? This action cannot be undone.`}
+        description={t('users.deleteUserDialog.confirmDescription', {
+          name: selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}`.trim() : '',
+        })}
         confirmText={t('users.deleteUserDialog.deleteButton')}
         cancelText={t('common.cancel')}
         variant="destructive"

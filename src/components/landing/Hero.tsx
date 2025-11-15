@@ -84,10 +84,12 @@ export function Hero() {
                 {/* Stat 1 */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-center mb-2">
-                    <Users className="h-6 w-6 md:h-8 md:w-8 text-primary" />
+                    <div className="inline-flex items-center justify-center rounded-full p-2 shadow-lg bg-white text-blue-600 dark:bg-linear-to-r dark:from-blue-500 dark:to-cyan-500 dark:text-white">
+                      <Users className="h-6 w-6 md:h-8 md:w-8" />
+                    </div>
                   </div>
                   <div className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white">
-                    500+
+                    <span suppressHydrationWarning>{t('landing.hero.clientsValue')}</span>
                   </div>
                   <div className="text-xs md:text-sm text-gray-300 font-medium">
                     <span suppressHydrationWarning>{t('landing.hero.clients')}</span>
@@ -97,10 +99,12 @@ export function Hero() {
                 {/* Stat 2 */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-center mb-2">
-                    <TrendingUp className="h-6 w-6 md:h-8 md:w-8 text-primary" />
+                    <div className="inline-flex items-center justify-center rounded-full p-2 shadow-lg bg-white text-blue-600 dark:bg-linear-to-r dark:from-blue-500 dark:to-cyan-500 dark:text-white">
+                      <TrendingUp className="h-6 w-6 md:h-8 md:w-8" />
+                    </div>
                   </div>
                   <div className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white">
-                    94%
+                    <span suppressHydrationWarning>{t('landing.hero.successRateValue')}</span>
                   </div>
                   <div className="text-xs md:text-sm text-gray-300 font-medium">
                     <span suppressHydrationWarning>{t('landing.hero.success')}</span>
@@ -110,10 +114,12 @@ export function Hero() {
                 {/* Stat 3 */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-center mb-2">
-                    <Award className="h-6 w-6 md:h-8 md:w-8 text-primary" />
+                    <div className="inline-flex items-center justify-center rounded-full p-2 shadow-lg bg-white text-blue-600 dark:bg-linear-to-r dark:from-blue-500 dark:to-cyan-500 dark:text-white">
+                      <Award className="h-6 w-6 md:h-8 md:w-8" />
+                    </div>
                   </div>
                   <div className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white">
-                    10+
+                    <span suppressHydrationWarning>{t('landing.hero.experienceValue')}</span>
                   </div>
                   <div className="text-xs md:text-sm text-gray-300 font-medium">
                     <span suppressHydrationWarning>{t('landing.hero.years')}</span>
@@ -123,16 +129,15 @@ export function Hero() {
                 {/* Stat 4 - Countries */}
                 <div className="space-y-2 col-span-2 md:col-span-1">
                   <div className="flex items-center justify-center mb-2">
-                    <Globe className="h-6 w-6 md:h-8 md:w-8 text-primary" />
+                    <div className="inline-flex items-center justify-center rounded-full p-2 shadow-lg bg-white text-blue-600 dark:bg-linear-to-r dark:from-blue-500 dark:to-cyan-500 dark:text-white">
+                      <Globe className="h-6 w-6 md:h-8 md:w-8" />
+                    </div>
                   </div>
                   <div className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white">
-                    50+
+                    <span suppressHydrationWarning>{t('landing.hero.countriesServedValue')}</span>
                   </div>
-                  <div
-                    className="text-xs md:text-sm text-gray-300 font-medium"
-                    suppressHydrationWarning
-                  >
-                    Countries Served
+                  <div className="text-xs md:text-sm text-gray-300 font-medium">
+                    <span suppressHydrationWarning>{t('landing.hero.countriesServed')}</span>
                   </div>
                 </div>
               </div>

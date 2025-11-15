@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 export function Services() {
   const { t } = useTranslation();
 
+  const bounceDelays = ['0s', '0.18s', '0.36s', '0.54s'];
+
   const services = [
     {
       icon: GraduationCap,
@@ -49,7 +51,7 @@ export function Services() {
   ];
 
   return (
-    <section className="relative py-16 md:py-20 lg:py-24 bg-gradient-to-b from-blue-50 via-indigo-200/20 to-purple-100/30 dark:from-transparent dark:via-transparent dark:to-transparent">
+    <section className="relative py-16 md:py-20 lg:py-24  from-blue-50 via-indigo-200/20 to-purple-100/30 dark:from-transparent dark:via-transparent dark:to-transparent">
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-16">
@@ -69,6 +71,8 @@ export function Services() {
               <Card
                 key={index}
                 className={`group relative overflow-hidden hover:shadow-2xl transition-all duration-200 hover:-translate-y-1 ${service.borderColor} border-2 will-change-transform`}
+                // className={`group relative overflow-hidden hover:shadow-2xl transition-all duration-200 hover:-translate-y-1 ${service.borderColor} border-2 will-change-transform animate-card-bounce`}
+                style={{ animationDelay: bounceDelays[index % bounceDelays.length] }}
               >
                 {service.badge && (
                   <div className="absolute top-4 right-4">
