@@ -183,7 +183,7 @@ jobs:
           fi
 
           echo "Linking Vercel project..."
-          npx vercel link --yes --project "$VERCEL_PROJECT_ID" --org "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN"
+          npx vercel link --yes --project "$VERCEL_PROJECT_ID" --scope "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN"
 
           echo "Deploying to Vercel..."
           npx vercel deploy \
