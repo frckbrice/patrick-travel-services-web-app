@@ -10,6 +10,7 @@ export interface FAQ {
   question: string;
   answer: string;
   category: string;
+  language: string;
   order: number;
   isActive: boolean;
   createdAt: string;
@@ -29,6 +30,7 @@ export interface CreateFAQInput {
   category: string;
   order?: number;
   isActive?: boolean;
+  language?: string;
 }
 
 export interface UpdateFAQInput extends Partial<CreateFAQInput> {
@@ -46,18 +48,21 @@ export interface UpdateFAQInput extends Partial<CreateFAQInput> {
 export const useFAQs = (options?: {
   category?: string;
   includeInactive?: boolean;
+  language?: string;
   enabled?: boolean;
 }) => {
-  const { category, includeInactive = false, enabled = true } = options || {};
+  const { category, includeInactive = false, language, enabled = true } = options || {};
 
   return useQuery({
-    queryKey: ['faqs', { category, includeInactive }],
+    queryKey: ['faqs', { category, includeInactive, language: language ?? 'all' }],
     queryFn: async (): Promise<FAQsResponse> => {
       const params = new URLSearchParams();
       if (category) params.append('category', category);
       if (includeInactive) params.append('includeInactive', 'true');
+      if (language && language !== 'all') params.append('language', language);
 
-      const response = await apiClient.get(`/api/faq?${params.toString()}`);
+      const queryString = params.toString();
+      const response = await apiClient.get(queryString ? `/api/faq?${queryString}` : '/api/faq');
       return response.data.data;
     },
     enabled,
@@ -94,6 +99,7 @@ export const useCreateFAQ = () => {
         question: newFAQ.question,
         answer: newFAQ.answer,
         category: newFAQ.category,
+        language: newFAQ.language || 'en',
         order: newFAQ.order || 0,
         isActive: newFAQ.isActive ?? true,
         createdAt: new Date().toISOString(),

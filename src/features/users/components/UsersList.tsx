@@ -167,14 +167,14 @@ export function UsersList() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
-          <p className="text-muted-foreground mt-2">Manage system users and permissions</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('users.userManagement')}</h1>
+          <p className="text-muted-foreground mt-2">{t('users.manageSystemUsers')}</p>
         </div>
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-destructive">Failed to load users. Please try again.</p>
+            <p className="text-destructive">{t('users.loadError')}</p>
             <Button className="mt-4" onClick={() => refetch()}>
-              Retry
+              {t('common.retry')}
             </Button>
           </CardContent>
         </Card>
@@ -194,6 +194,17 @@ export function UsersList() {
       CLIENT: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
     };
     return colors[role] || '';
+  };
+
+  const getRoleLabel = (role: string) => {
+    const roleKeyMap: Record<string, string> = {
+      ADMIN: 'users.admin',
+      AGENT: 'users.agent',
+      CLIENT: 'users.client',
+    };
+
+    const translationKey = roleKeyMap[role];
+    return translationKey ? t(translationKey) : role;
   };
 
   return (
@@ -308,7 +319,9 @@ export function UsersList() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getRoleBadgeColor(userData.role)}>{userData.role}</Badge>
+                      <Badge className={getRoleBadgeColor(userData.role)}>
+                        {getRoleLabel(userData.role)}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge variant={userData.isActive ? 'default' : 'secondary'}>
@@ -367,7 +380,11 @@ export function UsersList() {
             <CardContent className="border-t py-4">
               <div className="flex items-center justify-between gap-4">
                 <div className="text-sm text-muted-foreground">
-                  Page {currentPage} of {totalPages} ({totalUsers} total)
+                  {t('users.paginationSummary', {
+                    currentPage,
+                    totalPages,
+                    totalUsers,
+                  })}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -377,7 +394,7 @@ export function UsersList() {
                     disabled={currentPage === 1}
                   >
                     <ChevronLeft className="h-4 w-4" />
-                    <span className="hidden sm:inline ml-1">Previous</span>
+                    <span className="hidden sm:inline ml-1">{t('common.previous')}</span>
                   </Button>
                   <div className="flex items-center gap-1">
                     {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -405,7 +422,7 @@ export function UsersList() {
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                   >
-                    <span className="hidden sm:inline mr-1">Next</span>
+                    <span className="hidden sm:inline mr-1">{t('common.next')}</span>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -425,7 +442,7 @@ export function UsersList() {
           {selectedUser && (
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label>User</Label>
+                <Label>{t('users.editUserDialog.userLabel')}</Label>
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
                   <Avatar>
                     <AvatarFallback>
@@ -487,7 +504,9 @@ export function UsersList() {
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleConfirmDelete}
         title={t('users.deleteUserDialog.title')}
-        description={`Are you sure you want to delete ${selectedUser?.firstName} ${selectedUser?.lastName}? This action cannot be undone.`}
+        description={t('users.deleteUserDialog.confirmDescription', {
+          name: selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}`.trim() : '',
+        })}
         confirmText={t('users.deleteUserDialog.deleteButton')}
         cancelText={t('common.cancel')}
         variant="destructive"

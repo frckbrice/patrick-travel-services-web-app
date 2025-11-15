@@ -12,7 +12,9 @@
     "create": "Créer",
     "update": "Mettre à jour",
     "back": "Retour",
+    "previous": "Précédent",
     "next": "Suivant",
+    "retry": "Réessayer",
     "submit": "Soumettre",
     "search": "Rechercher",
     "filter": "Filtrer",
@@ -472,26 +474,31 @@
     "admins": "Administrateurs",
     "systemUsers": "Utilisateurs du Système",
     "viewManageUsers": "Voir et gérer tous les utilisateurs enregistrés",
+    "loadError": "Échec du chargement des utilisateurs. Veuillez réessayer.",
     "user": "Utilisateur",
     "contact": "Contact",
     "status": "Statut",
     "joined": "Inscrit",
     "actions": "Actions",
+    "paginationSummary": "Page {{currentPage}} sur {{totalPages}} ({{totalUsers}} au total)",
     "activate": "Activer",
     "deactivate": "Désactiver",
     "noUsersFound": "Aucun utilisateur trouvé",
     "noUsersYet": "Aucun utilisateur",
     "adjustFilters": "Essayez d'ajuster vos filtres",
     "usersWillAppear": "Les utilisateurs apparaîtront ici lors de leur inscription",
+    "actionMenuLabel": "Ouvrir le menu des actions",
     "editUserDialog": {
       "title": "Modifier l'Utilisateur",
       "description": "Mettre à jour le rôle et le statut de l'utilisateur",
+      "userLabel": "Utilisateur",
       "roleLabel": "Rôle",
       "statusLabel": "Statut"
     },
     "deleteUserDialog": {
       "title": "Supprimer l'Utilisateur",
       "description": "Cette action ne peut pas être annulée. Cela supprimera définitivement le compte utilisateur.",
+      "confirmDescription": "Êtes-vous sûr de vouloir supprimer {{name}} ? Cette action ne peut pas être annulée.",
       "deleting": "Suppression...",
       "deleteButton": "Supprimer l'Utilisateur"
     },
@@ -592,6 +599,7 @@
       "title": "Questions Fréquemment Posées",
       "description": "Trouvez des réponses aux questions courantes",
       "searchPlaceholder": "Rechercher des questions...",
+      "readMore": "Lire la suite",
       "allQuestions": "Toutes les Questions",
       "noResults": "Aucun résultat trouvé",
       "noResultsDesc": "Essayez des mots-clés différents ou parcourez toutes les questions",
@@ -599,6 +607,131 @@
       "supportReady": "Notre équipe d'assistance est prête à répondre à toutes vos questions",
       "contactSupportBtn": "Contacter le Support",
       "createAccountBtn": "Créer un Compte"
+    },
+    "managementPage": {
+      "title": "Gestion de la FAQ",
+      "subtitle": "Créez et gérez les questions fréquentes",
+      "languageLabel": "Langue",
+      "languageAll": "Toutes",
+      "languageOptions": {
+        "en": "Anglais",
+        "fr": "Français"
+      },
+      "addButton": "Ajouter une FAQ",
+      "stats": {
+        "total": "Total FAQ",
+        "active": "FAQ actives",
+        "categories": "Catégories"
+      },
+      "form": {
+        "questionLabel": "Question",
+        "questionPlaceholder": "Combien de temps dure la procédure de visa ?",
+        "answerLabel": "Réponse",
+        "answerPlaceholder": "Les délais varient selon le type de visa...",
+        "categoryLabel": "Catégorie",
+        "languageLabel": "Langue",
+        "orderLabel": "Ordre d'affichage",
+        "activeLabel": "Active"
+      },
+      "createDialog": {
+        "title": "Créer une nouvelle FAQ",
+        "description": "Ajoutez une nouvelle question fréquente",
+        "submit": "Créer la FAQ",
+        "submitting": "Création..."
+      },
+      "editDialog": {
+        "title": "Modifier la FAQ",
+        "description": "Mettez à jour les informations de la FAQ",
+        "submit": "Mettre à jour",
+        "submitting": "Mise à jour..."
+      },
+      "deleteDialog": {
+        "title": "Supprimer la FAQ",
+        "description": "Voulez-vous vraiment supprimer « {{question}} » ? Cette action est irréversible.",
+        "confirm": "Supprimer"
+      },
+      "accessDenied": {
+        "title": "Accès refusé",
+        "description": "Seuls les administrateurs peuvent gérer la FAQ"
+      },
+      "loadError": {
+        "title": "Échec du chargement des FAQ",
+        "description": "Veuillez actualiser la page et réessayer"
+      }
+    },
+    "managementTable": {
+      "columns": {
+        "order": "Ordre",
+        "category": "Catégorie",
+        "question": "Question",
+        "answer": "Réponse",
+        "status": "Statut",
+        "actions": "Actions"
+      },
+      "badges": {
+        "creating": "Création..."
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "searchPlaceholder": "Rechercher une question ou une réponse...",
+      "filters": {
+        "allCategories": "Toutes les catégories",
+        "results": "{{count}} FAQ",
+        "results_plural": "{{count}} FAQ"
+      },
+      "empty": {
+        "filtered": "Aucune FAQ ne correspond à vos filtres.",
+        "default": "Aucune FAQ pour le moment. Créez votre première FAQ pour commencer."
+      },
+      "pagination": {
+        "pageInfo": "Page {{current}} sur {{total}}",
+        "rowsPerPage": "Lignes par page :"
+      }
+    },
+    "categoryLabels": {
+      "visa-process": "Processus de visa",
+      "documents": "Documents",
+      "payment": "Paiement",
+      "account": "Compte",
+      "general": "Général",
+      "technical-support": "Support technique"
+    },
+    "list": {
+      "title": "Questions fréquentes",
+      "subtitle": "Trouvez des réponses aux questions courantes",
+      "cardTitle": "Questions courantes",
+      "cardDescription": "Cliquez sur une question pour afficher la réponse",
+      "contactTitle": "Vous ne trouvez pas ce que vous cherchez ?",
+      "contactSubtitle": "Notre équipe d'assistance est là pour vous aider",
+      "contactButton": "Contacter le support",
+      "items": [
+        {
+          "question": "Combien de temps dure le processus de visa ?",
+          "answer": "Les délais varient selon le type de visa. Les visas d'étude prennent généralement 4 à 6 semaines, tandis que les permis de travail peuvent prendre 8 à 12 semaines."
+        },
+        {
+          "question": "Quels documents dois-je fournir ?",
+          "answer": "Les documents requis dépendent de votre type de visa. Consultez votre tableau de bord pour obtenir une liste personnalisée."
+        },
+        {
+          "question": "Puis-je suivre l’état de mon dossier en ligne ?",
+          "answer": "Oui ! Vous pouvez suivre votre dossier en temps réel via le tableau de bord ou l’application mobile."
+        },
+        {
+          "question": "Comment téléverser des documents ?",
+          "answer": "Accédez à la section Documents et utilisez le bouton de téléversement. Formats acceptés : PDF, JPG, PNG, DOC."
+        },
+        {
+          "question": "Quels moyens de paiement acceptez-vous ?",
+          "answer": "Nous acceptons toutes les principales cartes de crédit, cartes de débit et virements bancaires. Des plans de paiement sont également disponibles."
+        },
+        {
+          "question": "Puis-je être remboursé si mon visa est refusé ?",
+          "answer": "Les frais de service ne sont pas remboursables, mais les frais gouvernementaux peuvent l’être selon le dossier."
+        }
+      ]
     }
   },
   "templates": {
@@ -654,10 +787,14 @@
         "successRate": "94% de taux de réussite pour les demandes de visa"
       },
       "clients": "Clients Satisfaits",
+      "clientsValue": "500+",
       "success": "Taux de Réussite",
       "successRate": "Taux de Réussite",
       "successRateValue": "94%",
       "years": "Années d'Expérience",
+      "experienceValue": "10+",
+      "countriesServed": "Pays desservis",
+      "countriesServedValue": "50+",
       "trustedBy": "Approuvé par {{count}}+ Clients",
       "expertConsultants": "Consultants Experts",
       "licensedProfessionals": "Professionnels agréés",
@@ -719,6 +856,11 @@
       "title": "Ce Que Disent Nos Clients",
       "subtitle": "Histoires réelles de personnes que nous avons aidées à atteindre leurs objectifs d'immigration",
       "badge": "Témoignages",
+      "name1": "Micheal Johnson",
+      "name2": "Akamba Bekono",
+      "name3": "Emma Williams",
+      "name4": "Tchatchouang Ebenezer",
+      "name5": "Osseni Adamou",
       "testimonial1": "Patrick Travel Services a rendu mon processus de visa étudiant si fluide. Leurs conseils d'experts et leur soutien constant m'ont aidé à être accepté dans l'université de mes rêves!",
       "testimonial2": "Grâce à leur professionnalisme et leur souci du détail, j'ai obtenu mon permis de travail en un temps record. Hautement recommandé!",
       "testimonial3": "L'équipe m'a aidé à retrouver ma famille. Leur approche compatissante et leur expertise ont fait toute la différence.",
@@ -728,7 +870,9 @@
       "role1": "Visa Étudiant",
       "role2": "Permis de Travail",
       "role3": "Réunification Familiale",
-      "rating": "sur 500+ avis"
+      "rating": "sur 500+ avis",
+      "statsClientsValue": "500+",
+      "statsExperienceValue": "25+"
     },
     "contact": {
       "title": "Contactez-Nous",

@@ -77,7 +77,7 @@ export function FAQSection({
   title,
   description,
 }: FAQSectionProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -86,7 +86,8 @@ export function FAQSection({
   const sectionDescription = description || t('faq.section.description');
 
   // Fetch only active FAQs (cached for 1 hour)
-  const { data, isLoading, error } = useFAQs();
+  const currentLanguage = i18n.language?.split('-')[0] || 'en';
+  const { data, isLoading, error } = useFAQs({ language: currentLanguage });
 
   if (isLoading) return <FAQSectionSkeleton />;
 
@@ -95,6 +96,15 @@ export function FAQSection({
   }
 
   const { faqs, faqsByCategory, categories } = data;
+  const limitedCategories = categories.slice(0, 4);
+  const getCategoryLabel = (category: string) => {
+    const slug = category
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-');
+    const translated = t(`faq.section.categoryLabels.${slug}`);
+    return translated.startsWith('faq.section.categoryLabels.') ? category : translated;
+  };
 
   // Filter FAQs by search query
   let filteredFAQs = faqs;
@@ -130,7 +140,7 @@ export function FAQSection({
 
   return (
     <section
-      className="py-12 md:py-20 bg-gradient-to-b from-blue-200/30 via-indigo-200/20 to-purple-200/30 dark:from-transparent dark:via-transparent dark:to-transparent"
+      className="py-12 md:py-20 bg-linear-to-b from-blue-200/30 via-indigo-200/20 to-purple-200/30 dark:from-transparent dark:via-transparent dark:to-transparent"
       id="faq"
     >
       {/* Schema.org markup for Google FAQ rich snippets */}
@@ -148,16 +158,35 @@ export function FAQSection({
 
         {/* Search Bar */}
         {showSearch && (
-          <div className="max-w-2xl mx-auto mb-8">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <div className="max-w-2xl mx-auto mb-6">
+            <label className="relative block rounded-xl border border-border bg-background/80 shadow-sm transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                <Search className="h-5 w-5" />
+              </span>
               <Input
                 placeholder={t('faq.section.searchPlaceholder')}
-                className="pl-10 h-12"
+                className="h-12 border-0 bg-transparent pl-12 pr-4 text-base placeholder:text-muted-foreground focus-visible:ring-0"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-            </div>
+            </label>
+          </div>
+        )}
+
+        {/* Matching categories for search */}
+        {showSearch && searchQuery && filteredFAQs.length > 0 && (
+          <div className="max-w-4xl mx-auto mb-8 flex flex-wrap items-center justify-center gap-2">
+            {Array.from(
+              new Set(
+                filteredFAQs
+                  .map((faq) => faq.category)
+                  .filter((category): category is string => Boolean(category))
+              )
+            ).map((category) => (
+              <Badge key={category} variant="secondary" className="px-3 py-1 text-sm">
+                {getCategoryLabel(category)}
+              </Badge>
+            ))}
           </div>
         )}
 
@@ -177,13 +206,13 @@ export function FAQSection({
                 >
                   {t('faq.section.allQuestions')}
                 </TabsTrigger>
-                {categories.map((category) => (
+                {limitedCategories.map((category) => (
                   <TabsTrigger
                     key={category}
                     value={category}
                     className="whitespace-nowrap px-2.5 py-2 text-xs md:text-sm flex items-center gap-1.5 rounded-md"
                   >
-                    <span className="truncate">{category}</span>
+                    <span className="truncate">{getCategoryLabel(category)}</span>
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 leading-none">
                       {faqsByCategory[category]?.length || 0}
                     </Badge>
@@ -249,6 +278,7 @@ export function FAQSection({
  */
 function FAQAccordion({ faqs, searchQuery }: { faqs: any[]; searchQuery: string }) {
   const [expandedAnswers, setExpandedAnswers] = useState<{ [key: string]: boolean }>({});
+  const { t } = useTranslation();
 
   if (faqs.length === 0) return null;
 
@@ -287,7 +317,7 @@ function FAQAccordion({ faqs, searchQuery }: { faqs: any[]; searchQuery: string 
           }}
           className="ml-2 text-primary hover:underline font-medium"
         >
-          Read more
+          {t('faq.section.readMore')}
         </button>
       </>
     );
@@ -303,7 +333,7 @@ function FAQAccordion({ faqs, searchQuery }: { faqs: any[]; searchQuery: string 
           >
             <AccordionTrigger className="text-left hover:no-underline py-4 gap-3">
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
+                <div className="shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
                   <HelpCircle className="h-3.5 w-3.5 text-primary" />
                 </div>
                 <span className="font-semibold text-sm md:text-base pr-2 leading-snug">

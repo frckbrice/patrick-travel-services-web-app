@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   useReactTable,
   getCoreRowModel,
@@ -22,7 +23,6 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,10 +53,20 @@ interface FAQTableEnhancedProps {
 }
 
 export function FAQTableEnhanced({ data, onEdit, onDelete, categories }: FAQTableEnhancedProps) {
+  const { t } = useTranslation();
   const [sorting, setSorting] = useState<SortingState>([{ id: 'order', desc: false }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+
+  const getCategoryLabel = (category: string) => {
+    const slug = category
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-');
+    const translated = t(`faq.section.categoryLabels.${slug}`);
+    return translated.startsWith('faq.section.categoryLabels.') ? category : translated;
+  };
 
   // Column definitions
   const columns = useMemo<ColumnDef<FAQ>[]>(
@@ -71,7 +81,7 @@ export function FAQTableEnhanced({ data, onEdit, onDelete, categories }: FAQTabl
               className="h-8 data-[state=open]:bg-accent px-2"
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
-              Order
+              {t('faq.managementTable.columns.order')}
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
@@ -91,7 +101,7 @@ export function FAQTableEnhanced({ data, onEdit, onDelete, categories }: FAQTabl
               className="h-8 data-[state=open]:bg-accent px-2"
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
-              Category
+              {t('faq.managementTable.columns.category')}
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
@@ -99,7 +109,7 @@ export function FAQTableEnhanced({ data, onEdit, onDelete, categories }: FAQTabl
         cell: ({ row }) => {
           return (
             <Badge variant="outline" className="font-normal">
-              {row.original.category}
+              {getCategoryLabel(row.original.category)}
             </Badge>
           );
         },
@@ -110,7 +120,7 @@ export function FAQTableEnhanced({ data, onEdit, onDelete, categories }: FAQTabl
       },
       {
         accessorKey: 'question',
-        header: 'Question',
+        header: t('faq.managementTable.columns.question'),
         cell: ({ row }) => {
           const question = row.original.question;
           const isCreating = row.original.id.startsWith('temp-');
@@ -122,7 +132,7 @@ export function FAQTableEnhanced({ data, onEdit, onDelete, categories }: FAQTabl
                 {question}
                 {isCreating && (
                   <Badge variant="outline" className="text-xs animate-pulse">
-                    Creating...
+                    {t('faq.managementTable.badges.creating')}
                   </Badge>
                 )}
               </p>
@@ -132,7 +142,7 @@ export function FAQTableEnhanced({ data, onEdit, onDelete, categories }: FAQTabl
       },
       {
         accessorKey: 'answer',
-        header: 'Answer',
+        header: t('faq.managementTable.columns.answer'),
         cell: ({ row }) => {
           const answer = row.original.answer;
           return (
@@ -144,7 +154,7 @@ export function FAQTableEnhanced({ data, onEdit, onDelete, categories }: FAQTabl
       },
       {
         accessorKey: 'isActive',
-        header: 'Status',
+        header: t('faq.managementTable.columns.status'),
         cell: ({ row }) => {
           const isActive = row.original.isActive;
           return (
@@ -152,12 +162,12 @@ export function FAQTableEnhanced({ data, onEdit, onDelete, categories }: FAQTabl
               {isActive ? (
                 <>
                   <Eye className="h-3 w-3" />
-                  Active
+                  {t('faq.managementTable.status.active')}
                 </>
               ) : (
                 <>
                   <EyeOff className="h-3 w-3" />
-                  Inactive
+                  {t('faq.managementTable.status.inactive')}
                 </>
               )}
             </Badge>
@@ -170,13 +180,13 @@ export function FAQTableEnhanced({ data, onEdit, onDelete, categories }: FAQTabl
       },
       {
         id: 'actions',
-        header: 'Actions',
+        header: t('faq.managementTable.columns.actions'),
         cell: ({ row }) => {
           return (
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => onEdit(row.original)}>
                 <Edit className="h-3.5 w-3.5 mr-1" />
-                Edit
+                {t('common.edit')}
               </Button>
               <Button
                 variant="outline"
@@ -185,7 +195,7 @@ export function FAQTableEnhanced({ data, onEdit, onDelete, categories }: FAQTabl
                 className="text-destructive hover:text-destructive"
               >
                 <Trash2 className="h-3.5 w-3.5 mr-1" />
-                Delete
+                {t('common.delete')}
               </Button>
             </div>
           );
@@ -193,7 +203,7 @@ export function FAQTableEnhanced({ data, onEdit, onDelete, categories }: FAQTabl
         size: 180,
       },
     ],
-    [onEdit, onDelete]
+    [onEdit, onDelete, t]
   );
 
   // Filter data by category
@@ -233,7 +243,7 @@ export function FAQTableEnhanced({ data, onEdit, onDelete, categories }: FAQTabl
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <Input
-                placeholder="Search questions or answers..."
+                placeholder={t('faq.managementTable.searchPlaceholder')}
                 value={globalFilter ?? ''}
                 onChange={(e) => setGlobalFilter(e.target.value)}
                 className="max-w-sm"
@@ -242,20 +252,23 @@ export function FAQTableEnhanced({ data, onEdit, onDelete, categories }: FAQTabl
             <div className="flex items-center gap-4">
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="All Categories" />
+                  <SelectValue placeholder={t('faq.managementTable.filters.allCategories')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="all">
+                    {t('faq.managementTable.filters.allCategories')}
+                  </SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat} value={cat}>
-                      {cat}
+                      {getCategoryLabel(cat)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <div className="text-sm text-muted-foreground">
-                {table.getFilteredRowModel().rows.length} FAQ
-                {table.getFilteredRowModel().rows.length !== 1 ? 's' : ''}
+                {t('faq.managementTable.filters.results', {
+                  count: table.getFilteredRowModel().rows.length,
+                })}
               </div>
             </div>
           </div>
@@ -295,8 +308,8 @@ export function FAQTableEnhanced({ data, onEdit, onDelete, categories }: FAQTabl
                   <TableRow>
                     <TableCell colSpan={columns.length} className="h-24 text-center">
                       {globalFilter || categoryFilter !== 'all'
-                        ? 'No FAQs found matching your filters.'
-                        : 'No FAQs yet. Create your first FAQ to get started.'}
+                        ? t('faq.managementTable.empty.filtered')
+                        : t('faq.managementTable.empty.default')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -312,12 +325,17 @@ export function FAQTableEnhanced({ data, onEdit, onDelete, categories }: FAQTabl
           <CardContent className="py-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-sm text-muted-foreground">
-                Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                {t('faq.managementTable.pagination.pageInfo', {
+                  current: table.getState().pagination.pageIndex + 1,
+                  total: table.getPageCount(),
+                })}
               </div>
               <div className="flex items-center gap-6">
                 {/* Page size selector */}
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Rows per page:</span>
+                  <span className="text-sm text-muted-foreground">
+                    {t('faq.managementTable.pagination.rowsPerPage')}
+                  </span>
                   <Select
                     value={`${table.getState().pagination.pageSize}`}
                     onValueChange={(value) => {
@@ -356,7 +374,7 @@ export function FAQTableEnhanced({ data, onEdit, onDelete, categories }: FAQTabl
                     className="h-8"
                   >
                     <ChevronLeft className="h-4 w-4" />
-                    <span className="hidden sm:inline ml-1">Previous</span>
+                    <span className="hidden sm:inline ml-1">{t('common.previous')}</span>
                   </Button>
                   <Button
                     variant="outline"
@@ -365,7 +383,7 @@ export function FAQTableEnhanced({ data, onEdit, onDelete, categories }: FAQTabl
                     disabled={!table.getCanNextPage()}
                     className="h-8"
                   >
-                    <span className="hidden sm:inline mr-1">Next</span>
+                    <span className="hidden sm:inline mr-1">{t('common.next')}</span>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                   <Button

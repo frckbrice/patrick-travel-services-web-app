@@ -1,121 +1,260 @@
 'use client';
 
-import { useTranslation } from 'react-i18next';
+import { useMemo } from 'react';
 import { Star, Quote } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import type { LandingCopy } from '@/lib/i18n/landing-content';
 
-export function Testimonials() {
-  const { t } = useTranslation();
+interface TestimonialsProps {
+  content: LandingCopy['testimonials'];
+  heroContent: LandingCopy['hero'];
+  whyChooseUsContent: LandingCopy['whyChooseUs'];
+  servicesContent: LandingCopy['services'];
+}
 
-  const testimonials = [
+interface Testimonial {
+  name: string;
+  role: string;
+  location: string;
+  content: string;
+  rating: number;
+  avatarInitials: string;
+  avatarSrc: string;
+  avatarColor: string;
+  gradient: string;
+}
+
+export function Testimonials({
+  content,
+  heroContent,
+  whyChooseUsContent,
+  servicesContent,
+}: TestimonialsProps) {
+  const testimonials = useMemo<Testimonial[]>(
+    () => [
+      {
+        name: content.name1,
+        role: content.role1,
+        location: content.location1,
+        content: content.testimonial1,
+        rating: 5,
+        avatarInitials: 'SJ',
+        avatarSrc: '/avatars/1.png',
+        avatarColor: 'bg-blue-600',
+        gradient: 'from-blue-600/30 via-cyan-500/20 to-transparent',
+      },
+      {
+        name: content.name2,
+        role: content.role2,
+        location: content.location2,
+        content: content.testimonial2,
+        rating: 5,
+        avatarInitials: 'MC',
+        avatarSrc: '/avatars/4.png',
+        avatarColor: 'bg-emerald-600',
+        gradient: 'from-emerald-500/25 via-sky-500/20 to-transparent',
+      },
+      {
+        name: content.name3,
+        role: content.role3,
+        location: content.location3,
+        content: content.testimonial3,
+        rating: 5,
+        avatarInitials: 'EW',
+        avatarSrc: '/avatars/6.png',
+        avatarColor: 'bg-purple-600',
+        gradient: 'from-purple-500/25 via-pink-500/15 to-transparent',
+      },
+      {
+        name: content.name4,
+        role: servicesContent.business,
+        location: content.location2,
+        content: `${content.testimonial2} ${whyChooseUsContent.features.efficiency.description}`,
+        rating: 5,
+        avatarInitials: 'DR',
+        avatarSrc: '/avatars/9.png',
+        avatarColor: 'bg-orange-600',
+        gradient: 'from-orange-500/25 via-amber-400/20 to-transparent',
+      },
+      {
+        name: content.name5,
+        role: servicesContent.family,
+        location: content.location3,
+        content: `${content.testimonial3} ${whyChooseUsContent.features.support.description}`,
+        rating: 5,
+        avatarInitials: 'CM',
+        avatarSrc: '/avatars/12.png',
+        avatarColor: 'bg-pink-600',
+        gradient: 'from-pink-500/25 via-rose-400/15 to-transparent',
+      },
+    ],
+    [content, servicesContent, whyChooseUsContent]
+  );
+
+  const heroTestimonial = testimonials[0];
+  const mosaicTestimonials = testimonials.slice(1);
+
+  const stats = [
     {
-      name: 'Sarah Johnson',
-      role: t('landing.testimonials.role1'),
-      location: t('landing.testimonials.location1'),
-      content: t('landing.testimonials.testimonial1'),
-      rating: 5,
-      avatar: 'SJ',
-      color: 'bg-blue-600',
+      value: content.statsClientsValue,
+      label: heroContent.clients,
+      caption: content.rating,
     },
     {
-      name: 'Michael Chen',
-      role: t('landing.testimonials.role2'),
-      location: t('landing.testimonials.location2'),
-      content: t('landing.testimonials.testimonial2'),
-      rating: 5,
-      avatar: 'MC',
-      color: 'bg-green-600',
+      value: heroContent.successRateValue,
+      label: heroContent.successRate,
+      caption: whyChooseUsContent.features.success.description,
     },
     {
-      name: 'Emma Williams',
-      role: t('landing.testimonials.role3'),
-      location: t('landing.testimonials.location3'),
-      content: t('landing.testimonials.testimonial3'),
-      rating: 5,
-      avatar: 'EW',
-      color: 'bg-purple-600',
+      value: content.statsExperienceValue,
+      label: heroContent.years,
+      caption: whyChooseUsContent.features.excellence.description,
     },
   ];
 
   return (
-    <section className="relative py-16 md:py-20 lg:py-24 bg-gradient-to-b from-purple-200/30 via-pink-200/20 to-blue-200/30 dark:from-transparent dark:via-transparent dark:to-transparent">
+    <section className="relative py-16 md:py-20 lg:py-24 overflow-hidden bg-linear-to-tr from-purple-200/30 via-pink-200/20 to-blue-200/30 dark:from-transparent dark:via-transparent dark:to-transparent">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute top-10 left-[-60px] w-72 h-72 bg-linear-to-trr from-purple-500/20 via-pink-500/20 to-transparent blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 right-[-40px] w-80 h-80 bg-linear-to-trl from-cyan-500/20 via-blue-500/20 to-transparent blur-3xl animate-pulse"></div>
+      </div>
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4">
-            <span suppressHydrationWarning>{t('landing.testimonials.title')}</span>
+            <span suppressHydrationWarning>{content.title}</span>
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-            <span suppressHydrationWarning>{t('landing.testimonials.subtitle')}</span>
+            <span suppressHydrationWarning>{content.subtitle}</span>
           </p>
         </div>
 
-        {/* Testimonials Grid */}
-        <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
-          {testimonials.map((testimonial, index) => (
-            <Card
-              key={index}
-              className="relative overflow-hidden hover:shadow-2xl transition-all duration-200 border-2 will-change-transform"
-            >
-              {/* Background Gradient */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-2xl pointer-events-none"></div>
-
-              <CardContent className="pt-8 relative">
-                {/* Quote Icon */}
-                <Quote className="h-12 w-12 text-primary/20 mb-4" />
-
-                {/* Rating */}
-                <div className="flex space-x-1 mb-4">
-                  {Array.from({ length: testimonial.rating }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className="h-5 w-5 fill-yellow-400 text-yellow-400"
-                      aria-label="star"
-                    />
-                  ))}
-                </div>
-
-                {/* Testimonial Content */}
-                <p className="text-muted-foreground mb-6 leading-relaxed italic">
-                  <span suppressHydrationWarning>&ldquo;{testimonial.content}&rdquo;</span>
-                </p>
-
-                {/* Author Info */}
-                <div className="flex items-center space-x-4 pt-4 border-t">
-                  <Avatar className="h-12 w-12">
-                    <AvatarFallback
-                      className={`${testimonial.color} text-white text-lg font-semibold`}
-                    >
-                      {testimonial.avatar}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <p className="font-semibold text-base">{testimonial.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      <span suppressHydrationWarning>{testimonial.role}</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      <span suppressHydrationWarning>{testimonial.location}</span>
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        {/* Testimonials Layout */}
+        <div className="relative">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px]">
+            <div className="grid gap-6 sm:grid-cols-2">
+              {mosaicTestimonials.map((testimonial) => (
+                <TestimonialCard key={testimonial.name} testimonial={testimonial} />
+              ))}
+            </div>
+            <SpotlightCard testimonial={heroTestimonial} badge={content.badge} />
+          </div>
         </div>
 
-        {/* Trust Badge */}
-        <div className="mt-16 text-center">
-          <div className="inline-flex items-center space-x-2 bg-muted px-6 py-3 rounded-full">
-            <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" aria-hidden="true" />
-            <span className="font-semibold">4.9/5.0</span>
-            <span className="text-muted-foreground">
-              <span suppressHydrationWarning>{t('landing.testimonials.rating')}</span>
-            </span>
-          </div>
+        {/* Stats Row */}
+        <div className="mt-16 grid sm:grid-cols-3 gap-4">
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              className="relative overflow-hidden rounded-2xl border border-border/60 bg-card/80 p-6 text-center backdrop-blur"
+            >
+              <div className="absolute inset-0 bg-linear-to-tr from-white/5 via-transparent to-primary/5"></div>
+              <div className="relative space-y-2">
+                <p className="text-3xl font-black text-primary">{stat.value}</p>
+                <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  <span suppressHydrationWarning>{stat.label}</span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <span suppressHydrationWarning>{stat.caption}</span>
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>
+  );
+}
+
+function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
+  return (
+    <Card className="relative overflow-hidden border border-white/10 bg-card/85 shadow-lg transition-transform duration-300 hover:-translate-y-1">
+      <div
+        className={`absolute inset-0 opacity-60 bg-linear-to-br ${testimonial.gradient} pointer-events-none`}
+        aria-hidden
+      />
+      <CardContent className="relative space-y-5 p-6">
+        <Quote className="h-10 w-10 text-primary/40" aria-hidden="true" />
+        <p className="text-muted-foreground leading-relaxed">
+          <span suppressHydrationWarning>&ldquo;{testimonial.content}&rdquo;</span>
+        </p>
+        <div className="flex items-center gap-4 pt-4 border-t border-border/60">
+          <Avatar className="h-16 w-16 ring-2 ring-white/80 dark:ring-white/30">
+            <AvatarImage
+              src={testimonial.avatarSrc}
+              alt={testimonial.name}
+              loading="lazy"
+              decoding="async"
+              className="object-cover"
+            />
+            <AvatarFallback
+              className={`${testimonial.avatarColor} text-white text-lg font-semibold`}
+            >
+              {testimonial.avatarInitials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="space-y-1">
+            <p className="font-semibold text-base">{testimonial.name}</p>
+            <p className="text-sm text-muted-foreground">
+              <span suppressHydrationWarning>{testimonial.role}</span>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              <span suppressHydrationWarning>{testimonial.location}</span>
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SpotlightCard({ testimonial, badge }: { testimonial: Testimonial; badge: string }) {
+  return (
+    <Card className="relative isolate overflow-hidden border border-white/15 bg-slate-950 text-white shadow-[0_20px_80px_rgba(15,23,42,0.55)]">
+      <div className="absolute inset-[-40%] bg-linear-to-br from-blue-500/40 via-cyan-500/30 to-purple-500/30 blur-3xl opacity-80" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.15),transparent_70%)]" />
+      <CardContent className="relative flex h-full flex-col gap-6 p-8 lg:p-10">
+        <div className="flex items-center gap-3 text-yellow-300">
+          <div className="flex items-center gap-1">
+            {Array.from({ length: testimonial.rating }).map((_, index) => (
+              <Star key={index} className="h-5 w-5 fill-yellow-300 text-yellow-300" />
+            ))}
+          </div>
+          <span className="text-sm font-semibold tracking-wide uppercase text-yellow-200/80">
+            {badge}
+          </span>
+        </div>
+        <Quote className="h-16 w-16 text-white/20" aria-hidden="true" />
+        <p className="text-xl leading-relaxed font-medium text-white/90">
+          <span suppressHydrationWarning>&ldquo;{testimonial.content}&rdquo;</span>
+        </p>
+        <div className="flex items-center gap-4 pt-6 border-t border-white/10">
+          <Avatar className="h-20 w-20 ring-4 ring-white/30">
+            <AvatarImage
+              src={testimonial.avatarSrc}
+              alt={testimonial.name}
+              loading="lazy"
+              decoding="async"
+              className="object-cover"
+            />
+            <AvatarFallback
+              className={`${testimonial.avatarColor} text-white text-xl font-semibold`}
+            >
+              {testimonial.avatarInitials}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="text-lg font-semibold">{testimonial.name}</p>
+            <p className="text-sm text-white/70">
+              <span suppressHydrationWarning>{testimonial.role}</span>
+            </p>
+            <p className="text-xs text-white/60">
+              <span suppressHydrationWarning>{testimonial.location}</span>
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

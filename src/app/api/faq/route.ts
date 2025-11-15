@@ -15,6 +15,7 @@ import { revalidatePath } from 'next/cache';
 const getHandler = asyncHandler(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get('category');
+  const language = searchParams.get('language');
   const includeInactive = searchParams.get('includeInactive') === 'true';
 
   // Build query filters
@@ -29,6 +30,10 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
     where.category = category;
   }
 
+  if (language && language !== 'all') {
+    where.language = language;
+  }
+
   // Fetch FAQs ordered by category and order
   const faqs = await prisma.fAQ.findMany({
     where,
@@ -38,6 +43,7 @@ const getHandler = asyncHandler(async (request: NextRequest) => {
       question: true,
       answer: true,
       category: true,
+      language: true,
       order: true,
       isActive: true,
       createdAt: true,
@@ -89,7 +95,7 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
   }
 
   const body = await request.json();
-  const { question, answer, category, order, isActive } = body;
+  const { question, answer, category, order, isActive, language = 'en' } = body;
 
   // Validation
   if (!question || !answer || !category) {
@@ -102,6 +108,7 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
       question: question.trim(),
       answer: answer.trim(),
       category: category.trim(),
+      language: language.trim().toLowerCase() || 'en',
       order: order ?? 0,
       isActive: isActive ?? true,
     },

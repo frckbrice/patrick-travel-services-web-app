@@ -14,6 +14,7 @@
     "back": "Back",
     "previous": "Previous",
     "next": "Next",
+    "retry": "Retry",
     "submit": "Submit",
     "search": "Search",
     "filter": "Filter",
@@ -495,26 +496,31 @@
     "admins": "Admins",
     "systemUsers": "System Users",
     "viewManageUsers": "View and manage all registered users",
+    "loadError": "Failed to load users. Please try again.",
     "user": "User",
     "contact": "Contact",
     "status": "Status",
     "joined": "Joined",
     "actions": "Actions",
+    "paginationSummary": "Page {{currentPage}} of {{totalPages}} ({{totalUsers}} total)",
     "activate": "Activate",
     "deactivate": "Deactivate",
     "noUsersFound": "No users found",
     "noUsersYet": "No users yet",
     "adjustFilters": "Try adjusting your filters",
     "usersWillAppear": "Users will appear here when they register",
+    "actionMenuLabel": "Open actions menu",
     "editUserDialog": {
       "title": "Edit User",
       "description": "Update user role and status",
+      "userLabel": "User",
       "roleLabel": "Role",
       "statusLabel": "Status"
     },
     "deleteUserDialog": {
       "title": "Delete User",
       "description": "This action cannot be undone. This will permanently delete the user account.",
+      "confirmDescription": "Are you sure you want to delete {{name}}? This action cannot be undone.",
       "deleting": "Deleting...",
       "deleteButton": "Delete User"
     },
@@ -644,7 +650,133 @@
       "stillHaveQuestions": "Still have questions?",
       "supportReady": "Our support team is ready to help you with any questions",
       "contactSupportBtn": "Contact Support",
-      "createAccountBtn": "Create Account"
+      "createAccountBtn": "Create Account",
+      "readMore": "Read more"
+    },
+    "managementPage": {
+      "title": "FAQ Management",
+      "subtitle": "Create and manage frequently asked questions",
+      "languageLabel": "Language",
+      "languageAll": "All",
+      "languageOptions": {
+        "en": "English",
+        "fr": "French"
+      },
+      "addButton": "Add FAQ",
+      "stats": {
+        "total": "Total FAQs",
+        "active": "Active FAQs",
+        "categories": "Categories"
+      },
+      "form": {
+        "questionLabel": "Question",
+        "questionPlaceholder": "How long does the visa process take?",
+        "answerLabel": "Answer",
+        "answerPlaceholder": "Processing times vary by visa type...",
+        "categoryLabel": "Category",
+        "languageLabel": "Language",
+        "orderLabel": "Display Order",
+        "activeLabel": "Active"
+      },
+      "createDialog": {
+        "title": "Create New FAQ",
+        "description": "Add a new frequently asked question",
+        "submit": "Create FAQ",
+        "submitting": "Creating..."
+      },
+      "editDialog": {
+        "title": "Edit FAQ",
+        "description": "Update the FAQ details",
+        "submit": "Update FAQ",
+        "submitting": "Updating..."
+      },
+      "deleteDialog": {
+        "title": "Delete FAQ",
+        "description": "Are you sure you want to delete \"{{question}}\"? This action cannot be undone.",
+        "confirm": "Delete FAQ"
+      },
+      "accessDenied": {
+        "title": "Access Denied",
+        "description": "Only administrators can manage FAQs"
+      },
+      "loadError": {
+        "title": "Failed to load FAQs",
+        "description": "Please try refreshing the page"
+      }
+    },
+    "managementTable": {
+      "columns": {
+        "order": "Order",
+        "category": "Category",
+        "question": "Question",
+        "answer": "Answer",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "badges": {
+        "creating": "Creating..."
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "searchPlaceholder": "Search questions or answers...",
+      "filters": {
+        "allCategories": "All Categories",
+        "results": "{{count}} FAQ",
+        "results_plural": "{{count}} FAQs"
+      },
+      "empty": {
+        "filtered": "No FAQs found matching your filters.",
+        "default": "No FAQs yet. Create your first FAQ to get started."
+      },
+      "pagination": {
+        "pageInfo": "Page {{current}} of {{total}}",
+        "rowsPerPage": "Rows per page:"
+      }
+    },
+    "categoryLabels": {
+      "visa-process": "Visa Process",
+      "documents": "Documents",
+      "payment": "Payment",
+      "account": "Account",
+      "general": "General",
+      "technical-support": "Technical Support"
+    },
+    "list": {
+      "title": "Frequently Asked Questions",
+      "subtitle": "Find answers to common questions",
+      "cardTitle": "Common Questions",
+      "cardDescription": "Click on any question to see the answer",
+      "contactTitle": "Can’t find what you’re looking for?",
+      "contactSubtitle": "Our support team is here to help",
+      "contactButton": "Contact Support",
+      "items": [
+        {
+          "question": "How long does the visa process take?",
+          "answer": "Processing times vary by visa type. Student visas typically take 4-6 weeks, while work permits can take 8-12 weeks."
+        },
+        {
+          "question": "What documents do I need to provide?",
+          "answer": "Required documents depend on your visa type. Check your case dashboard for a personalized checklist."
+        },
+        {
+          "question": "Can I track my case status online?",
+          "answer": "Yes! You can track your case status in real-time through the dashboard or mobile app."
+        },
+        {
+          "question": "How do I upload documents?",
+          "answer": "Navigate to the Documents section and use the upload button. Supported formats: PDF, JPG, PNG, DOC."
+        },
+        {
+          "question": "What payment methods do you accept?",
+          "answer": "We accept all major credit cards, debit cards, and bank transfers. Payment plans are also available."
+        },
+        {
+          "question": "Can I get a refund if my visa is rejected?",
+          "answer": "Service fees are non-refundable, but government fees may be refundable depending on the case."
+        }
+      ]
     }
   },
   "templates": {
@@ -700,10 +832,14 @@
         "successRate": "94% success rate with visa applications"
       },
       "clients": "Happy Clients",
+      "clientsValue": "500+",
       "success": "Success Rate",
       "successRate": "Success Rate",
       "successRateValue": "94%",
       "years": "Years Experience",
+      "experienceValue": "10+",
+      "countriesServed": "Countries Served",
+      "countriesServedValue": "50+",
       "trustedBy": "Trusted by {{count}}+ Clients",
       "expertConsultants": "Expert Consultants",
       "licensedProfessionals": "Licensed professionals",
@@ -765,6 +901,11 @@
       "title": "What Our Clients Say",
       "subtitle": "Real stories from people we've helped achieve their immigration goals",
       "badge": "Testimonials",
+      "name1": "Micheal Johnson",
+      "name2": "Akamba Bekono",
+      "name3": "Emma Williams",
+      "name4": "Tchatchouang Ebenezer",
+      "name5": "Osseni Adamou",
       "testimonial1": "Patrick Travel Services made my student visa process so smooth. Their expert guidance and constant support helped me get accepted to my dream university!",
       "testimonial2": "Thanks to their professionalism and attention to detail, I secured my work permit in record time. Highly recommended!",
       "testimonial3": "The team helped me reunite with my family. Their compassionate approach and expertise made all the difference.",
@@ -774,7 +915,9 @@
       "role1": "Student Visa",
       "role2": "Work Permit",
       "role3": "Family Reunification",
-      "rating": "from 500+ reviews"
+      "rating": "from 500+ reviews",
+      "statsClientsValue": "500+",
+      "statsExperienceValue": "25+"
     },
     "contact": {
       "title": "Get in Touch",

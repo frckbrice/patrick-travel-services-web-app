@@ -39,7 +39,7 @@ const putHandler = asyncHandler(
 
     const { id } = await context.params;
     const body = await request.json();
-    const { question, answer, category, order, isActive } = body;
+    const { question, answer, category, order, isActive, language } = body;
 
     // Check if FAQ exists
     const existingFaq = await prisma.fAQ.findUnique({
@@ -57,6 +57,7 @@ const putHandler = asyncHandler(
         ...(question !== undefined && { question: question.trim() }),
         ...(answer !== undefined && { answer: answer.trim() }),
         ...(category !== undefined && { category: category.trim() }),
+        ...(language !== undefined && { language: language.trim().toLowerCase() || 'en' }),
         ...(order !== undefined && { order }),
         ...(isActive !== undefined && { isActive }),
       },

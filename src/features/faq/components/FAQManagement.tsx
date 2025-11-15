@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   useFAQs,
   useCreateFAQ,
@@ -45,12 +46,16 @@ const CATEGORIES = [
   'Technical Support',
 ];
 
+const LANGUAGE_OPTIONS = ['en', 'fr'] as const;
+
 export function FAQManagement() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedFAQ, setSelectedFAQ] = useState<FAQ | null>(null);
+  const [languageFilter, setLanguageFilter] = useState<'all' | 'en' | 'fr'>('all');
 
   // Form state
   const [formData, setFormData] = useState<CreateFAQInput>({
@@ -59,13 +64,33 @@ export function FAQManagement() {
     category: 'General',
     order: 0,
     isActive: true,
+    language: 'en',
   });
 
   // Fetch FAQs (including inactive for admin view)
-  const { data, isLoading, error } = useFAQs({ includeInactive: true });
+  const { data, isLoading, error } = useFAQs({
+    includeInactive: true,
+    language: languageFilter === 'all' ? undefined : languageFilter,
+  });
   const createMutation = useCreateFAQ();
   const updateMutation = useUpdateFAQ();
   const deleteMutation = useDeleteFAQ();
+
+  const getCategoryLabel = (category: string) => {
+    const slug = category
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-');
+    const translated = t(`faq.section.categoryLabels.${slug}`);
+    return translated.startsWith('faq.section.categoryLabels.') ? category : translated;
+  };
+
+  const getLanguageLabel = (value: 'en' | 'fr' | 'all') => {
+    if (value === 'all') {
+      return t('faq.managementPage.languageAll');
+    }
+    return t(`faq.managementPage.languageOptions.${value}`);
+  };
 
   // Only ADMIN can access this page
   if (user?.role !== 'ADMIN') {
@@ -73,8 +98,12 @@ export function FAQManagement() {
       <Card>
         <CardContent className="py-12 text-center">
           <HelpCircle className="mx-auto h-12 w-12 text-destructive mb-4 opacity-50" />
-          <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
-          <p className="text-muted-foreground">Only administrators can manage FAQs</p>
+          <h3 className="text-lg font-semibold mb-2">
+            {t('faq.managementPage.accessDenied.title')}
+          </h3>
+          <p className="text-muted-foreground">
+            {t('faq.managementPage.accessDenied.description')}
+          </p>
         </CardContent>
       </Card>
     );
@@ -87,8 +116,8 @@ export function FAQManagement() {
       <Card>
         <CardContent className="py-12 text-center">
           <HelpCircle className="mx-auto h-12 w-12 text-destructive mb-4 opacity-50" />
-          <h3 className="text-lg font-semibold mb-2">Failed to load FAQs</h3>
-          <p className="text-muted-foreground">Please try refreshing the page</p>
+          <h3 className="text-lg font-semibold mb-2">{t('faq.managementPage.loadError.title')}</h3>
+          <p className="text-muted-foreground">{t('faq.managementPage.loadError.description')}</p>
         </CardContent>
       </Card>
     );
@@ -107,6 +136,7 @@ export function FAQManagement() {
           category: 'General',
           order: 0,
           isActive: true,
+          language: formData.language ?? 'en',
         });
       },
     });
@@ -143,6 +173,7 @@ export function FAQManagement() {
       category: faq.category,
       order: faq.order,
       isActive: faq.isActive,
+      language: faq.language || 'en',
     });
     setIsEditDialogOpen(true);
   };
@@ -155,34 +186,57 @@ export function FAQManagement() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">FAQ Management</h1>
-          <p className="text-muted-foreground mt-2">Create and manage frequently asked questions</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('faq.managementPage.title')}</h1>
+          <p className="text-muted-foreground mt-2">{t('faq.managementPage.subtitle')}</p>
         </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add FAQ
-        </Button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground">
+              {t('faq.managementPage.languageLabel')}
+            </span>
+            <Select
+              value={languageFilter}
+              onValueChange={(value: 'all' | 'en' | 'fr') => setLanguageFilter(value)}
+            >
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{getLanguageLabel('all')}</SelectItem>
+                {LANGUAGE_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {getLanguageLabel(option)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t('faq.managementPage.addButton')}
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>Total FAQs</CardDescription>
+            <CardDescription>{t('faq.managementPage.stats.total')}</CardDescription>
             <CardTitle className="text-3xl">{faqs.length}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>Active FAQs</CardDescription>
+            <CardDescription>{t('faq.managementPage.stats.active')}</CardDescription>
             <CardTitle className="text-3xl">{faqs.filter((f) => f.isActive).length}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>Categories</CardDescription>
+            <CardDescription>{t('faq.managementPage.stats.categories')}</CardDescription>
             <CardTitle className="text-3xl">{categories.length}</CardTitle>
           </CardHeader>
         </Card>
@@ -200,32 +254,34 @@ export function FAQManagement() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create New FAQ</DialogTitle>
-            <DialogDescription>Add a new frequently asked question</DialogDescription>
+            <DialogTitle>{t('faq.managementPage.createDialog.title')}</DialogTitle>
+            <DialogDescription>
+              {t('faq.managementPage.createDialog.description')}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="question">Question</Label>
+              <Label htmlFor="question">{t('faq.managementPage.form.questionLabel')}</Label>
               <Input
                 id="question"
                 value={formData.question}
                 onChange={(e) => setFormData({ ...formData, question: e.target.value })}
-                placeholder="How long does the visa process take?"
+                placeholder={t('faq.managementPage.form.questionPlaceholder')}
               />
             </div>
             <div>
-              <Label htmlFor="answer">Answer</Label>
+              <Label htmlFor="answer">{t('faq.managementPage.form.answerLabel')}</Label>
               <Textarea
                 id="answer"
                 value={formData.answer}
                 onChange={(e) => setFormData({ ...formData, answer: e.target.value })}
-                placeholder="Processing times vary by visa type..."
+                placeholder={t('faq.managementPage.form.answerPlaceholder')}
                 rows={6}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 md:grid-cols-3">
               <div>
-                <Label htmlFor="category">Category</Label>
+                <Label htmlFor="category">{t('faq.managementPage.form.categoryLabel')}</Label>
                 <Select
                   value={formData.category}
                   onValueChange={(value) => setFormData({ ...formData, category: value })}
@@ -236,14 +292,34 @@ export function FAQManagement() {
                   <SelectContent>
                     {CATEGORIES.map((cat) => (
                       <SelectItem key={cat} value={cat}>
-                        {cat}
+                        {getCategoryLabel(cat)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="order">Display Order</Label>
+                <Label htmlFor="language">{t('faq.managementPage.form.languageLabel')}</Label>
+                <Select
+                  value={formData.language || 'en'}
+                  onValueChange={(value: 'en' | 'fr') =>
+                    setFormData({ ...formData, language: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGE_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {getLanguageLabel(option)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="order">{t('faq.managementPage.form.orderLabel')}</Label>
                 <Input
                   id="order"
                   type="number"
@@ -258,7 +334,7 @@ export function FAQManagement() {
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="isActive">Active</Label>
+              <Label htmlFor="isActive">{t('faq.managementPage.form.activeLabel')}</Label>
               <Switch
                 id="isActive"
                 checked={formData.isActive}
@@ -268,13 +344,15 @@ export function FAQManagement() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleCreate}
               disabled={createMutation.isPending || !formData.question || !formData.answer}
             >
-              {createMutation.isPending ? 'Creating...' : 'Create FAQ'}
+              {createMutation.isPending
+                ? t('faq.managementPage.createDialog.submitting')
+                : t('faq.managementPage.createDialog.submit')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -284,12 +362,12 @@ export function FAQManagement() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit FAQ</DialogTitle>
-            <DialogDescription>Update the FAQ details</DialogDescription>
+            <DialogTitle>{t('faq.managementPage.editDialog.title')}</DialogTitle>
+            <DialogDescription>{t('faq.managementPage.editDialog.description')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="edit-question">Question</Label>
+              <Label htmlFor="edit-question">{t('faq.managementPage.form.questionLabel')}</Label>
               <Input
                 id="edit-question"
                 value={formData.question}
@@ -297,7 +375,7 @@ export function FAQManagement() {
               />
             </div>
             <div>
-              <Label htmlFor="edit-answer">Answer</Label>
+              <Label htmlFor="edit-answer">{t('faq.managementPage.form.answerLabel')}</Label>
               <Textarea
                 id="edit-answer"
                 value={formData.answer}
@@ -305,9 +383,9 @@ export function FAQManagement() {
                 rows={6}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 md:grid-cols-3">
               <div>
-                <Label htmlFor="edit-category">Category</Label>
+                <Label htmlFor="edit-category">{t('faq.managementPage.form.categoryLabel')}</Label>
                 <Select
                   value={formData.category}
                   onValueChange={(value) => setFormData({ ...formData, category: value })}
@@ -318,14 +396,34 @@ export function FAQManagement() {
                   <SelectContent>
                     {CATEGORIES.map((cat) => (
                       <SelectItem key={cat} value={cat}>
-                        {cat}
+                        {getCategoryLabel(cat)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="edit-order">Display Order</Label>
+                <Label htmlFor="edit-language">{t('faq.managementPage.form.languageLabel')}</Label>
+                <Select
+                  value={formData.language || 'en'}
+                  onValueChange={(value: 'en' | 'fr') =>
+                    setFormData({ ...formData, language: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGE_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {getLanguageLabel(option)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-order">{t('faq.managementPage.form.orderLabel')}</Label>
                 <Input
                   id="edit-order"
                   type="number"
@@ -340,7 +438,7 @@ export function FAQManagement() {
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="edit-isActive">Active</Label>
+              <Label htmlFor="edit-isActive">{t('faq.managementPage.form.activeLabel')}</Label>
               <Switch
                 id="edit-isActive"
                 checked={formData.isActive}
@@ -350,13 +448,15 @@ export function FAQManagement() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleEdit}
               disabled={updateMutation.isPending || !formData.question || !formData.answer}
             >
-              {updateMutation.isPending ? 'Updating...' : 'Update FAQ'}
+              {updateMutation.isPending
+                ? t('faq.managementPage.editDialog.submitting')
+                : t('faq.managementPage.editDialog.submit')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -367,10 +467,12 @@ export function FAQManagement() {
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         onConfirm={handleDelete}
-        title="Delete FAQ"
-        description={`Are you sure you want to delete "${selectedFAQ?.question}"? This action cannot be undone.`}
-        confirmText="Delete FAQ"
-        cancelText="Cancel"
+        title={t('faq.managementPage.deleteDialog.title')}
+        description={t('faq.managementPage.deleteDialog.description', {
+          question: selectedFAQ?.question ?? '',
+        })}
+        confirmText={t('faq.managementPage.deleteDialog.confirm')}
+        cancelText={t('common.cancel')}
         variant="destructive"
         isLoading={deleteMutation.isPending}
       />
