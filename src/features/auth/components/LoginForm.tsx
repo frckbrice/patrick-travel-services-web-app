@@ -38,6 +38,7 @@ import { AuthLoadingOverlay } from './AuthLoadingOverlay';
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const loginMutation = useLogin();
   const googleSignInMutation = useGoogleSignIn();
   const { t } = useTranslation();
@@ -58,6 +59,13 @@ export function LoginForm() {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (mounted && !isLoading && isAuthenticated && !redirecting) {
+      setRedirecting(true);
+      router.replace('/dashboard');
+    }
+  }, [mounted, isLoading, isAuthenticated, redirecting, router]);
+
   const handleGoogleSignIn = async () => {
     try {
       await googleSignInMutation.mutateAsync();
@@ -77,21 +85,22 @@ export function LoginForm() {
   };
 
   // Show loading while checking session or hydrating
-  if (!mounted || isLoading) {
+  if (!mounted || isLoading || redirecting || isAuthenticated) {
+    const statusLabel =
+      !mounted || isLoading ? t('auth.loading.authenticating') : t('auth.loading.redirecting');
     return (
       <div className="w-full max-w-md mx-auto">
         <Card>
-          <CardContent className="p-12 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <CardContent className="p-12 flex flex-col items-center justify-center space-y-4">
+            <div
+              className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"
+              aria-label={statusLabel}
+            />
+            <p className="text-sm text-muted-foreground">{statusLabel}</p>
           </CardContent>
         </Card>
       </div>
     );
-  }
-
-  // Prevent flash of login form while redirecting
-  if (isAuthenticated) {
-    return null;
   }
 
   const isAuthLoading = loginMutation.isPending || googleSignInMutation.isPending;

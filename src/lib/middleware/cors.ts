@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
  * Allowed origins based on environment
  */
 const getAllowedOrigins = (): string[] => {
-  const origins = [process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'];
+  const origins = [process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000'];
 
   // Add mobile app origins in development
   if (process.env.NODE_ENV === 'development') {
