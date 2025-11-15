@@ -26,18 +26,18 @@ export const Navbar = memo(function Navbar() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <nav className="fixed top-0 left-0 right-0 z-50 w-full border-b border-transparent dark:border-transparent bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3">
             {/* PERFORMANCE: Priority loading for logo (above the fold) */}
-            <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 rounded-lg bg-white dark:bg-white p-1.5 flex items-center justify-center">
+            <div className="relative w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-lg bg-white/60 dark:bg-white p-1.5 flex items-center justify-center overflow-hidden">
               <Image
                 src="/images/app-logo.png"
                 alt="Patrick Travel Service"
                 width={40}
                 height={40}
-                className="object-contain"
+                className="object-cover w-full h-full"
                 priority
               />
             </div>
@@ -52,7 +52,7 @@ export const Navbar = memo(function Navbar() {
               <Link
                 key={item.nameKey}
                 href={item.href}
-                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                className="text-md font-medium text-muted-foreground hover:text-primary transition-colors"
               >
                 <span suppressHydrationWarning>{t(item.nameKey)}</span>
               </Link>
@@ -111,7 +111,7 @@ export const Navbar = memo(function Navbar() {
                 <Link
                   key={item.nameKey}
                   href={item.href}
-                  className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                  className="block py-2 text-md font-medium text-muted-foreground hover:text-primary transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   <span suppressHydrationWarning>{t(item.nameKey)}</span>

@@ -26,3 +26,4 @@ export const contactInfo = (t: (key: string) => string) => [
     bgColor: 'bg-purple-100 dark:bg-purple-900/20',
   },
 ];
+// #0f1626

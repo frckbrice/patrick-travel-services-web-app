@@ -11,7 +11,7 @@ export function Hero() {
   const { t } = useTranslation();
 
   return (
-    <section className="relative w-full min-h-[85vh] md:min-h-[90vh] flex items-center overflow-hidden">
+    <section className="relative w-full min-h-[85vh] md:min-h-[90vh] flex items-center overflow-hidden pt-14 md:pt-16 lg:pt-20">
       {/* Full-Width Background Image */}
       <div className="absolute inset-0 z-0">
         <Image
