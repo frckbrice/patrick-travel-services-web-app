@@ -1,12 +1,19 @@
 // Shared constants for Patrick Travel Services
 
+const vercelUrlRaw = process.env.NEXT_PUBLIC_VERCEL_URL;
+const vercelUrl =
+  vercelUrlRaw && !/^https?:\/\//i.test(vercelUrlRaw) ? `https://${vercelUrlRaw}` : vercelUrlRaw;
+const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
 export const API_CONFIG = {
-  // Keep it simple: prod uses the deployed domain, dev uses localhost.
-  // Allow override via NEXT_PUBLIC_API_URL when explicitly provided.
+  // Resolution order (prod):
+  // 1) NEXT_PUBLIC_API_URL (explicit override)
+  // 2) NEXT_PUBLIC_APP_URL (same-origin API on the app domain)
+  // 3) NEXT_PUBLIC_VERCEL_URL (CI/preview fallback; normalized with https://)
+  // Dev falls back to localhost.
   BASE_URL:
-    process.env.NODE_ENV === 'production'
-      ? process.env.NEXT_PUBLIC_VERCEL_URL || process.env.NEXT_PUBLIC_API_URL
-      : 'http://localhost:3000',
+    process.env.NODE_ENV === 'production' ? apiUrl || appUrl || vercelUrl : 'http://localhost:3000',
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
 };
