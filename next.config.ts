@@ -1,49 +1,48 @@
 import type { NextConfig } from 'next';
-// TEMPORARILY DISABLED: PWA causing service worker issues in development
-// import withPWAInit from "@ducanh2912/next-pwa";
+import withPWAInit from '@ducanh2912/next-pwa';
 
-// const withPWA = withPWAInit({
-//   dest: "public",
-//   cacheOnFrontEndNav: true,
-//   aggressiveFrontEndNavCaching: true,
-//   reloadOnOnline: true,
-//   disable: process.env.NODE_ENV === "development",
-//   workboxOptions: {
-//     disableDevLogs: true,
-//     // CRITICAL: Exclude API routes from service worker caching
-//     runtimeCaching: [
-//       {
-//         urlPattern: /^https?:\/\/[^/]+\/api\/.*/i,
-//         handler: 'NetworkOnly',
-//         options: {
-//           cacheName: 'api-cache',
-//         },
-//       },
-//       {
-//         urlPattern: /^https?.*\.(png|jpg|jpeg|webp|svg|gif|avif)$/i,
-//         handler: 'CacheFirst',
-//         options: {
-//           cacheName: 'image-cache',
-//           expiration: {
-//             maxEntries: 64,
-//             maxAgeSeconds: 24 * 60 * 60, // 24 hours
-//           },
-//         },
-//       },
-//       {
-//         urlPattern: /^https?.*\.(js|css|woff|woff2|ttf|eot)$/i,
-//         handler: 'StaleWhileRevalidate',
-//         options: {
-//           cacheName: 'static-resources',
-//           expiration: {
-//             maxEntries: 32,
-//             maxAgeSeconds: 24 * 60 * 60, // 24 hours
-//           },
-//         },
-//       },
-//     ],
-//   },
-// });
+const withPWA = withPWAInit({
+  dest: 'public',
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === 'development',
+  workboxOptions: {
+    disableDevLogs: true,
+    // CRITICAL: Exclude API routes from service worker caching
+    runtimeCaching: [
+      {
+        urlPattern: /^https?:\/\/[^/]+\/api\/.*/i,
+        handler: 'NetworkOnly',
+        options: {
+          cacheName: 'api-cache',
+        },
+      },
+      {
+        urlPattern: /^https?.*\.(png|jpg|jpeg|webp|svg|gif|avif)$/i,
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'image-cache',
+          expiration: {
+            maxEntries: 64,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+        },
+      },
+      {
+        urlPattern: /^https?.*\.(js|css|woff|woff2|ttf|eot)$/i,
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'static-resources',
+          expiration: {
+            maxEntries: 32,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+        },
+      },
+    ],
+  },
+});
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -172,6 +171,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-// TEMPORARILY DISABLED: Export nextConfig directly (no PWA wrapper)
-export default nextConfig;
-// export default withPWA(nextConfig);
+export default withPWA(nextConfig);
