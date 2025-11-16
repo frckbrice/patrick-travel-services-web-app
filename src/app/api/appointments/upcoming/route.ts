@@ -76,7 +76,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
         ? {
             ...appointment,
             actionUrl: NOTIFICATION_ACTION_URLS.APPOINTMENT_DETAILS(
-              appointment.case.id,
+              appointment.caseId,
               appointment.id
             ),
           }

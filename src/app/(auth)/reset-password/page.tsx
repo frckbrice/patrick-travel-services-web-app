@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -30,6 +30,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { useAuthStore } from '@/features/auth/store';
 
 const resetPasswordSchema = z
   .object({
@@ -49,6 +50,8 @@ function ResetPasswordForm() {
   const oobCode = searchParams.get('oobCode'); // Firebase reset code from email
   const [showPassword, setShowPassword] = useState(false);
   const { t } = useTranslation();
+  const { isAuthenticated, isLoading } = useAuthStore();
+  const [redirecting, setRedirecting] = useState(false);
 
   const form = useForm<ResetPasswordInput>({
     resolver: zodResolver(resetPasswordSchema),
@@ -57,6 +60,15 @@ function ResetPasswordForm() {
       confirmPassword: '',
     },
   });
+
+  // Redirect authenticated users away from auth page
+  useEffect(() => {
+    // IMPORTANT: If a valid reset code is present, allow resetting even if authenticated
+    if (!oobCode && !isLoading && isAuthenticated && !redirecting) {
+      setRedirecting(true);
+      router.replace('/dashboard');
+    }
+  }, [oobCode, isLoading, isAuthenticated, redirecting, router]);
 
   const onSubmit = async (data: ResetPasswordInput) => {
     if (!oobCode) {
@@ -83,6 +95,22 @@ function ResetPasswordForm() {
       }
     }
   };
+
+  // Show loader during redirect/auth check
+  if (!oobCode && (isLoading || redirecting || isAuthenticated)) {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <Card className="border-2">
+          <CardContent className="p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-muted-foreground" suppressHydrationWarning>
+              {t('auth.loading.redirecting')}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (!oobCode) {
     return (
