@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
@@ -11,6 +11,7 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/lib/firebase/firebase-client';
 import { toast } from 'sonner';
 import { logger } from '@/lib/utils/logger';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -29,6 +30,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { useAuthStore } from '@/features/auth/store';
 
 type ForgotPasswordSchema = z.ZodObject<{
   email: z.ZodString;
@@ -38,7 +40,18 @@ type ForgotPasswordInput = z.infer<ForgotPasswordSchema>;
 
 export default function ForgotPasswordPage() {
   const [emailSent, setEmailSent] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const { t } = useTranslation();
+  const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuthStore();
+
+  // Redirect authenticated users away from auth page
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && !redirecting) {
+      setRedirecting(true);
+      router.replace('/dashboard');
+    }
+  }, [isLoading, isAuthenticated, redirecting, router]);
 
   const forgotPasswordSchema = useMemo<ForgotPasswordSchema>(
     () =>
@@ -76,6 +89,20 @@ export default function ForgotPasswordPage() {
       }
     }
   };
+
+  // Show lightweight loader during redirect/auth check
+  if (isLoading || redirecting || isAuthenticated) {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <Card>
+          <CardContent className="p-12 flex flex-col items-center justify-center space-y-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            <p className="text-sm text-muted-foreground">{t('auth.loading.redirecting')}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (emailSent) {
     return (

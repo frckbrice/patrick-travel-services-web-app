@@ -39,6 +39,7 @@ import { AuthLoadingOverlay } from './AuthLoadingOverlay';
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const registerMutation = useRegister();
   const googleSignInMutation = useGoogleSignIn();
   const { t } = useTranslation();
@@ -68,6 +69,13 @@ export function RegisterForm() {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (mounted && !isLoading && isAuthenticated && !redirecting) {
+      setRedirecting(true);
+      router.replace('/dashboard');
+    }
+  }, [mounted, isLoading, isAuthenticated, redirecting, router]);
+
   const handleGoogleSignIn = async () => {
     try {
       await googleSignInMutation.mutateAsync();
@@ -92,21 +100,19 @@ export function RegisterForm() {
   };
 
   // Show loading while checking session or hydrating
-  if (!mounted || isLoading) {
+  if (!mounted || isLoading || redirecting || isAuthenticated) {
     return (
       <div className="w-full max-w-md mx-auto">
         <Card>
-          <CardContent className="p-12 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <CardContent className="p-12 flex flex-col items-center justify-center space-y-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            <p className="text-sm text-muted-foreground">
+              {isLoading ? t('auth.loading.authenticating') : t('auth.loading.redirecting')}
+            </p>
           </CardContent>
         </Card>
       </div>
     );
-  }
-
-  // Prevent flash of register form while redirecting
-  if (isAuthenticated) {
-    return null;
   }
 
   const isAuthLoading = registerMutation.isPending || googleSignInMutation.isPending;
