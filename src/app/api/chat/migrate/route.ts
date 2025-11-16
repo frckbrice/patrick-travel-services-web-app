@@ -335,7 +335,7 @@ async function migrateChatFromOldToNew(
 
   // Check if new room exists
   const newRoomSnapshot = await newRoomRef.get();
-  let newMetadata = newRoomSnapshot.exists() ? newRoomSnapshot.val().metadata || {} : null;
+  const newMetadata = newRoomSnapshot.exists() ? newRoomSnapshot.val().metadata || {} : null;
 
   if (!newMetadata) {
     // Create new metadata if it doesn't exist
