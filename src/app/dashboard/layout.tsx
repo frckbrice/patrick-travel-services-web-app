@@ -83,14 +83,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  // Show loading state while redirecting to login
+  // Show loading state while redirecting
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
           <p className="mt-4 text-muted-foreground" suppressHydrationWarning>
-            {t('dashboard.redirectingToLogin')}
+            {t('common.loading')}
           </p>
         </div>
       </div>
@@ -113,7 +113,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Top Navigation */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -167,23 +167,39 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     })}
                   </nav>
                   <Separator className="my-4" />
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2 px-4">
-                      <LanguageSwitcher />
-                      <ThemeSwitcher />
+                  <div className="space-y-3 px-4">
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {t('settings.appearance.title')}
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <p className="text-xs text-muted-foreground mb-1.5">
+                            {t('settings.appearance.languageLabel')}
+                          </p>
+                          <LanguageSwitcher />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs text-muted-foreground mb-1.5">
+                            {t('settings.appearance.themeLabel')}
+                          </p>
+                          <ThemeSwitcher />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </SheetContent>
               </Sheet>
 
               <Link href="/dashboard" className="flex items-center space-x-3 cursor-pointer">
-                <div className="relative flex items-center justify-center w-10 h-10 rounded-lg bg-white dark:bg-white p-1.5">
+                <div className="relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-white dark:bg-white p-1.5">
                   <Image
                     src="/images/app-logo.png"
                     alt="Patrick Travel Service"
-                    width={40}
-                    height={40}
+                    width={56}
+                    height={56}
                     className="object-contain"
+                    style={{ width: 'auto', height: 'auto' }}
                     priority
                   />
                 </div>
@@ -194,10 +210,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </div>
 
             {/* Right Section - Theme, Language & User Info */}
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              {/* Theme & Language Switchers */}
-              <div className="hidden sm:flex items-center space-x-2">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              {/* Language Switcher - Always visible */}
+              <div className="flex items-center">
                 <LanguageSwitcher />
+              </div>
+
+              {/* Theme Switcher - Always visible */}
+              <div className="flex items-center">
                 <ThemeSwitcher />
               </div>
 
@@ -270,7 +290,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <div className="flex">
+      <div className="flex min-w-0">
         {/* Sidebar */}
         <aside className="w-64 border-r bg-background min-h-[calc(100vh-4rem)] hidden md:block">
           <div className="w-full max-w-7xl mx-auto">
@@ -300,8 +320,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 bg-muted/10">
-          <div className="mx-auto max-w-7xl">{children}</div>
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 bg-muted/10">
+          <div className="mx-auto max-w-7xl min-w-0">{children}</div>
         </main>
       </div>
     </div>

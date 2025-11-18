@@ -21,6 +21,8 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
                 width={120}
                 height={120}
                 className="object-contain"
+                style={{ width: 'auto', height: 'auto' }}
+                priority
               />
             </div>
           </div>

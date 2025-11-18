@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, History, Mail } from 'lucide-react';
 import { MessagesList } from './MessagesListEnhanced';
@@ -27,6 +28,7 @@ export function MessagesPageWithTabs({
   initialTab,
   preselectedMessageId,
 }: MessagesPageWithTabsProps = {}) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<string>(initialTab || 'active');
 
   // If coming from case details with a specific client, show active tab
@@ -42,19 +44,26 @@ export function MessagesPageWithTabs({
 
   return (
     <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          // Client-side tab switching - no page reload
+          setActiveTab(value);
+        }}
+        className="space-y-6"
+      >
         <TabsList className="grid w-full max-w-2xl grid-cols-3">
-          <TabsTrigger value="active" className="gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Active Chats
+          <TabsTrigger value="active" className="gap-2 text-xs sm:text-sm" type="button">
+            <MessageSquare className="h-4 w-4 shrink-0" />
+            <span className="truncate">{t('messages.activeChats')}</span>
           </TabsTrigger>
-          <TabsTrigger value="received" className="gap-2">
-            <Mail className="h-4 w-4" />
-            Received Emails
+          <TabsTrigger value="received" className="gap-2 text-xs sm:text-sm" type="button">
+            <Mail className="h-4 w-4 shrink-0" />
+            <span className="truncate">{t('messages.receivedEmails.title')}</span>
           </TabsTrigger>
-          <TabsTrigger value="history" className="gap-2">
-            <History className="h-4 w-4" />
-            Conversation History
+          <TabsTrigger value="history" className="gap-2 text-xs sm:text-sm" type="button">
+            <History className="h-4 w-4 shrink-0" />
+            <span className="truncate">{t('messages.conversationHistory.title')}</span>
           </TabsTrigger>
         </TabsList>
 

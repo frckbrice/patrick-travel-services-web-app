@@ -9,8 +9,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ClientsTable } from './ClientsTable';
+import { useTranslation } from 'react-i18next';
 
 export function ClientsList() {
+  const { t } = useTranslation();
   const { user, isLoading: isAuthLoading, accessToken } = useAuthStore();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,9 +61,11 @@ export function ClientsList() {
       <Card>
         <CardContent className="py-12 text-center">
           <Users className="mx-auto h-12 w-12 text-destructive mb-4 opacity-50" />
-          <h3 className="text-lg font-semibold mb-2">Failed to load clients</h3>
-          <p className="text-muted-foreground">
-            Unable to load client data. Please try refreshing the page.
+          <h3 className="text-base sm:text-lg font-semibold mb-2">
+            {t('clients.failedToLoadClients')}
+          </h3>
+          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+            {t('clients.unableToLoadClientData')}
           </p>
         </CardContent>
       </Card>
@@ -80,18 +84,24 @@ export function ClientsList() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {user?.role === 'AGENT' ? 'My Clients' : 'All Clients'}
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2 flex-wrap">
+            <span className="wrap-break-word">
+              {user?.role === 'AGENT' ? t('clients.myClients') : t('clients.allClients')}
+            </span>
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-sm sm:text-base text-muted-foreground mt-2 leading-relaxed">
             {user?.role === 'AGENT'
-              ? 'Clients with cases assigned to you'
-              : 'Manage all client accounts and information'}
+              ? t('clients.clientsWithCasesAssigned')
+              : t('clients.manageAllClientAccounts')}
           </p>
         </div>
-        <Badge variant="secondary" className="text-base px-4 py-2">
-          {pagination?.total || 0} {pagination?.total === 1 ? 'Client' : 'Clients'}
+        <Badge
+          variant="secondary"
+          className="text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2 w-fit shrink-0"
+        >
+          {pagination?.total || 0}{' '}
+          {pagination?.total === 1 ? t('clients.client') : t('clients.clients_plural')}
         </Badge>
       </div>
 
@@ -100,13 +110,11 @@ export function ClientsList() {
         <Card>
           <CardContent className="py-12 text-center">
             <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4 opacity-50" />
-            <h3 className="text-lg font-semibold mb-2">
-              {searchQuery ? 'No clients found' : 'No clients yet'}
+            <h3 className="text-base sm:text-lg font-semibold mb-2">
+              {searchQuery ? t('clients.noClientsFound') : t('clients.noClientsYet')}
             </h3>
-            <p className="text-muted-foreground">
-              {searchQuery
-                ? 'Try adjusting your search'
-                : 'Clients will appear here when they register'}
+            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+              {searchQuery ? t('clients.tryAdjustingSearch') : t('clients.clientsWillAppear')}
             </p>
           </CardContent>
         </Card>

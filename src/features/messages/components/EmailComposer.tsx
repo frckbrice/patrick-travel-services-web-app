@@ -128,18 +128,18 @@ export function EmailComposer({
 
   const handleSend = useCallback(async () => {
     if (!subject.trim() || !content.trim()) {
-      toast.error('Subject and message are required');
+      toast.error(t('email.subjectAndMessageRequired') || 'Subject and message are required');
       return;
     }
 
     // CRITICAL: ALL emails must have a caseId
     if (!caseId) {
-      toast.error('Please select a case');
+      toast.error(t('email.pleaseSelectCase') || 'Please select a case');
       return;
     }
 
     if (user?.role !== 'CLIENT' && !selectedRecipient) {
-      toast.error('Please select a recipient');
+      toast.error(t('email.pleaseSelectRecipient') || 'Please select a recipient');
       return;
     }
 
@@ -179,7 +179,7 @@ export function EmailComposer({
 
       // Validate file count (max 3)
       if (attachments.length + files.length > 3) {
-        toast.error('Maximum 3 attachments allowed per email');
+        toast.error(t('email.maximumAttachments'));
         return;
       }
 
@@ -206,10 +206,10 @@ export function EmailComposer({
         }));
 
         setAttachments((prev) => [...prev, ...newAttachments]);
-        toast.success(`${uploadedFiles.length} file(s) attached`);
+        toast.success(t('email.filesAttached', { count: uploadedFiles.length }));
       } catch (error) {
         logger.error('File upload error:', error);
-        toast.error('Failed to upload file(s)');
+        toast.error(t('email.failedToUploadFiles'));
       } finally {
         setIsUploading(false);
         if (fileInputRef.current) {
@@ -315,7 +315,7 @@ export function EmailComposer({
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="font-semibold text-blue-900 dark:text-blue-100">
-                  Sending email to:
+                  {t('email.sendingEmailTo')}
                 </h4>
                 <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mt-1">
                   {recipientName}
@@ -328,7 +328,9 @@ export function EmailComposer({
                 {caseReference && (
                   <div className="mt-2 flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-300">
                     <Briefcase className="h-3 w-3" />
-                    <span>Case: {caseReference}</span>
+                    <span>
+                      {t('email.case')}: {caseReference}
+                    </span>
                   </div>
                 )}
               </div>
@@ -346,7 +348,8 @@ export function EmailComposer({
             </Label>
             {userCases.length > 0 && (
               <span className="text-xs text-muted-foreground">
-                {userCases.length} {userCases.length === 1 ? 'case' : 'cases'}
+                {userCases.length}{' '}
+                {userCases.length === 1 ? t('email.case') : t('email.case_plural')}
               </span>
             )}
           </div>
@@ -361,10 +364,8 @@ export function EmailComposer({
               <div className="flex items-start gap-3 text-sm text-red-700 dark:text-red-300 p-4 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800">
                 <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium">Unable to load cases</p>
-                  <p className="text-xs mt-1 opacity-90">
-                    {t('email.casesLoadError') || 'Please check your connection and try again.'}
-                  </p>
+                  <p className="font-medium">{t('email.unableToLoadCases')}</p>
+                  <p className="text-xs mt-1 opacity-90">{t('email.casesLoadError')}</p>
                 </div>
               </div>
               <Button
@@ -381,11 +382,8 @@ export function EmailComposer({
             <div className="flex items-start gap-3 text-sm text-amber-700 dark:text-amber-300 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
               <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium">No cases found</p>
-                <p className="text-xs mt-1 opacity-90">
-                  {t('email.noCasesAvailable') ||
-                    'Please create a case first to send emails to your agent.'}
-                </p>
+                <p className="font-medium">{t('email.noCasesFound')}</p>
+                <p className="text-xs mt-1 opacity-90">{t('email.createCaseFirst')}</p>
               </div>
             </div>
           ) : (
@@ -515,7 +513,7 @@ export function EmailComposer({
           />
           <div className="flex justify-between items-center">
             <p className="text-xs text-muted-foreground">
-              {subject.trim() ? '✓ Subject provided' : 'Subject is required'}
+              {subject.trim() ? t('email.subjectProvided') : t('email.subjectRequired')}
             </p>
             <p className="text-xs text-muted-foreground">{subject.length}/200</p>
           </div>
@@ -524,25 +522,22 @@ export function EmailComposer({
         {/* Message Content - Rich Text Area */}
         <div className="space-y-2.5">
           <Label htmlFor="content" className="text-sm font-semibold flex items-center gap-2">
-            {t('email.message') || 'Message'}
+            {t('email.message')}
             <span className="text-red-500">*</span>
           </Label>
           <Textarea
             id="content"
             value={content}
             onChange={handleContentChange}
-            placeholder={
-              t('email.contentPlaceholder') ||
-              'Type your message here...\n\nYou can format your message with:\n• Line breaks\n• Bullet points\n• Multiple paragraphs'
-            }
+            placeholder={t('email.contentPlaceholder')}
             className="min-h-[220px] resize-y text-base leading-relaxed focus:ring-2 focus:ring-primary/20 transition-all"
             maxLength={5000}
           />
           <div className="flex justify-between items-center">
             <p className="text-xs text-muted-foreground">
               {content.trim()
-                ? `✓ ${content.split(/\s+/).filter(Boolean).length} words`
-                : 'Message is required'}
+                ? `✓ ${content.split(/\s+/).filter(Boolean).length} ${t('email.words')}`
+                : t('email.messageRequired')}
             </p>
             <p className="text-xs text-muted-foreground">{content.length}/5000</p>
           </div>
@@ -550,9 +545,7 @@ export function EmailComposer({
 
         {/* Attachments */}
         <div className="space-y-3">
-          <Label className="text-sm font-semibold">
-            {t('email.attachments') || 'Attachments'} (Optional)
-          </Label>
+          <Label className="text-sm font-semibold">{t('email.attachments')} (Optional)</Label>
 
           {/* Hidden file input */}
           <input
@@ -568,7 +561,7 @@ export function EmailComposer({
           {attachments.length > 0 && (
             <div className="space-y-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
               <p className="text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wide">
-                Attached Files ({attachments.length}/3)
+                {t('email.attachedFiles')} ({attachments.length}/3)
               </p>
               {attachments.map((attachment, index) => (
                 <div
@@ -611,16 +604,14 @@ export function EmailComposer({
             {isUploading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Uploading...
+                {t('email.uploading')}
               </>
             ) : (
-              `${attachments.length === 0 ? 'Add' : 'Add More'} Files (${attachments.length}/3)`
+              `${attachments.length === 0 ? t('email.addFiles') : t('email.addMoreFiles')} (${attachments.length}/3)`
             )}
           </Button>
           {attachments.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center">
-              Support: Images, PDF, Word documents • Max 3 files
-            </p>
+            <p className="text-xs text-muted-foreground text-center">{t('email.supportFormats')}</p>
           )}
         </div>
       </div>
@@ -707,7 +698,7 @@ export function EmailComposer({
   // Mobile: Dialog
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-6">
+      <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader className="space-y-3">
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Mail className="h-5 w-5" />

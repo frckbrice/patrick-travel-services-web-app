@@ -75,6 +75,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getInitials } from '@/lib/utils/helpers';
 import { toast } from 'sonner';
 
@@ -114,6 +115,10 @@ export function UsersListEnhanced() {
   const [editIsActive, setEditIsActive] = useState(true);
 
   // Mutations
+  // Note: These hooks require QueryClientProvider to be available
+  // The provider is set up in src/app/providers.tsx and should be available
+  // If you see errors about QueryClient not being set, ensure the component
+  // is rendered within the Providers wrapper in the root layout
   const updateUser = useUpdateUser();
   const deleteUser = useDeleteUser();
 
@@ -252,17 +257,17 @@ export function UsersListEnhanced() {
           );
         },
         cell: ({ row }) => (
-          <div className="flex items-center gap-3 min-w-[200px]">
-            <Avatar>
-              <AvatarFallback>
+          <div className="flex items-center gap-2 sm:gap-3 min-w-[200px]">
+            <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
+              <AvatarFallback className="text-xs sm:text-sm">
                 {getInitials(`${row.original.firstName} ${row.original.lastName}`)}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <p className="font-medium">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm sm:text-base font-medium truncate">
                 {row.original.firstName} {row.original.lastName}
               </p>
-              <p className="text-sm text-muted-foreground truncate max-w-[180px]">
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">
                 {row.original.email}
               </p>
             </div>
@@ -292,15 +297,15 @@ export function UsersListEnhanced() {
           );
         },
         cell: ({ row }) => (
-          <div className="space-y-1 text-sm min-w-[180px]">
-            <div className="flex items-center gap-1 text-muted-foreground">
+          <div className="space-y-1 text-xs sm:text-sm min-w-[180px]">
+            <div className="flex items-center gap-1 text-muted-foreground min-w-0">
               <Mail className="h-3 w-3 shrink-0" />
-              <span className="truncate max-w-[200px]">{row.original.email}</span>
+              <span className="truncate">{row.original.email}</span>
             </div>
             {row.original.phone && (
               <div className="flex items-center gap-1 text-muted-foreground">
                 <Phone className="h-3 w-3 shrink-0" />
-                <span>{row.original.phone}</span>
+                <span className="truncate">{row.original.phone}</span>
               </div>
             )}
           </div>
@@ -392,9 +397,11 @@ export function UsersListEnhanced() {
           );
         },
         cell: ({ row }) => (
-          <div className="flex items-center gap-1 text-sm text-muted-foreground min-w-[120px]">
-            <Calendar className="h-3 w-3" />
-            {new Date(row.original.createdAt).toLocaleDateString()}
+          <div className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground min-w-[120px]">
+            <Calendar className="h-3 w-3 shrink-0" />
+            <span className="truncate">
+              {new Date(row.original.createdAt).toLocaleDateString()}
+            </span>
           </div>
         ),
         enableSorting: true,
@@ -404,34 +411,45 @@ export function UsersListEnhanced() {
         header: () => <div className="text-right">{t('users.actions')}</div>,
         cell: ({ row }) => (
           <div className="text-right">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <MoreHorizontal className="h-4 w-4" />
-                  <span className="sr-only">{t('users.actionMenuLabel')}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{t('users.actions')}</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => handleEdit(row.original)}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  {t('users.editUser')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleToggleActive(row.original)}>
-                  <Power className="mr-2 h-4 w-4" />
-                  {row.original.isActive ? t('users.deactivate') : t('users.activate')}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={() => handleDelete(row.original)}
-                  disabled={row.original.id === user?.id}
-                >
-                  <Trash className="mr-2 h-4 w-4" />
-                  {t('users.deleteUser')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">{t('users.actionMenuLabel')}</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>{t('users.actions')}</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleEdit(row.original)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          {t('users.editUser')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleToggleActive(row.original)}>
+                          <Power className="mr-2 h-4 w-4" />
+                          {row.original.isActive ? t('users.deactivate') : t('users.activate')}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => handleDelete(row.original)}
+                          disabled={row.original.id === user?.id}
+                        >
+                          <Trash className="mr-2 h-4 w-4" />
+                          {t('users.deleteUser')}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{t('users.actions')}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         ),
         enableSorting: false,
@@ -474,16 +492,18 @@ export function UsersListEnhanced() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            <Shield className="inline-block mr-2 h-8 w-8 text-primary" />
-            {t('users.userManagement')}
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2 flex-wrap">
+            <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary shrink-0" />
+            <span className="wrap-break-word">{t('users.userManagement')}</span>
           </h1>
-          <p className="text-muted-foreground mt-2">{t('users.manageSystemUsers')}</p>
+          <p className="text-sm sm:text-base text-muted-foreground mt-2 leading-relaxed">
+            {t('users.manageSystemUsers')}
+          </p>
         </div>
         <Card>
           <CardContent className="py-12 text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
-            <p className="text-destructive mb-4">{t('users.loadError')}</p>
+            <p className="text-sm sm:text-base text-destructive mb-4">{t('users.loadError')}</p>
             <Button onClick={() => refetch()}>
               <RefreshCw className="mr-2 h-4 w-4" />
               {t('common.retry')}
@@ -498,42 +518,96 @@ export function UsersListEnhanced() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            <Shield className="inline-block mr-2 h-8 w-8 text-primary" />
-            {t('users.userManagement')}
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2 flex-wrap">
+            <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary shrink-0" />
+            <span className="wrap-break-word">{t('users.userManagement')}</span>
           </h1>
-          <p className="text-muted-foreground mt-2">{t('users.manageSystemUsers')}</p>
+          <p className="text-sm sm:text-base text-muted-foreground mt-2 leading-relaxed">
+            {t('users.manageSystemUsers')}
+          </p>
         </div>
-        <Badge variant="secondary" className="text-base px-4 py-2 w-fit">
+        <Badge
+          variant="secondary"
+          className="text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2 w-fit shrink-0"
+        >
           {totalUsers} {totalUsers === 1 ? t('users.user') : t('users.title')}
         </Badge>
       </div>
 
       {/* Filters */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
+        <CardContent className="pt-4 sm:pt-6">
+          <div className="space-y-3 sm:space-y-0 sm:flex sm:flex-row gap-3 sm:gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t('users.searchPlaceholder')}
-                className="pl-10"
+                className="pl-10 text-sm sm:text-base"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Tabs value={roleFilter} onValueChange={setRoleFilter} className="w-full md:w-auto">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="all">{t('users.all')}</TabsTrigger>
-                <TabsTrigger value="client">{t('users.clients')}</TabsTrigger>
-                <TabsTrigger value="agent">{t('users.agents')}</TabsTrigger>
-                <TabsTrigger value="admin">{t('users.admins')}</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <Button variant="ghost" size="icon" onClick={() => refetch()} disabled={isLoading}>
-              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            </Button>
+            <div className="flex items-center gap-3 sm:gap-4">
+              <Tabs
+                value={roleFilter}
+                onValueChange={(value) => {
+                  // Prevent any default behavior and update filter client-side
+                  setRoleFilter(value);
+                }}
+                className="flex-1 sm:flex-none sm:w-auto"
+              >
+                <TabsList className="grid w-full grid-cols-4 bg-muted/50 p-1">
+                  <TabsTrigger
+                    value="all"
+                    type="button"
+                    className="bg-transparent hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm whitespace-nowrap transition-colors text-xs sm:text-sm"
+                  >
+                    {t('users.all')}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="client"
+                    type="button"
+                    className="bg-transparent hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm whitespace-nowrap transition-colors text-xs sm:text-sm"
+                  >
+                    {t('users.clients')}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="agent"
+                    type="button"
+                    className="bg-transparent hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm whitespace-nowrap transition-colors text-xs sm:text-sm"
+                  >
+                    {t('users.agents')}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="admin"
+                    type="button"
+                    className="bg-transparent hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm whitespace-nowrap transition-colors text-xs sm:text-sm"
+                  >
+                    {t('users.admins')}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => refetch()}
+                      disabled={isLoading}
+                      className="shrink-0"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                      <span className="sr-only">{t('common.refresh')}</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{t('common.refresh')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -543,10 +617,10 @@ export function UsersListEnhanced() {
         <Card>
           <CardContent className="py-12 text-center">
             <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4 opacity-50" />
-            <h3 className="text-lg font-semibold mb-2">
+            <h3 className="text-base sm:text-lg font-semibold mb-2">
               {hasActiveFilters ? t('users.noUsersFound') : t('users.noUsersYet')}
             </h3>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
               {hasActiveFilters ? t('users.adjustFilters') : t('users.usersWillAppear')}
             </p>
           </CardContent>
@@ -554,11 +628,13 @@ export function UsersListEnhanced() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Users className="mr-2 h-5 w-5" />
+            <CardTitle className="flex items-center text-lg sm:text-xl font-semibold">
+              <Users className="mr-2 h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
               {t('users.systemUsers')}
             </CardTitle>
-            <CardDescription>{t('users.viewManageUsers')}</CardDescription>
+            <CardDescription className="text-sm sm:text-base">
+              {t('users.viewManageUsers')}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {/* MOBILE RESPONSIVE: Horizontal scrollable container */}
@@ -595,8 +671,8 @@ export function UsersListEnhanced() {
           {/* Pagination */}
           {totalPages > 1 && (
             <CardContent className="border-t py-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="text-sm text-muted-foreground">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm sm:text-base text-muted-foreground text-center sm:text-left">
                   {t('users.paginationSummary', {
                     currentPage,
                     totalPages,
@@ -604,15 +680,24 @@ export function UsersListEnhanced() {
                   })}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1 || isLoading}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    <span className="hidden sm:inline ml-1">{t('common.previous')}</span>
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                          disabled={currentPage === 1 || isLoading}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          <span className="hidden sm:inline ml-1">{t('common.previous')}</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{t('common.previous')}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   <div className="flex items-center gap-1">
                     {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                       // Show pages around current page
@@ -634,15 +719,24 @@ export function UsersListEnhanced() {
                       </Button>
                     ))}
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages || isLoading}
-                  >
-                    <span className="hidden sm:inline mr-1">{t('common.next')}</span>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages || isLoading}
+                        >
+                          <span className="hidden sm:inline mr-1">{t('common.next')}</span>
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{t('common.next')}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
             </CardContent>
@@ -652,15 +746,21 @@ export function UsersListEnhanced() {
 
       {/* Edit User Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{t('users.editUserDialog.title')}</DialogTitle>
-            <DialogDescription>{t('users.editUserDialog.description')}</DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">
+              {t('users.editUserDialog.title')}
+            </DialogTitle>
+            <DialogDescription className="text-sm sm:text-base">
+              {t('users.editUserDialog.description')}
+            </DialogDescription>
           </DialogHeader>
           {selectedUser && (
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label>{t('users.editUserDialog.userLabel')}</Label>
+                <Label className="text-sm sm:text-base font-medium">
+                  {t('users.editUserDialog.userLabel')}
+                </Label>
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
                   <Avatar>
                     <AvatarFallback>
@@ -676,7 +776,9 @@ export function UsersListEnhanced() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-role">{t('users.editUserDialog.roleLabel')}</Label>
+                <Label htmlFor="edit-role" className="text-sm sm:text-base font-medium">
+                  {t('users.editUserDialog.roleLabel')}
+                </Label>
                 <Select value={editRole} onValueChange={setEditRole}>
                   <SelectTrigger id="edit-role">
                     <SelectValue />
@@ -689,7 +791,9 @@ export function UsersListEnhanced() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-status">{t('users.editUserDialog.statusLabel')}</Label>
+                <Label htmlFor="edit-status" className="text-sm sm:text-base font-medium">
+                  {t('users.editUserDialog.statusLabel')}
+                </Label>
                 <Select
                   value={editIsActive ? 'active' : 'inactive'}
                   onValueChange={(v) => setEditIsActive(v === 'active')}
@@ -705,11 +809,19 @@ export function UsersListEnhanced() {
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setEditDialogOpen(false)}
+              className="w-full sm:w-auto"
+            >
               {t('common.cancel')}
             </Button>
-            <Button onClick={handleSaveEdit} disabled={updateUser.isPending}>
+            <Button
+              onClick={handleSaveEdit}
+              disabled={updateUser.isPending}
+              className="w-full sm:w-auto"
+            >
               {updateUser.isPending ? t('users.saving') : t('users.saveChanges')}
             </Button>
           </DialogFooter>

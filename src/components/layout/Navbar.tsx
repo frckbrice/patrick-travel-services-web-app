@@ -31,13 +31,14 @@ export const Navbar = memo(function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3">
             {/* PERFORMANCE: Priority loading for logo (above the fold) */}
-            <div className="relative w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-lg bg-white/60 dark:bg-white p-1.5 flex items-center justify-center overflow-hidden">
+            <div className="relative w-12 h-12 sm:w-16 sm:h-16 shrink-0 rounded-lg bg-white/60 dark:bg-white p-1.5 flex items-center justify-center overflow-hidden">
               <Image
                 src="/images/app-logo.png"
                 alt="Patrick Travel Service"
                 width={40}
                 height={40}
-                className="object-cover w-full h-full"
+                className="object-contain"
+                style={{ width: 'auto', height: 'auto' }}
                 priority
               />
             </div>
@@ -105,24 +106,65 @@ export const Navbar = memo(function Navbar() {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden border-t">
-            <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-3">
-              {navigation.map((item) => (
+          <div className="md:hidden border-t border-transparent dark:border-transparent">
+            <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-4">
+              {/* Company Name - Mobile Only */}
+              <div className="pb-2 border-b border-border/50">
                 <Link
-                  key={item.nameKey}
-                  href={item.href}
-                  className="block py-2 text-md font-medium text-muted-foreground hover:text-primary transition-colors"
+                  href="/"
+                  className="flex items-center gap-2"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <span suppressHydrationWarning>{t(item.nameKey)}</span>
+                  <Image
+                    src="/images/app-logo.png"
+                    alt="Patrick Travel Services"
+                    width={32}
+                    height={32}
+                    className="object-contain"
+                    style={{ width: 'auto', height: 'auto' }}
+                  />
+                  <span className="font-bold text-lg text-primary">Patrick Travel Services</span>
                 </Link>
-              ))}
-              <div className="flex items-center space-x-2 pt-2">
-                <LanguageSwitcher />
-                <ThemeSwitcher />
               </div>
+
+              {/* Navigation Links */}
+              <div className="space-y-1">
+                {navigation.map((item) => (
+                  <Link
+                    key={item.nameKey}
+                    href={item.href}
+                    className="block py-2.5 px-3 text-base font-medium text-foreground hover:text-primary hover:bg-muted/50 rounded-lg transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <span suppressHydrationWarning>{t(item.nameKey)}</span>
+                  </Link>
+                ))}
+              </div>
+
+              {/* Language and Theme Switchers */}
+              <div className="pt-2 pb-2 border-t border-border/50">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide block mb-2 px-1">
+                      {t('settings.language') || 'Language'}
+                    </span>
+                    <div className="flex justify-start">
+                      <LanguageSwitcher />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide block mb-2 px-1">
+                      {t('settings.theme') || 'Theme'}
+                    </span>
+                    <div className="flex justify-start">
+                      <ThemeSwitcher />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* SESSION AWARE: Show different buttons for mobile */}
-              <div className="flex flex-col space-y-2 pt-2">
+              <div className="flex flex-col space-y-2 pt-2 border-t border-border/50">
                 {isAuthenticated ? (
                   <Button className="w-full" asChild>
                     <Link href="/dashboard">

@@ -61,6 +61,8 @@ import { SimpleSkeleton } from '@/components/ui/simple-skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { getInitials } from '@/lib/utils/helpers';
+import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
 
 interface Email {
   id: string;
@@ -107,6 +109,7 @@ interface ReceivedEmailsTableProps {
 }
 
 export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTableProps = {}) {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
 
@@ -240,7 +243,7 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
     () => [
       {
         accessorKey: 'sender',
-        header: 'Sender',
+        header: t('messages.receivedEmails.sender'),
         cell: ({ row }) => {
           const email = row.original;
           const senderName = `${email.sender.firstName} ${email.sender.lastName}`;
@@ -260,7 +263,7 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
                   <p className="text-sm font-medium truncate">{senderName}</p>
                   {isUnread && (
                     <Badge variant="default" className="h-4 px-1.5 text-xs">
-                      New
+                      {t('messages.receivedEmails.new')}
                     </Badge>
                   )}
                 </div>
@@ -281,7 +284,7 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
               className="h-8 data-[state=open]:bg-accent"
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
-              Subject
+              {t('messages.receivedEmails.subject')}
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
@@ -291,7 +294,7 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
           return (
             <div className="max-w-md">
               <p className="text-sm font-semibold text-foreground truncate">
-                {email.subject || '(No subject)'}
+                {email.subject || `(${t('messages.receivedEmails.noSubject') || 'No subject'})`}
               </p>
               <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
                 {email.content.substring(0, 150)}
@@ -304,7 +307,7 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
       },
       {
         accessorKey: 'case',
-        header: 'Case',
+        header: t('messages.receivedEmails.case'),
         cell: ({ row }) => {
           const email = row.original;
           return email.case ? (
@@ -328,7 +331,7 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
               className="h-8 data-[state=open]:bg-accent"
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
-              Date
+              {t('messages.receivedEmails.date')}
               {column.getIsSorted() === 'asc' ? (
                 <ArrowUp className="ml-2 h-4 w-4" />
               ) : column.getIsSorted() === 'desc' ? (
@@ -352,7 +355,7 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
       },
       {
         id: 'actions',
-        header: 'Actions',
+        header: t('messages.receivedEmails.actions'),
         cell: ({ row }) => {
           const email = row.original;
           return (
@@ -362,14 +365,14 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
               className="h-8 text-xs"
               onClick={() => handleViewEmail(email)}
             >
-              View
+              {t('messages.receivedEmails.view')}
             </Button>
           );
         },
         size: 100,
       },
     ],
-    [handleViewEmail]
+    [handleViewEmail, t]
   );
 
   // Table instance with server-side pagination and sorting
@@ -430,14 +433,16 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-lg font-semibold">Received Emails</CardTitle>
+            <CardTitle className="text-lg font-semibold">
+              {t('messages.receivedEmails.title')}
+            </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Incoming emails and replies from clients
+              {t('messages.receivedEmails.description')}
             </p>
           </div>
           {unreadCount > 0 && (
             <Badge variant="default" className="ml-2">
-              {unreadCount} unread
+              {unreadCount} {t('messages.receivedEmails.unread')}
             </Badge>
           )}
         </div>
@@ -448,7 +453,10 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search emails by subject or content..."
+              placeholder={
+                t('messages.receivedEmails.searchPlaceholder') ||
+                'Search emails by subject or content...'
+              }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -459,30 +467,112 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
             onValueChange={(value: 'all' | 'read' | 'unread') => setIsReadFilter(value)}
           >
             <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Filter by read status" />
+              <SelectValue
+                placeholder={
+                  t('messages.receivedEmails.filterByReadStatus') || 'Filter by read status'
+                }
+              />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All emails</SelectItem>
-              <SelectItem value="unread">Unread only</SelectItem>
-              <SelectItem value="read">Read only</SelectItem>
+              <SelectItem value="all">
+                {t('messages.receivedEmails.allEmails') || 'All emails'}
+              </SelectItem>
+              <SelectItem value="unread">
+                {t('messages.receivedEmails.unreadOnly') || 'Unread only'}
+              </SelectItem>
+              <SelectItem value="read">
+                {t('messages.receivedEmails.readOnly') || 'Read only'}
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        {/* Table */}
+        {/* Mobile Card View */}
         {emails.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <Mail className="mx-auto h-12 w-12 mb-4 opacity-30" />
-            <p className="text-sm font-medium">No received emails</p>
+            <p className="text-sm font-medium">{t('messages.receivedEmails.noReceivedEmails')}</p>
             <p className="text-xs mt-1">
               {searchQuery || isReadFilter !== 'all'
-                ? 'Try adjusting your filters'
-                : 'Client email replies will appear here'}
+                ? t('messages.receivedEmails.adjustFilters')
+                : t('messages.receivedEmails.clientEmailReplies')}
             </p>
           </div>
         ) : (
           <>
-            <div className="rounded-md border">
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {table.getRowModel().rows.map((row) => {
+                const email = row.original;
+                const isUnread = !email.isRead;
+
+                return (
+                  <Card
+                    key={row.id}
+                    className={cn(
+                      'cursor-pointer hover:shadow-md transition-shadow border shadow-sm',
+                      isUnread && 'bg-blue-50/50 dark:bg-blue-950/20'
+                    )}
+                    onClick={() => handleViewEmail(email)}
+                  >
+                    <CardContent className="p-3 sm:p-4 space-y-2.5">
+                      {/* Header: Subject and Unread Badge */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Mail className="h-4 w-4 text-primary shrink-0" />
+                            {isUnread && (
+                              <Badge variant="default" className="text-xs h-4 px-1.5 shrink-0">
+                                {t('messages.receivedEmails.unread')}
+                              </Badge>
+                            )}
+                          </div>
+                          <h4 className="text-sm font-semibold truncate">
+                            {email.subject || t('messages.receivedEmails.noSubject')}
+                          </h4>
+                        </div>
+                      </div>
+
+                      {/* Sender Info */}
+                      <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                        <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium truncate">
+                            {email.sender.firstName} {email.sender.lastName}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {email.sender.email}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Content Preview */}
+                      <p className="text-xs text-muted-foreground line-clamp-2 pt-1">
+                        {email.content}
+                      </p>
+
+                      {/* Footer: Date and Case Reference */}
+                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/50">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(email.sentAt), 'MMM dd, yyyy HH:mm')}
+                          </span>
+                        </div>
+                        {email.case && (
+                          <Badge variant="outline" className="text-xs shrink-0">
+                            {email.case.referenceNumber}
+                          </Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   {table.getHeaderGroups().map((headerGroup) => (
@@ -506,9 +596,10 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
                       return (
                         <TableRow
                           key={row.id}
-                          className={`cursor-pointer hover:bg-muted/50 ${
-                            isUnread ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''
-                          }`}
+                          className={cn(
+                            'cursor-pointer hover:bg-muted/50',
+                            isUnread && 'bg-blue-50/50 dark:bg-blue-950/20'
+                          )}
                           onClick={() => handleViewEmail(email)}
                         >
                           {row.getVisibleCells().map((cell) => (
@@ -522,7 +613,7 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
                   ) : (
                     <TableRow>
                       <TableCell colSpan={columns.length} className="h-24 text-center">
-                        No emails found.
+                        {t('messages.receivedEmails.noEmailsFound') || 'No emails found.'}
                       </TableCell>
                     </TableRow>
                   )}
@@ -534,9 +625,14 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
             {paginationData && paginationData.totalPages > 1 && (
               <div className="flex items-center justify-between px-2 py-4">
                 <div className="text-sm text-muted-foreground">
-                  Showing {pagination.pageIndex * pagination.pageSize + 1} to{' '}
-                  {Math.min((pagination.pageIndex + 1) * pagination.pageSize, paginationData.total)}{' '}
-                  of {paginationData.total} emails
+                  {t('messages.receivedEmails.showing', {
+                    from: pagination.pageIndex * pagination.pageSize + 1,
+                    to: Math.min(
+                      (pagination.pageIndex + 1) * pagination.pageSize,
+                      paginationData.total
+                    ),
+                    total: paginationData.total,
+                  })}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -554,10 +650,15 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
                     disabled={!table.getCanPreviousPage()}
                   >
                     <ChevronLeft className="h-4 w-4" />
-                    <span className="hidden sm:inline ml-1">Previous</span>
+                    <span className="hidden sm:inline ml-1">
+                      {t('messages.receivedEmails.previous')}
+                    </span>
                   </Button>
                   <div className="text-sm text-muted-foreground">
-                    Page {pagination.pageIndex + 1} of {paginationData.totalPages}
+                    {t('messages.receivedEmails.page', {
+                      current: pagination.pageIndex + 1,
+                      total: paginationData.totalPages,
+                    })}
                   </div>
                   <Button
                     variant="outline"
@@ -565,7 +666,9 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
                     onClick={() => table.nextPage()}
                     disabled={!table.getCanNextPage()}
                   >
-                    <span className="hidden sm:inline mr-1">Next</span>
+                    <span className="hidden sm:inline mr-1">
+                      {t('messages.receivedEmails.next')}
+                    </span>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                   <Button
@@ -590,8 +693,8 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
             <div className="flex items-start justify-between">
               <DialogTitle className="text-xl font-semibold pr-4">
                 {isLoadingEmail
-                  ? 'Loading email...'
-                  : selectedEmailData?.email?.subject || 'Email Details'}
+                  ? t('messages.receivedEmails.loadingEmail')
+                  : selectedEmailData?.email?.subject || t('messages.receivedEmails.emailDetails')}
               </DialogTitle>
               <Button variant="ghost" size="icon" onClick={handleCloseDialog} className="h-8 w-8">
                 <X className="h-4 w-4" />
@@ -638,7 +741,7 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
                       </p>
                       {!selectedEmailData.email.isRead && (
                         <Badge variant="default" className="h-5 px-2 text-xs">
-                          New
+                          {t('messages.receivedEmails.new')}
                         </Badge>
                       )}
                     </div>
@@ -647,7 +750,7 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
                     </p>
                     <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                       <User className="h-3 w-3" />
-                      <span>From client</span>
+                      <span>{t('messages.receivedEmails.fromClient')}</span>
                     </div>
                   </div>
                 </div>
@@ -658,7 +761,7 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
                     <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                     <div>
                       <p className="text-xs font-medium text-blue-900 dark:text-blue-100">
-                        Related Case
+                        {t('messages.receivedEmails.relatedCase')}
                       </p>
                       <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
                         {selectedEmailData.email.case.referenceNumber}
@@ -672,7 +775,8 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
                 {/* Email Content */}
                 <div className="prose prose-sm dark:prose-invert max-w-none">
                   <div className="whitespace-pre-wrap break-words text-sm leading-relaxed p-4 bg-background rounded-lg border">
-                    {selectedEmailData.email.content || '(No content)'}
+                    {selectedEmailData.email.content ||
+                      `(${t('messages.receivedEmails.noContent')})`}
                   </div>
                 </div>
               </div>
@@ -683,17 +787,17 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
                   {selectedEmailData.email.isRead ? (
                     <span className="flex items-center gap-1">
                       <Mail className="h-3 w-3" />
-                      Read{' '}
+                      {t('messages.receivedEmails.read')}{' '}
                       {selectedEmailData.email.readAt &&
                         format(new Date(selectedEmailData.email.readAt), 'MMM d, h:mm a')}
                     </span>
                   ) : (
-                    <span>Unread</span>
+                    <span>{t('messages.receivedEmails.unread')}</span>
                   )}
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={handleCloseDialog}>
-                    Close
+                    {t('messages.receivedEmails.close')}
                   </Button>
                   <Button
                     onClick={() => {
@@ -703,7 +807,7 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
                     }}
                   >
                     <Reply className="h-4 w-4 mr-2" />
-                    Reply
+                    {t('messages.receivedEmails.reply')}
                   </Button>
                 </div>
               </div>
@@ -712,7 +816,9 @@ export function ReceivedEmailsTable({ preselectedMessageId }: ReceivedEmailsTabl
             <div className="text-center py-8 flex-1 flex items-center justify-center">
               <div>
                 <AlertCircle className="mx-auto h-10 w-10 mb-3 opacity-50" />
-                <p className="text-sm text-muted-foreground">Failed to load email details</p>
+                <p className="text-sm text-muted-foreground">
+                  {t('messages.receivedEmails.failedToLoadEmail')}
+                </p>
               </div>
             </div>
           )}

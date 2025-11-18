@@ -7,11 +7,10 @@ import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { CheckCircle2 } from 'lucide-react';
-import { sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '@/lib/firebase/firebase-client';
 import { toast } from 'sonner';
 import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
+import { apiClient } from '@/lib/utils/axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -73,17 +72,30 @@ export default function ForgotPasswordPage() {
 
   const onSubmit = async (data: ForgotPasswordInput) => {
     try {
-      await sendPasswordResetEmail(auth, data.email);
-      setEmailSent(true);
-      toast.success(t('auth.toasts.resetEmailSent'));
-    } catch (error) {
+      // Call backend API to generate reset link and send email
+      const response = await apiClient.post('/api/auth/forgot-password', {
+        email: data.email,
+      });
+
+      if (response.data.success) {
+        setEmailSent(true);
+        toast.success(t('auth.toasts.resetEmailSent') || response.data.message);
+      } else {
+        throw new Error(response.data.error || 'Failed to send reset email');
+      }
+    } catch (error: any) {
       logger.error('Password reset error:', error);
-      if (error instanceof Error) {
-        if (error.message.includes('user-not-found')) {
-          toast.error(t('auth.errors.resetEmailUserNotFound'));
-        } else {
-          toast.error(t('auth.errors.resetEmailFailed'));
-        }
+
+      // Handle API errors
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else if (error.response?.data?.message) {
+        // Backend returns success even if user doesn't exist (for security)
+        // So we show success message
+        setEmailSent(true);
+        toast.success(error.response.data.message);
+      } else if (error.message) {
+        toast.error(error.message);
       } else {
         toast.error(t('auth.errors.resetEmailFailed'));
       }

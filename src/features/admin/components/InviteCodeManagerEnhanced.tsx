@@ -66,13 +66,13 @@ export function InviteCodeManagerEnhanced() {
   // Copy to clipboard helper
   const copyToClipboard = (code: string) => {
     if (!navigator.clipboard) {
-      toast.error('Clipboard API not available');
+      toast.error(t('inviteCodes.clipboardNotAvailable'));
       return;
     }
     navigator.clipboard
       .writeText(code)
       .then(() => toast.success(t('inviteCodes.copiedToClipboard')))
-      .catch(() => toast.error('Failed to copy to clipboard'));
+      .catch(() => toast.error(t('inviteCodes.copyFailed')));
   };
 
   // Generate invite code mutation
@@ -98,7 +98,7 @@ export function InviteCodeManagerEnhanced() {
       // Optimistically update with temporary invite code
       const tempInviteCode: InviteCode = {
         id: `temp-${Date.now()}`, // Temporary ID
-        code: 'GENERATING...',
+        code: t('inviteCodes.generating'),
         role,
         createdById: user?.id || '',
         lastUsedById: null,
@@ -134,7 +134,9 @@ export function InviteCodeManagerEnhanced() {
         };
       });
 
-      toast.success(`${data.role} invite code generated!`);
+      toast.success(
+        t('inviteCodes.codeGenerated', { role: t(`users.${data.role.toLowerCase()}`) })
+      );
       setIsDialogOpen(false);
 
       // Auto-copy to clipboard
@@ -151,7 +153,7 @@ export function InviteCodeManagerEnhanced() {
         queryClient.setQueryData(['invite-codes-table'], context.previousInviteCodes);
       }
       toast.error(
-        `Failed to generate invite code: ${error.response?.data?.error || error.message}`
+        t('inviteCodes.generateError', { error: error.response?.data?.error || error.message })
       );
     },
   });
@@ -164,12 +166,14 @@ export function InviteCodeManagerEnhanced() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Key className="h-8 w-8 text-primary" />
-            {t('inviteCodes.management')}
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2 flex-wrap">
+            <Key className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
+            <span className="break-words">{t('inviteCodes.management')}</span>
           </h1>
-          <p className="text-muted-foreground mt-2">{t('inviteCodes.description')}</p>
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base leading-relaxed">
+            {t('inviteCodes.description')}
+          </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -178,14 +182,20 @@ export function InviteCodeManagerEnhanced() {
               {t('inviteCodes.generateCode')}
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-lg">
             <DialogHeader>
-              <DialogTitle>{t('inviteCodes.generateDialog.title')}</DialogTitle>
-              <DialogDescription>{t('inviteCodes.generateDialog.description')}</DialogDescription>
+              <DialogTitle className="text-lg sm:text-xl">
+                {t('inviteCodes.generateDialog.title')}
+              </DialogTitle>
+              <DialogDescription className="text-sm sm:text-base">
+                {t('inviteCodes.generateDialog.description')}
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="role">{t('inviteCodes.generateDialog.roleLabel')}</Label>
+                <Label htmlFor="role" className="text-sm sm:text-base font-medium">
+                  {t('inviteCodes.generateDialog.roleLabel')}
+                </Label>
                 <Select value={role} onValueChange={(v) => setRole(v as 'AGENT' | 'ADMIN')}>
                   <SelectTrigger id="role">
                     <SelectValue placeholder={t('inviteCodes.generateDialog.selectRole')} />
@@ -207,7 +217,9 @@ export function InviteCodeManagerEnhanced() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="expiresInDays">{t('inviteCodes.generateDialog.expiryLabel')}</Label>
+                <Label htmlFor="expiresInDays" className="text-sm sm:text-base font-medium">
+                  {t('inviteCodes.generateDialog.expiryLabel')}
+                </Label>
                 <Input
                   id="expiresInDays"
                   type="number"
@@ -220,13 +232,16 @@ export function InviteCodeManagerEnhanced() {
                       setExpiresInDays(val);
                     }
                   }}
+                  className="text-sm sm:text-base"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                   Between 1 and 365 {t('inviteCodes.generateDialog.days')}
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="maxUses">{t('inviteCodes.generateDialog.maxUsesLabel')}</Label>
+                <Label htmlFor="maxUses" className="text-sm sm:text-base font-medium">
+                  {t('inviteCodes.generateDialog.maxUsesLabel')}
+                </Label>
                 <Input
                   id="maxUses"
                   type="number"
@@ -239,14 +254,17 @@ export function InviteCodeManagerEnhanced() {
                       setMaxUses(val);
                     }
                   }}
+                  className="text-sm sm:text-base"
                 />
-                <p className="text-xs text-muted-foreground">Between 1 and 100 uses</p>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  {t('inviteCodes.maxUsesHelper')}
+                </p>
               </div>
             </div>
             <Button
               onClick={() => generateMutation.mutate()}
               disabled={generateMutation.isPending}
-              className="w-full"
+              className="w-full text-sm sm:text-base"
             >
               {generateMutation.isPending
                 ? t('inviteCodes.generateDialog.generating')

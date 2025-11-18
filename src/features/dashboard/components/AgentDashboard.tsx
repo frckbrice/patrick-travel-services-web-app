@@ -21,8 +21,10 @@ import Link from 'next/link';
 import { StatCardPlaceholder, ListItemPlaceholder } from '@/components/ui/progressive-placeholder';
 import { SimpleSkeleton, SkeletonText } from '@/components/ui/simple-skeleton';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 export const AgentDashboard = memo(function AgentDashboard() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
 
   // PERFORMANCE: Add caching and prevent refetch for instant navigation
@@ -156,69 +158,94 @@ export const AgentDashboard = memo(function AgentDashboard() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">Welcome back, {user?.firstName}!</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {user?.role === 'ADMIN' ? 'Dashboard overview' : 'Your cases overview'}
+      <div className="min-w-0 flex-1">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight wrap-break-word">
+          {t('dashboard.agentDashboard.welcomeBack', { name: user?.firstName || '' })}
+        </h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-2 leading-relaxed">
+          {user?.role === 'ADMIN'
+            ? t('dashboard.agentDashboard.dashboardOverview')
+            : t('dashboard.agentDashboard.yourCasesOverview')}
         </p>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground">
-              {user?.role === 'ADMIN' ? 'All Cases' : 'Assigned Cases'}
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs sm:text-sm font-medium text-muted-foreground">
+              {user?.role === 'ADMIN'
+                ? t('dashboard.agentDashboard.allCases')
+                : t('dashboard.agentDashboard.assignedCases')}
             </span>
-            <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
+            <Briefcase className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold">{stats.assignedCases}</span>
-            <span className="text-xs text-muted-foreground">{stats.activeCases} active</span>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground">
-              {user?.role === 'ADMIN' ? 'Under Review' : 'Pending Review'}
+            <span className="text-xl sm:text-2xl font-bold">{stats.assignedCases}</span>
+            <span className="text-xs text-muted-foreground truncate">
+              {stats.activeCases} {t('dashboard.agentDashboard.active')}
             </span>
-            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold">{stats.pendingReview}</span>
-            <span className="text-xs text-muted-foreground">Require attention</span>
           </div>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground">Completed</span>
-            <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs sm:text-sm font-medium text-muted-foreground">
+              {user?.role === 'ADMIN'
+                ? t('dashboard.agentDashboard.underReview')
+                : t('dashboard.agentDashboard.pendingReview')}
+            </span>
+            <Clock className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold">{stats.completedThisMonth}</span>
-            <span className="text-xs text-muted-foreground">This month</span>
+            <span className="text-xl sm:text-2xl font-bold">{stats.pendingReview}</span>
+            <span className="text-xs text-muted-foreground truncate">
+              {t('dashboard.agentDashboard.requireAttention')}
+            </span>
           </div>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground">Response Time</span>
-            <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs sm:text-sm font-medium text-muted-foreground">
+              {t('dashboard.agentDashboard.completed')}
+            </span>
+            <CheckCircle2 className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold">{stats.responseTime}</span>
-            <span className="text-xs text-muted-foreground">Average</span>
+            <span className="text-xl sm:text-2xl font-bold">{stats.completedThisMonth}</span>
+            <span className="text-xs text-muted-foreground truncate">
+              {t('dashboard.agentDashboard.thisMonth')}
+            </span>
+          </div>
+        </Card>
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs sm:text-sm font-medium text-muted-foreground">
+              {t('dashboard.agentDashboard.responseTime')}
+            </span>
+            <TrendingUp className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl sm:text-2xl font-bold">{stats.responseTime}</span>
+            <span className="text-xs text-muted-foreground truncate">
+              {t('dashboard.agentDashboard.average')}
+            </span>
           </div>
         </Card>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
+      <div className="grid gap-3 grid-cols-1 lg:grid-cols-7">
+        <Card className="lg:col-span-4">
           <div className="p-4 pb-3 border-b">
-            <CardTitle className="text-sm font-semibold">Recent Cases</CardTitle>
+            <CardTitle className="text-sm font-semibold">
+              {t('dashboard.agentDashboard.recentCases')}
+            </CardTitle>
           </div>
           <div className="p-3 space-y-2">
             {activeAssigned.slice(0, 5).map((c: Case) => (
-              <div key={c.id} className="flex items-center justify-between py-1.5">
-                <div className="flex items-center gap-2 min-w-0">
+              <div
+                key={c.id}
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-1.5"
+              >
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                   <Briefcase className="h-4 w-4 text-primary flex-shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{c.referenceNumber}</p>
@@ -228,11 +255,18 @@ export const AgentDashboard = memo(function AgentDashboard() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-xs whitespace-nowrap">
                     {c.status.replace(/_/g, ' ')}
                   </Badge>
-                  <Button asChild size="sm" variant="outline" className="h-7 text-xs">
-                    <Link href={`/dashboard/cases/${c.id}`}>Review</Link>
+                  <Button
+                    asChild
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs whitespace-nowrap"
+                  >
+                    <Link href={`/dashboard/cases/${c.id}`}>
+                      {t('dashboard.agentDashboard.review')}
+                    </Link>
                   </Button>
                 </div>
               </div>
@@ -241,40 +275,60 @@ export const AgentDashboard = memo(function AgentDashboard() {
               <div className="text-center py-6 text-muted-foreground">
                 <Briefcase className="mx-auto h-8 w-8 mb-2 opacity-50" />
                 <p className="text-sm">
-                  {user?.role === 'ADMIN' ? 'No active cases' : 'No active cases assigned'}
+                  {user?.role === 'ADMIN'
+                    ? t('dashboard.agentDashboard.noActiveCases')
+                    : t('dashboard.agentDashboard.noActiveCasesAssigned')}
                 </p>
               </div>
             )}
           </div>
         </Card>
 
-        <Card className="col-span-3">
+        <Card className="lg:col-span-3">
           <div className="p-4 pb-3 border-b">
-            <CardTitle className="text-sm font-semibold">Quick Actions</CardTitle>
+            <CardTitle className="text-sm font-semibold">
+              {t('dashboard.agentDashboard.quickActions')}
+            </CardTitle>
           </div>
           <div className="p-3 space-y-1.5">
-            <Button asChild className="w-full justify-start h-8 text-sm" variant="outline">
-              <Link href="/dashboard/cases">
-                <Briefcase className="mr-2 h-3.5 w-3.5" />
-                {user?.role === 'ADMIN' ? 'All Cases' : 'My Cases'}
+            <Button asChild className="w-full justify-start h-9 sm:h-8 text-sm" variant="outline">
+              <Link href="/dashboard/cases" className="flex items-center">
+                <Briefcase className="mr-2 h-3.5 w-3.5 flex-shrink-0" />
+                <span className="truncate">
+                  {user?.role === 'ADMIN'
+                    ? t('dashboard.agentDashboard.allCases')
+                    : t('dashboard.agentDashboard.myCases')}
+                </span>
               </Link>
             </Button>
-            <Button asChild className="w-full justify-start h-8 text-sm" variant="outline">
-              <Link href="/dashboard/documents">
-                <FileCheck className="mr-2 h-3.5 w-3.5" />
-                {user?.role === 'ADMIN' ? 'All Documents' : 'Review Documents'}
+            <Button asChild className="w-full justify-start h-9 sm:h-8 text-sm" variant="outline">
+              <Link href="/dashboard/documents" className="flex items-center">
+                <FileCheck className="mr-2 h-3.5 w-3.5 flex-shrink-0" />
+                <span className="truncate">
+                  {user?.role === 'ADMIN'
+                    ? t('dashboard.agentDashboard.allDocuments')
+                    : t('dashboard.agentDashboard.reviewDocuments')}
+                </span>
               </Link>
             </Button>
-            <Button asChild className="w-full justify-start h-8 text-sm" variant="outline">
-              <Link href="/dashboard/clients">
-                <Users className="mr-2 h-3.5 w-3.5" />
-                {user?.role === 'ADMIN' ? 'All Clients' : 'My Clients'}
+            <Button asChild className="w-full justify-start h-9 sm:h-8 text-sm" variant="outline">
+              <Link href="/dashboard/clients" className="flex items-center">
+                <Users className="mr-2 h-3.5 w-3.5 flex-shrink-0" />
+                <span className="truncate">
+                  {user?.role === 'ADMIN'
+                    ? t('dashboard.agentDashboard.allClients')
+                    : t('dashboard.agentDashboard.myClients')}
+                </span>
               </Link>
             </Button>
-            <Button asChild className="w-full justify-start h-8 text-sm" variant="outline">
-              <Link href="/dashboard/messages">
-                <AlertCircle className="mr-2 h-3.5 w-3.5" />
-                {user?.role === 'ADMIN' ? 'All Messages' : 'Urgent Messages'}
+            <Button asChild className="w-full justify-start h-9 sm:h-8 text-sm" variant="outline">
+              <Link href="/dashboard/messages" className="flex items-center">
+                <AlertCircle className="mr-2 h-3.5 w-3.5 flex-shrink-0" />
+                <span className="truncate">
+                  {user?.role === 'ADMIN'
+                    ? t('dashboard.agentDashboard.allMessages')
+                    : t('dashboard.agentDashboard.urgentMessages')}
+                </span>
               </Link>
             </Button>
           </div>
@@ -291,6 +345,7 @@ export const AgentDashboard = memo(function AgentDashboard() {
  * - Mobile-optimized for instant display
  */
 export function AgentDashboardSkeleton() {
+  const { t } = useTranslation();
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -301,18 +356,30 @@ export function AgentDashboardSkeleton() {
 
       {/* Stat Cards with Progressive Placeholders */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCardPlaceholder title="Assigned Cases" icon={Briefcase} />
-        <StatCardPlaceholder title="Pending Review" icon={Clock} />
-        <StatCardPlaceholder title="Completed (This Month)" icon={CheckCircle2} />
-        <StatCardPlaceholder title="Avg Response Time" icon={TrendingUp} />
+        <StatCardPlaceholder
+          title={t('dashboard.agentDashboard.skeleton.assignedCases')}
+          icon={Briefcase}
+        />
+        <StatCardPlaceholder
+          title={t('dashboard.agentDashboard.skeleton.pendingReview')}
+          icon={Clock}
+        />
+        <StatCardPlaceholder
+          title={t('dashboard.agentDashboard.skeleton.completedThisMonth')}
+          icon={CheckCircle2}
+        />
+        <StatCardPlaceholder
+          title={t('dashboard.agentDashboard.skeleton.avgResponseTime')}
+          icon={TrendingUp}
+        />
       </div>
 
       {/* Content Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
         {/* Recent Cases Card */}
-        <Card className="col-span-4">
+        <Card className="lg:col-span-4">
           <CardHeader>
-            <CardTitle>Recent Cases</CardTitle>
+            <CardTitle>{t('dashboard.agentDashboard.skeleton.recentCases')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {[1, 2, 3].map((i) => (
@@ -322,9 +389,9 @@ export function AgentDashboardSkeleton() {
         </Card>
 
         {/* Quick Actions Card */}
-        <Card className="col-span-3">
+        <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle>{t('dashboard.agentDashboard.skeleton.quickActions')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {[1, 2, 3, 4].map((i) => (

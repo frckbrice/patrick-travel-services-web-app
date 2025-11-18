@@ -111,6 +111,7 @@ A production-ready immigration services management platform built with Next.js 1
 ### Development Tools
 
 - **Code Quality:** ESLint 9, Prettier
+- **Code Review:** CodeRabbit AI-powered reviews
 - **Git Hooks:** Husky, lint-staged
 - **Commit Convention:** Commitlint (Conventional Commits)
 - **Type Checking:** TypeScript 5 (strict mode)
@@ -732,10 +733,49 @@ import { FileUploader } from '@/components/upload/FileUploader';
 
 See [UploadThing Documentation](https://docs.uploadthing.com) for more information.
 
+## Code Review with CodeRabbit
+
+This project uses [CodeRabbit](https://coderabbit.ai) for AI-powered code reviews on pull requests.
+
+### Setup
+
+1. **Install CodeRabbit GitHub App**
+   - Visit [CodeRabbit.ai](https://coderabbit.ai)
+   - Install the GitHub App on your repository
+   - Grant necessary permissions
+
+2. **Configuration**
+   - The project includes a `.coderabbit.yaml` configuration file
+   - CodeRabbit will automatically review pull requests based on this configuration
+   - Reviews focus on:
+     - Security best practices
+     - Performance optimization
+     - Accessibility (WCAG 2.1 AA)
+     - TypeScript type safety
+     - Next.js and React best practices
+     - Code quality and maintainability
+
+3. **Review Process**
+   - CodeRabbit automatically reviews new pull requests
+   - Reviews include suggestions, code examples, and explanations
+   - Reviews focus on security, performance, accessibility, and best practices
+   - You can interact with CodeRabbit comments directly in GitHub
+
+### Customization
+
+Edit `.coderabbit.yaml` to customize:
+- Review focus areas
+- File inclusion/exclusion patterns
+- Review confidence thresholds
+- Notification settings
+
+For more information, see the [CodeRabbit Documentation](https://docs.coderabbit.ai).
+
 ## Best Practices
 
 - **Type Safety:** Full TypeScript coverage
 - **Code Quality:** ESLint + Prettier enforced
+- **Code Review:** CodeRabbit AI-powered reviews on PRs
 - **Git Workflow:** Conventional commits + Husky hooks
 - **Component Architecture:** Feature-based organization
 - **State Management:** Zustand for global state, React Query for server state

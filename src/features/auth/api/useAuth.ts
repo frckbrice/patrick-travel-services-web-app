@@ -209,13 +209,24 @@ export const useLogout = () => {
       logout();
       queryClient.clear(); // Clear all queries
       toast.success('Logged out successfully');
-      router.replace('/');
+      // Use window.location for full page navigation to home page
+      // This ensures we leave the dashboard route completely
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      } else {
+        router.replace('/');
+      }
     },
     onError: () => {
       // Even if logout fails, clear local state
       logout();
       queryClient.clear();
-      router.replace('/');
+      // Use window.location for full page navigation to home page
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      } else {
+        router.replace('/');
+      }
     },
   });
 };

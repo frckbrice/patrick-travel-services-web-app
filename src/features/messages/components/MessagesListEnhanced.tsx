@@ -208,7 +208,7 @@ export function MessagesList({
       if (!presence) {
         return {
           status: 'offline' as const,
-          label: isMounted ? 'Offline' : '',
+          label: isMounted ? t('messages.activeChats.offline') : '',
           lastSeen: null,
         };
       }
@@ -223,7 +223,7 @@ export function MessagesList({
       if (presence.status === 'online') {
         return {
           status: 'online' as const,
-          label: 'Online now',
+          label: t('messages.activeChats.onlineNow'),
           lastSeen,
         };
       }
@@ -231,11 +231,15 @@ export function MessagesList({
       const relative = formatRelativeTime(lastSeen);
       return {
         status: 'offline' as const,
-        label: relative ? `Last seen ${relative}` : isMounted ? 'Offline' : '',
+        label: relative
+          ? t('messages.activeChats.lastSeen', { time: relative })
+          : isMounted
+            ? t('messages.activeChats.offline')
+            : '',
         lastSeen,
       };
     },
-    [presences, formatRelativeTime, isMounted]
+    [presences, formatRelativeTime, isMounted, t]
   );
 
   const typingNames = useMemo(
@@ -250,11 +254,16 @@ export function MessagesList({
 
   const typingLabel = useMemo(() => {
     if (!isParticipantTyping) return '';
-    if (typingNames.length === 0) return 'Someone is typing…';
-    if (typingNames.length === 1) return `${typingNames[0]} is typing…`;
-    if (typingNames.length === 2) return `${typingNames[0]} and ${typingNames[1]} are typing…`;
-    return `${typingNames[0]}, ${typingNames[1]} and others are typing…`;
-  }, [isParticipantTyping, typingNames]);
+    if (typingNames.length === 0) return t('messages.activeChats.someoneTyping');
+    if (typingNames.length === 1)
+      return t('messages.activeChats.isTyping', { name: typingNames[0] });
+    if (typingNames.length === 2)
+      return t('messages.activeChats.areTyping', { name1: typingNames[0], name2: typingNames[1] });
+    return t('messages.activeChats.andOthersTyping', {
+      name1: typingNames[0],
+      name2: typingNames[1],
+    });
+  }, [isParticipantTyping, typingNames, t]);
 
   // Transform ChatRoom to Conversation format for UI (fully memoized)
   const conversations = useMemo(() => {
@@ -322,7 +331,7 @@ export function MessagesList({
           participantName: preselectedClientName,
           participantEmail: preselectedEmail,
           participantRole: 'CLIENT',
-          lastMessage: 'Ready to start conversation',
+          lastMessage: t('messages.activeChats.readyToStart'),
           lastMessageTime: new Date().toISOString(),
           unreadCount: 0,
           caseId: caseReference,
@@ -418,7 +427,7 @@ export function MessagesList({
 
   const headerStatusLabel = isParticipantTyping
     ? typingLabel
-    : selectedPresence?.label || (isMounted ? 'Offline' : '');
+    : selectedPresence?.label || (isMounted ? t('messages.activeChats.offline') : '');
 
   const headerStatusClass = isParticipantTyping
     ? 'text-primary font-medium'
@@ -561,7 +570,7 @@ export function MessagesList({
 
         setOptimisticMessages((prev) => prev.filter((m) => m.id !== msg.id));
       } catch (error: any) {
-        toast.error(error?.message || 'Failed to retry message');
+        toast.error(error?.message || t('messages.mutations.sendFailed'));
       }
     },
     [selected, user, sendMessageMutation, selectedConversation, getUserInfo]
@@ -670,7 +679,7 @@ export function MessagesList({
 
     // Validate file count (max 3)
     if (attachments.length + files.length > 3) {
-      toast.error('Maximum 3 attachments allowed per message');
+      toast.error(t('messages.activeChats.maximumAttachments'));
       return;
     }
 
@@ -701,10 +710,10 @@ export function MessagesList({
       }));
 
       setAttachments((prev) => [...prev, ...newAttachments]);
-      toast.success(`${uploadedFiles.length} file(s) attached`);
+      toast.success(t('messages.activeChats.filesAttached', { count: uploadedFiles.length }));
     } catch (error) {
       logger.error('File upload error:', error);
-      toast.error('Failed to upload file(s)');
+      toast.error(t('messages.activeChats.failedToUpload'));
     } finally {
       setIsUploading(false);
       // Reset file input
@@ -731,11 +740,13 @@ export function MessagesList({
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div className="flex-1">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Messages</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            {t('messages.activeChats.title')}
+          </h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-2">
             {user?.role === 'CLIENT'
-              ? 'Communicate with your immigration advisor'
-              : 'Manage conversations with your clients'}
+              ? t('messages.activeChats.description.client')
+              : t('messages.activeChats.description.agent')}
           </p>
         </div>
         <Button
@@ -744,8 +755,8 @@ export function MessagesList({
           className="gap-2 w-full sm:w-auto"
         >
           <Mail className="h-4 w-4" />
-          <span className="hidden sm:inline">Send Email</span>
-          <span className="sm:hidden">Email</span>
+          <span className="hidden sm:inline">{t('messages.activeChats.sendEmail')}</span>
+          <span className="sm:hidden">{t('messages.activeChats.email')}</span>
         </Button>
       </div>
 
@@ -762,13 +773,15 @@ export function MessagesList({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-14rem)] sm:h-[calc(100vh-16rem)]">
         {/* Conversations - Hidden on mobile */}
         <Card className="hidden lg:flex lg:col-span-1 overflow-hidden flex-col">
-          <CardHeader className="border-b">
-            <CardTitle className="text-base">Conversations</CardTitle>
+          <CardHeader className="border-b p-3 sm:p-6">
+            <CardTitle className="text-sm sm:text-base">
+              {t('messages.activeChats.conversations')}
+            </CardTitle>
             <div className="relative mt-2">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search..."
-                className="pl-8"
+                placeholder={t('messages.activeChats.searchPlaceholder')}
+                className="pl-8 text-sm"
                 aria-label="Search conversations"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -795,7 +808,9 @@ export function MessagesList({
                 <div className="text-center">
                   <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground mb-3 opacity-50" />
                   <p className="text-sm text-muted-foreground">
-                    {searchQuery ? 'No conversations found' : 'No conversations yet'}
+                    {searchQuery
+                      ? t('messages.activeChats.noConversationsFound')
+                      : t('messages.activeChats.noConversations')}
                   </p>
                 </div>
               </div>
@@ -804,8 +819,8 @@ export function MessagesList({
                 const presenceDetails = getPresenceDetails(conv.participantId);
                 const presenceLabel =
                   presenceDetails.status === 'online'
-                    ? 'Online now'
-                    : presenceDetails.label || (isMounted ? 'Offline' : '');
+                    ? t('messages.activeChats.onlineNow')
+                    : presenceDetails.label || (isMounted ? t('messages.activeChats.offline') : '');
 
                 return (
                   <button
@@ -815,18 +830,20 @@ export function MessagesList({
                     aria-selected={selected === conv.id}
                     aria-label={`Conversation with ${conv.participantName}`}
                     className={cn(
-                      'w-full p-4 text-left hover:bg-muted/50 transition border-b',
+                      'w-full p-3 sm:p-4 text-left hover:bg-muted/50 transition border-b',
                       selected === conv.id && 'bg-muted'
                     )}
                   >
-                    <div className="flex gap-3">
-                      <div className="relative">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback>{getInitials(conv.participantName)}</AvatarFallback>
+                    <div className="flex gap-2.5 sm:gap-3">
+                      <div className="relative shrink-0">
+                        <Avatar className="h-9 w-9 sm:h-10 sm:w-10">
+                          <AvatarFallback className="text-xs sm:text-sm">
+                            {getInitials(conv.participantName)}
+                          </AvatarFallback>
                         </Avatar>
                         <div
                           className={cn(
-                            'absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white dark:border-slate-900',
+                            'absolute bottom-0 right-0 h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full border-2 border-white dark:border-slate-900',
                             presenceDetails.status === 'online'
                               ? 'bg-emerald-500'
                               : 'bg-muted-foreground/40'
@@ -834,22 +851,24 @@ export function MessagesList({
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex justify-between mb-1">
-                          <h4 className="text-sm font-semibold truncate">{conv.participantName}</h4>
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <h4 className="text-xs sm:text-sm font-semibold truncate">
+                            {conv.participantName}
+                          </h4>
                           {conv.unreadCount > 0 && (
-                            <Badge variant="default" className="ml-2">
+                            <Badge variant="default" className="ml-2 shrink-0 text-xs h-5 px-1.5">
                               {conv.unreadCount}
                             </Badge>
                           )}
                         </div>
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
-                          <span className="text-xs text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-x-1.5 sm:gap-x-2 gap-y-0.5 sm:gap-y-1 mb-1">
+                          <span className="text-xs text-muted-foreground truncate">
                             {conv.participantRole}
                           </span>
                           <span className="hidden sm:inline text-xs text-muted-foreground">•</span>
                           <span
                             className={cn(
-                              'text-xs',
+                              'text-xs truncate',
                               presenceDetails.status === 'online'
                                 ? 'text-emerald-600 font-medium'
                                 : 'text-muted-foreground'
@@ -859,11 +878,13 @@ export function MessagesList({
                             {presenceLabel}
                           </span>
                         </div>
-                        <p className="text-xs text-muted-foreground truncate">{conv.lastMessage}</p>
+                        <p className="text-xs text-muted-foreground truncate mb-1">
+                          {conv.lastMessage}
+                        </p>
                         {isMounted && (
-                          <div className="flex items-center gap-1 mt-1">
-                            <Clock className="h-3 w-3" />
-                            <span className="text-xs" suppressHydrationWarning>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 shrink-0" />
+                            <span className="text-xs truncate" suppressHydrationWarning>
                               {formatTime(conv.lastMessageTime)}
                             </span>
                           </div>
@@ -881,54 +902,59 @@ export function MessagesList({
         <Card className="col-span-1 lg:col-span-2 overflow-hidden flex flex-col">
           {selected && selectedConversation ? (
             <>
-              <CardHeader className="border-b">
-                <div className="flex gap-3">
-                  <div className="relative">
-                    <Avatar>
-                      <AvatarFallback>
+              <CardHeader className="border-b p-3 sm:p-6">
+                <div className="flex gap-2 sm:gap-3">
+                  <div className="relative shrink-0">
+                    <Avatar className="h-9 w-9 sm:h-10 sm:w-10">
+                      <AvatarFallback className="text-xs sm:text-sm">
                         {getInitials(selectedConversation.participantName)}
                       </AvatarFallback>
                     </Avatar>
                     <div
                       className={cn(
-                        'absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white dark:border-slate-900',
+                        'absolute bottom-0 right-0 h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full border-2 border-white dark:border-slate-900',
                         selectedPresence?.status === 'online'
                           ? 'bg-emerald-500'
                           : 'bg-muted-foreground/40'
                       )}
                     />
                   </div>
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold">{selectedConversation.participantName}</h3>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                      <h3 className="text-sm sm:text-base font-semibold truncate">
+                        {selectedConversation.participantName}
+                      </h3>
                       {isParticipantTyping ? (
                         <Badge
                           variant="outline"
-                          className="text-xs border-primary text-primary bg-primary/10"
+                          className="text-xs border-primary text-primary bg-primary/10 shrink-0"
                         >
-                          Typing…
+                          {t('messages.activeChats.typing')}
                         </Badge>
                       ) : (
                         selectedPresence?.status === 'online' && (
-                          <Badge variant="outline" className="text-xs">
-                            Online
+                          <Badge variant="outline" className="text-xs shrink-0">
+                            {t('messages.activeChats.online')}
                           </Badge>
                         )
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
-                      <span className="text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-1.5 sm:gap-x-2 gap-y-0.5 sm:gap-y-1 mt-1">
+                      <span className="text-xs text-muted-foreground truncate">
                         {selectedConversation.participantRole}
                       </span>
                       <span className="hidden sm:inline text-xs text-muted-foreground">•</span>
-                      <span className={cn('text-xs', headerStatusClass)} suppressHydrationWarning>
+                      <span
+                        className={cn('text-xs truncate', headerStatusClass)}
+                        suppressHydrationWarning
+                      >
                         {headerStatusLabel}
                       </span>
                     </div>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+              <CardContent className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
                 {isLoadingMessages ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="flex flex-col items-center gap-2">
@@ -944,10 +970,12 @@ export function MessagesList({
                       </div>
                       <div>
                         <h3 className="text-base font-semibold mb-1">
-                          No conversation yet with {selectedConversation?.participantName}
+                          {t('messages.activeChats.noConversationYet', {
+                            name: selectedConversation?.participantName,
+                          })}
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          Start a new conversation by typing your message below
+                          {t('messages.activeChats.startConversation')}
                         </p>
                       </div>
                     </div>
@@ -1046,7 +1074,7 @@ export function MessagesList({
                                             )}
                                           >
                                             <Download className="h-3 w-3" />
-                                            Download
+                                            {t('messages.activeChats.download')}
                                           </span>
                                         </div>
                                       </div>
@@ -1095,7 +1123,7 @@ export function MessagesList({
                                               isOwn ? 'text-primary-foreground' : 'text-primary'
                                             )}
                                           >
-                                            Download
+                                            {t('messages.activeChats.download')}
                                           </span>
                                         </div>
                                       </>
@@ -1124,20 +1152,24 @@ export function MessagesList({
                                   {msg.status === 'sending' && (
                                     <div className="flex items-center gap-1">
                                       <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current opacity-50" />
-                                      <span className="text-xs opacity-70">Sending...</span>
+                                      <span className="text-xs opacity-70">
+                                        {t('messages.activeChats.sending')}
+                                      </span>
                                     </div>
                                   )}
                                   {msg.status === 'sent' && (
-                                    <span className="text-xs opacity-70">✓ Sent</span>
+                                    <span className="text-xs opacity-70">
+                                      {t('messages.activeChats.sent')}
+                                    </span>
                                   )}
                                   {msg.status === 'failed' && (
                                     <button
                                       onClick={() => handleRetryMessage(msg)}
                                       className="flex items-center gap-1 text-xs hover:underline cursor-pointer"
-                                      title="Click to retry sending this message"
+                                      title={t('messages.activeChats.clickToRetry')}
                                     >
                                       <X className="h-3 w-3 text-red-400" />
-                                      Failed - Click to retry
+                                      {t('messages.activeChats.failed')}
                                     </button>
                                   )}
                                 </div>
@@ -1162,7 +1194,7 @@ export function MessagesList({
                             className="text-xs text-muted-foreground mb-1"
                             suppressHydrationWarning
                           >
-                            {typingLabel || 'Typing…'}
+                            {typingLabel || t('messages.activeChats.typing')}
                           </p>
                           <div className="flex gap-1 text-muted-foreground">
                             <Circle
@@ -1230,14 +1262,18 @@ export function MessagesList({
                     size="icon"
                     onClick={handleAttachmentClick}
                     disabled={isUploading || attachments.length >= 3}
-                    title={isUploading ? 'Uploading...' : 'Attach file'}
+                    title={
+                      isUploading
+                        ? t('messages.activeChats.uploading')
+                        : t('messages.activeChats.attachFile')
+                    }
                     className="flex-shrink-0 h-9 w-9"
                   >
                     <Paperclip className={cn('h-4 w-4', isUploading && 'animate-pulse')} />
                   </Button>
 
                   <Input
-                    placeholder="Type a message..."
+                    placeholder={t('messages.activeChats.typeMessage')}
                     value={input}
                     onChange={(e) => {
                       setInput(e.target.value);
@@ -1256,7 +1292,7 @@ export function MessagesList({
                   <Button
                     onClick={handleSend}
                     disabled={(!input.trim() && attachments.length === 0) || isUploading}
-                    title="Send message"
+                    title={t('messages.activeChats.sendMessage')}
                     className="flex-shrink-0 h-9 w-9"
                   >
                     <Send className="h-4 w-4" />
@@ -1284,9 +1320,11 @@ export function MessagesList({
               ) : (
                 <div className="text-center">
                   <MessageSquare className="mx-auto h-16 w-16 text-muted-foreground mb-4 opacity-50" />
-                  <h3 className="text-lg font-semibold">Select a Conversation</h3>
+                  <h3 className="text-lg font-semibold">
+                    {t('messages.activeChats.selectConversation')}
+                  </h3>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Choose a conversation to start messaging
+                    {t('messages.activeChats.chooseConversation')}
                   </p>
                 </div>
               )}

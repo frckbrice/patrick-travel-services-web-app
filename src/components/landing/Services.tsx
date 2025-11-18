@@ -64,7 +64,7 @@ export function Services() {
         </div>
 
         {/* Services Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-12">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 mb-12">
           {services.map((service, index) => {
             const Icon = service.icon;
             return (
@@ -75,30 +75,36 @@ export function Services() {
                 style={{ animationDelay: bounceDelays[index % bounceDelays.length] }}
               >
                 {service.badge && (
-                  <div className="absolute top-4 right-4">
-                    <Badge variant={service.badgeVariant} className="text-xs">
+                  <div className="absolute top-2 right-2 sm:top-4 sm:right-4">
+                    <Badge
+                      variant={service.badgeVariant}
+                      className="text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1"
+                    >
                       <span suppressHydrationWarning>{service.badge}</span>
                     </Badge>
                   </div>
                 )}
 
-                <CardHeader className="pb-4">
+                <CardHeader className="pb-2 sm:pb-4 p-4 sm:p-6">
                   <div
-                    className={`w-16 h-16 rounded-2xl ${service.bgColor} flex items-center justify-center mb-4 group-hover:scale-105 transition-transform duration-200 will-change-transform`}
+                    className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl ${service.bgColor} flex items-center justify-center mb-2 sm:mb-4 group-hover:scale-105 transition-transform duration-200 will-change-transform`}
                   >
-                    <Icon className={`h-8 w-8 ${service.color}`} />
+                    <Icon className={`h-6 w-6 sm:h-8 sm:w-8 ${service.color}`} />
                   </div>
-                  <CardTitle className="text-xl">
+                  <CardTitle className="text-base sm:text-xl leading-tight">
                     <span suppressHydrationWarning>{service.title}</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-base leading-relaxed">
+                <CardContent className="p-4 sm:p-6 pt-0">
+                  <CardDescription className="text-sm sm:text-base leading-relaxed line-clamp-3 sm:line-clamp-none">
                     <span suppressHydrationWarning>{service.description}</span>
                   </CardDescription>
-                  <Button variant="ghost" className="mt-4 px-0 group-hover:gap-2 transition-all">
+                  <Button
+                    variant="ghost"
+                    className="mt-2 sm:mt-4 px-0 h-auto py-1 text-xs sm:text-sm group-hover:gap-2 transition-all"
+                  >
                     <span suppressHydrationWarning>{t('landing.services.learnMore')}</span>
-                    <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </CardContent>
               </Card>

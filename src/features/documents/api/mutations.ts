@@ -1,6 +1,7 @@
 // React Query - Mutations for Documents feature
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { apiClient } from '@/lib/utils/axios';
 import { toast } from 'sonner';
 import type { Document, CreateDocumentInput } from '../types';
@@ -8,6 +9,7 @@ import { DOCUMENTS_KEY } from './queries';
 
 // Create document metadata
 export function useCreateDocument() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -17,16 +19,17 @@ export function useCreateDocument() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [DOCUMENTS_KEY] });
-      toast.success('Document saved successfully');
+      toast.success(t('documents.mutations.saved'));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || 'Failed to save document');
+      toast.error(error.response?.data?.error || t('documents.mutations.saveFailed'));
     },
   });
 }
 
 // Delete document
 export function useDeleteDocument() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -35,16 +38,17 @@ export function useDeleteDocument() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [DOCUMENTS_KEY] });
-      toast.success('Document deleted successfully');
+      toast.success(t('documents.mutations.deleted'));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || 'Failed to delete document');
+      toast.error(error.response?.data?.error || t('documents.mutations.deleteFailed'));
     },
   });
 }
 
 // Approve document (AGENT/ADMIN only)
 export function useApproveDocument() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -54,16 +58,17 @@ export function useApproveDocument() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [DOCUMENTS_KEY] });
-      toast.success('Document approved! Client has been notified.');
+      toast.success(t('documents.mutations.approved'));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || 'Failed to approve document');
+      toast.error(error.response?.data?.error || t('documents.mutations.approveFailed'));
     },
   });
 }
 
 // Reject document (AGENT/ADMIN only)
 export function useRejectDocument() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -73,10 +78,10 @@ export function useRejectDocument() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [DOCUMENTS_KEY] });
-      toast.success('Document rejected. Client has been notified.');
+      toast.success(t('documents.mutations.rejected'));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || 'Failed to reject document');
+      toast.error(error.response?.data?.error || t('documents.mutations.rejectFailed'));
     },
   });
 }

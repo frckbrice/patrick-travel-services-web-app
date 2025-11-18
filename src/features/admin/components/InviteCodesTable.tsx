@@ -216,8 +216,8 @@ export function InviteCodesTable({ onRefresh }: InviteCodesTableProps) {
           </Button>
         ),
         cell: ({ row }) => (
-          <div className="flex items-center gap-2">
-            <code className="text-sm font-mono bg-muted px-2 py-1 rounded">
+          <div className="flex items-center gap-2 min-w-0">
+            <code className="text-xs sm:text-sm font-mono bg-muted px-2 py-1 rounded truncate max-w-[120px] sm:max-w-none">
               {row.original.code}
             </code>
             <Button
@@ -267,7 +267,9 @@ export function InviteCodesTable({ onRefresh }: InviteCodesTableProps) {
         accessorKey: 'purpose',
         header: t('inviteCodes.table.purpose'),
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">{row.original.purpose || '-'}</span>
+          <span className="text-xs sm:text-sm text-muted-foreground truncate block max-w-[150px] sm:max-w-none">
+            {row.original.purpose || '-'}
+          </span>
         ),
       },
       {
@@ -284,8 +286,8 @@ export function InviteCodesTable({ onRefresh }: InviteCodesTableProps) {
           </Button>
         ),
         cell: ({ row }) => (
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs sm:text-sm font-medium whitespace-nowrap">
               {row.original.usedCount}/{row.original.maxUses}
             </span>
             <div className="w-16 bg-muted/80 dark:bg-muted/60 rounded-full h-2">
@@ -321,10 +323,12 @@ export function InviteCodesTable({ onRefresh }: InviteCodesTableProps) {
           </Button>
         ),
         cell: ({ row }) => (
-          <div className="flex flex-col gap-1">
-            <span className="text-sm">{new Date(row.original.createdAt).toLocaleDateString()}</span>
+          <div className="flex flex-col gap-1 min-w-0">
+            <span className="text-xs sm:text-sm font-medium">
+              {new Date(row.original.createdAt).toLocaleDateString()}
+            </span>
             {row.original.createdByUser && (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-muted-foreground truncate">
                 by {row.original.createdByUser.firstName} {row.original.createdByUser.lastName}
               </span>
             )}
@@ -348,7 +352,7 @@ export function InviteCodesTable({ onRefresh }: InviteCodesTableProps) {
           const expiresAt = new Date(row.original.expiresAt);
           const isExpired = expiresAt <= new Date();
           return (
-            <span className={cn('text-sm', isExpired && 'text-red-500')}>
+            <span className={cn('text-xs sm:text-sm font-medium', isExpired && 'text-red-500')}>
               {expiresAt.toLocaleDateString()}
             </span>
           );
@@ -369,15 +373,15 @@ export function InviteCodesTable({ onRefresh }: InviteCodesTableProps) {
         ),
         cell: ({ row }) => {
           if (!row.original.lastUsedAt) {
-            return <span className="text-sm text-muted-foreground">-</span>;
+            return <span className="text-xs sm:text-sm text-muted-foreground">-</span>;
           }
           return (
-            <div className="flex flex-col gap-1">
-              <span className="text-sm">
+            <div className="flex flex-col gap-1 min-w-0">
+              <span className="text-xs sm:text-sm font-medium">
                 {new Date(row.original.lastUsedAt).toLocaleDateString()}
               </span>
               {row.original.lastUsedByUser && (
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground truncate">
                   by {row.original.lastUsedByUser.firstName} {row.original.lastUsedByUser.lastName}
                 </span>
               )}
@@ -421,14 +425,14 @@ export function InviteCodesTable({ onRefresh }: InviteCodesTableProps) {
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={t('inviteCodes.table.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+            className="pl-9 text-sm sm:text-base"
           />
         </div>
         <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -526,14 +530,14 @@ export function InviteCodesTable({ onRefresh }: InviteCodesTableProps) {
       {/* Pagination */}
       {paginationMeta && paginationMeta.totalPages > 0 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm sm:text-base text-muted-foreground text-center sm:text-left">
             {t('inviteCodes.table.showing', {
               from: pagination.pageIndex * pagination.pageSize + 1,
               to: Math.min((pagination.pageIndex + 1) * pagination.pageSize, paginationMeta.total),
               total: paginationMeta.total,
             })}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-center">
             <Button
               variant="outline"
               size="sm"
@@ -550,7 +554,7 @@ export function InviteCodesTable({ onRefresh }: InviteCodesTableProps) {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm">
+            <span className="text-sm sm:text-base font-medium">
               {t('inviteCodes.table.page', {
                 current: pagination.pageIndex + 1,
                 total: paginationMeta.totalPages,

@@ -104,28 +104,28 @@ export function AnalyticsView() {
 
   const stats = [
     {
-      label: 'Total Cases',
+      label: t('dashboard.analytics.totalCases'),
       value: totalCases.toString(),
       icon: BarChart3,
-      description: 'All time cases',
+      description: t('dashboard.analytics.allTimeCases'),
     },
     {
-      label: 'Active Cases',
+      label: t('dashboard.analytics.activeCases'),
       value: activeCases.toString(),
       icon: TrendingUp,
-      description: 'Currently processing',
+      description: t('dashboard.analytics.currentlyProcessing'),
     },
     {
-      label: 'Approved Cases',
+      label: t('dashboard.analytics.approvedCases'),
       value: approvedCases.toString(),
       icon: FileCheck,
-      description: 'Successfully approved',
+      description: t('dashboard.analytics.successfullyApproved'),
     },
     {
-      label: 'Success Rate',
+      label: t('dashboard.analytics.successRate'),
       value: `${successRate}%`,
       icon: Target,
-      description: 'Approval percentage',
+      description: t('dashboard.analytics.approvalPercentage'),
     },
   ];
 
@@ -136,23 +136,29 @@ export function AnalyticsView() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-        <p className="text-muted-foreground mt-2">Track performance and case statistics</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          {t('dashboard.analytics.title')}
+        </h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-2 leading-relaxed">
+          {t('dashboard.analytics.description')}
+        </p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+      {/* Stats Grid - Compact Design */}
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <Card key={stat.label} className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-muted-foreground">{stat.label}</span>
-                <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+            <Card key={stat.label} className="p-3 sm:p-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs sm:text-sm font-medium text-muted-foreground">
+                  {stat.label}
+                </span>
+                <Icon className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-muted-foreground flex-shrink-0" />
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold">{stat.value}</span>
-                <span className="text-xs text-muted-foreground">{stat.description}</span>
+                <span className="text-xl sm:text-2xl font-bold">{stat.value}</span>
+                <span className="text-xs text-muted-foreground truncate">{stat.description}</span>
               </div>
             </Card>
           );
@@ -161,17 +167,38 @@ export function AnalyticsView() {
 
       {/* Charts */}
       <Tabs defaultValue="status" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="status">By Status</TabsTrigger>
-          <TabsTrigger value="trends">Monthly Trends</TabsTrigger>
-          <TabsTrigger value="types">Case Types</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="w-full inline-flex min-w-max sm:w-auto bg-muted/50 p-1">
+            <TabsTrigger
+              value="status"
+              className="bg-transparent hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm whitespace-nowrap transition-colors"
+            >
+              {t('dashboard.analytics.byStatus')}
+            </TabsTrigger>
+            <TabsTrigger
+              value="trends"
+              className="bg-transparent hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm whitespace-nowrap transition-colors"
+            >
+              {t('dashboard.analytics.monthlyTrends')}
+            </TabsTrigger>
+            <TabsTrigger
+              value="types"
+              className="bg-transparent hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm whitespace-nowrap transition-colors"
+            >
+              {t('dashboard.analytics.caseTypes')}
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="status" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Cases by Status</CardTitle>
-              <CardDescription>Distribution of cases across different statuses</CardDescription>
+              <CardTitle className="text-lg sm:text-xl font-semibold">
+                {t('dashboard.analytics.casesByStatus')}
+              </CardTitle>
+              <CardDescription className="text-sm sm:text-base">
+                {t('dashboard.analytics.statusDistribution')}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {statusData.length > 0 ? (
@@ -187,7 +214,7 @@ export function AnalyticsView() {
                 </ResponsiveContainer>
               ) : (
                 <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  <p>No data available</p>
+                  <p className="text-sm sm:text-base">{t('dashboard.analytics.noDataAvailable')}</p>
                 </div>
               )}
             </CardContent>
@@ -197,8 +224,12 @@ export function AnalyticsView() {
         <TabsContent value="trends" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Monthly Trends</CardTitle>
-              <CardDescription>Case volume and approval trends over time</CardDescription>
+              <CardTitle className="text-lg sm:text-xl font-semibold">
+                {t('dashboard.analytics.monthlyTrends')}
+              </CardTitle>
+              <CardDescription className="text-sm sm:text-base">
+                {t('dashboard.analytics.trendsDescription')}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {monthlyTrends.length > 0 ? (
@@ -214,7 +245,7 @@ export function AnalyticsView() {
                 </ResponsiveContainer>
               ) : (
                 <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  <p>No data available</p>
+                  <p className="text-sm sm:text-base">{t('dashboard.analytics.noDataAvailable')}</p>
                 </div>
               )}
             </CardContent>
@@ -224,8 +255,12 @@ export function AnalyticsView() {
         <TabsContent value="types" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Case Types Distribution</CardTitle>
-              <CardDescription>Breakdown by visa type</CardDescription>
+              <CardTitle className="text-lg sm:text-xl font-semibold">
+                {t('dashboard.analytics.caseTypesDistribution')}
+              </CardTitle>
+              <CardDescription className="text-sm sm:text-base">
+                {t('dashboard.analytics.breakdownByVisaType')}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {serviceTypeData.length > 0 ? (
@@ -253,7 +288,7 @@ export function AnalyticsView() {
                 </ResponsiveContainer>
               ) : (
                 <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  <p>No data available</p>
+                  <p className="text-sm sm:text-base">{t('dashboard.analytics.noDataAvailable')}</p>
                 </div>
               )}
             </CardContent>

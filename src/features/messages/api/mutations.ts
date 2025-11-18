@@ -3,6 +3,7 @@
 // Mobile app compatible - uses same Firebase SDK
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { logger } from '@/lib/utils/logger';
 import { sendMessage } from '@/lib/firebase/chat.service';
@@ -17,6 +18,7 @@ import { markMessageAsRead, markAllMessagesAsRead } from '@/lib/firebase/message
 // Mobile apps use the same Firebase SDK and chat.service functions
 // Now includes PostgreSQL archiving for offline recovery
 export function useSendMessage() {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuthStore();
 
   return useMutation({
@@ -162,11 +164,11 @@ export function useSendMessage() {
     },
     onSuccess: ({ firebaseId }) => {
       // No need to invalidate - real-time listener will update automatically
-      toast.success('Message sent');
+      toast.success(t('messages.mutations.sent'));
       logger.info('Message sent and archived successfully');
     },
     onError: (error: any) => {
-      const errorMessage = error?.message || 'Failed to send message';
+      const errorMessage = error?.message || t('messages.mutations.sendFailed');
       toast.error(errorMessage);
       logger.error('Failed to send message', error);
     },
@@ -177,6 +179,7 @@ export function useSendMessage() {
 
 // Send email mutation - Uses REST API (PostgreSQL tracked)
 export function useSendEmail() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -202,12 +205,12 @@ export function useSendEmail() {
       return response.data;
     },
     onSuccess: () => {
-      toast.success('Email sent successfully');
+      toast.success(t('messages.mutations.emailSent'));
       // Invalidate messages to refresh email history
       queryClient.invalidateQueries({ queryKey: [MESSAGES_KEY] });
     },
     onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || 'Failed to send email';
+      const errorMessage = error?.response?.data?.error || t('messages.mutations.emailSendFailed');
       toast.error(errorMessage);
       logger.error('Failed to send email', error);
     },
@@ -217,6 +220,7 @@ export function useSendEmail() {
 
 // Mark message as read mutation - Firebase + PostgreSQL sync
 export function useMarkMessageRead() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
 
@@ -246,7 +250,7 @@ export function useMarkMessageRead() {
       queryClient.invalidateQueries({ queryKey: ['chat-history'] });
       queryClient.invalidateQueries({ queryKey: ['unread-count'] });
 
-      toast.success('Message marked as read');
+      toast.success(t('messages.mutations.markedAsRead'));
     },
     onError: (error: any, variables) => {
       logger.error('Failed to mark message as read', {
@@ -254,7 +258,8 @@ export function useMarkMessageRead() {
         error: error?.response?.data?.message || error?.message,
       });
 
-      const errorMessage = error?.response?.data?.message || 'Failed to mark message as read';
+      const errorMessage =
+        error?.response?.data?.message || t('messages.mutations.markAsReadFailed');
       toast.error(errorMessage);
     },
   });

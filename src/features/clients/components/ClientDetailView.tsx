@@ -28,6 +28,7 @@ import {
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface ClientDetailViewProps {
   clientId: string;
@@ -44,6 +45,7 @@ const statusConfig = {
 };
 
 export function ClientDetailView({ clientId }: ClientDetailViewProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuthStore();
   const { data: client, isLoading: isLoadingClient, error: clientError } = useClient(clientId);
@@ -66,130 +68,176 @@ export function ClientDetailView({ clientId }: ClientDetailViewProps) {
         {isForbidden ? (
           <>
             <div>
-              <p className="text-red-600 font-semibold">Access Denied</p>
+              <p className="text-red-600 font-semibold">{t('clients.accessDenied')}</p>
               <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
-                You can only view profiles of clients with cases assigned to you.
+                {t('clients.canOnlyViewAssignedClients')}
               </p>
             </div>
           </>
         ) : (
-          <p className="text-red-600">Client not found</p>
+          <p className="text-red-600">{t('clients.clientNotFound')}</p>
         )}
-        <Button variant="outline" onClick={() => router.back()}>
+        <Button
+          variant="outline"
+          onClick={() => router.back()}
+          className="bg-transparent hover:bg-muted/80 transition-colors"
+        >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Go Back
+          {t('common.goBack')}
         </Button>
       </div>
     );
   }
 
-  const fullName = `${client.firstName} ${client.lastName}`.trim() || 'N/A';
+  const fullName = `${client.firstName} ${client.lastName}`.trim() || t('clients.notAvailable');
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="icon" onClick={() => router.back()}>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="space-y-1 min-w-0 flex-1">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => router.back()}
+              className="shrink-0 bg-transparent hover:bg-muted/80 transition-colors"
+            >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">{fullName}</h1>
-              <p className="text-muted-foreground">Client Profile</p>
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight wrap-break-word">
+                {fullName}
+              </h1>
+              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                {t('clients.clientProfile')}
+              </p>
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0">
           <Button
             variant="outline"
             onClick={() => router.push(`/dashboard/messages?client=${clientId}`)}
+            className="bg-transparent hover:bg-muted/80 transition-colors"
           >
             <MessageSquare className="h-4 w-4 mr-2" />
-            Message
+            {t('clients.message')}
           </Button>
         </div>
       </div>
 
       {/* Client Info Cards */}
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
         {/* Status Card */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground">Status</span>
-            <CheckCircle className="h-3.5 w-3.5 text-muted-foreground" />
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs sm:text-sm font-medium text-muted-foreground">
+              {t('clients.status')}
+            </span>
+            <CheckCircle className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant={client.isActive ? 'default' : 'secondary'}>
-              {client.isActive ? 'Active' : 'Inactive'}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant={client.isActive ? 'default' : 'secondary'} className="text-xs">
+              {client.isActive ? t('clients.active') : t('clients.inactive')}
             </Badge>
             {client.isVerified && (
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                Verified
+              <Badge
+                variant="outline"
+                className="bg-green-50 text-green-700 border-green-200 text-xs"
+              >
+                {t('clients.verified')}
               </Badge>
             )}
           </div>
         </Card>
 
         {/* Cases Card */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground">Total Cases</span>
-            <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs sm:text-sm font-medium text-muted-foreground">
+              {t('clients.totalCases')}
+            </span>
+            <Briefcase className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold">{cases?.length || 0}</span>
-            <span className="text-xs text-muted-foreground">
-              {cases?.filter((c) => c.status === 'APPROVED').length || 0} approved
+            <span className="text-xl sm:text-2xl font-bold">{cases?.length || 0}</span>
+            <span className="text-xs text-muted-foreground truncate">
+              {cases?.filter((c) => c.status === 'APPROVED').length || 0} {t('clients.approved')}
             </span>
           </div>
         </Card>
 
         {/* Member Since Card */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground">Member Since</span>
-            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs sm:text-sm font-medium text-muted-foreground">
+              {t('clients.memberSince')}
+            </span>
+            <Calendar className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold">
+            <span className="text-xl sm:text-2xl font-bold">
               {format(new Date(client.createdAt), 'MMM yyyy')}
             </span>
-            <span className="text-xs text-muted-foreground">
-              Last: {client.lastLogin ? format(new Date(client.lastLogin), 'MMM dd') : 'Never'}
+            <span className="text-xs text-muted-foreground truncate">
+              {t('clients.last')}:{' '}
+              {client.lastLogin ? format(new Date(client.lastLogin), 'MMM dd') : t('clients.never')}
             </span>
           </div>
         </Card>
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="cases">Cases ({cases?.length || 0})</TabsTrigger>
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          // Client-side tab switching - no page reload
+          setActiveTab(value);
+        }}
+      >
+        <TabsList className="grid w-full grid-cols-2 lg:w-[400px] bg-muted/50 p-1">
+          <TabsTrigger
+            value="overview"
+            type="button"
+            className="bg-transparent hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm whitespace-nowrap transition-colors text-xs sm:text-sm"
+          >
+            {t('clients.overview')}
+          </TabsTrigger>
+          <TabsTrigger
+            value="cases"
+            type="button"
+            className="bg-transparent hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm whitespace-nowrap transition-colors text-xs sm:text-sm"
+          >
+            {t('cases.title')} ({cases?.length || 0})
+          </TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Contact Information</CardTitle>
-              <CardDescription>Client&apos;s contact details</CardDescription>
+              <CardTitle>{t('clients.contactInformation')}</CardTitle>
+              <CardDescription>{t('clients.contactDetails')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3">
                 <Mail className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <p className="text-sm font-medium">Email</p>
-                  <p className="text-sm text-muted-foreground">{client.email || 'N/A'}</p>
+                  <p className="text-sm font-medium">{t('clients.email')}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {client.email || t('clients.notAvailable')}
+                  </p>
                 </div>
               </div>
               <Separator />
               <div className="flex items-center gap-3">
                 <Phone className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <p className="text-sm font-medium">Phone</p>
-                  <p className="text-sm text-muted-foreground">{client.phone || 'N/A'}</p>
+                  <p className="text-sm font-medium">{t('clients.phone')}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {client.phone || t('clients.notAvailable')}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -197,22 +245,22 @@ export function ClientDetailView({ clientId }: ClientDetailViewProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Account Details</CardTitle>
-              <CardDescription>Account information and timestamps</CardDescription>
+              <CardTitle>{t('clients.accountDetails')}</CardTitle>
+              <CardDescription>{t('clients.accountInformation')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="flex items-center gap-3">
                   <UserIcon className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="text-sm font-medium">User ID</p>
+                    <p className="text-sm font-medium">{t('clients.userID')}</p>
                     <p className="text-sm text-muted-foreground font-mono">{client.id}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="text-sm font-medium">Role</p>
+                    <p className="text-sm font-medium">{t('clients.role')}</p>
                     <Badge variant="outline">{client.role}</Badge>
                   </div>
                 </div>
@@ -220,13 +268,13 @@ export function ClientDetailView({ clientId }: ClientDetailViewProps) {
               <Separator />
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <p className="text-sm font-medium">Created At</p>
+                  <p className="text-sm font-medium">{t('clients.createdAt')}</p>
                   <p className="text-sm text-muted-foreground">
                     {format(new Date(client.createdAt), 'PPpp')}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Last Updated</p>
+                  <p className="text-sm font-medium">{t('clients.lastUpdated')}</p>
                   <p className="text-sm text-muted-foreground">
                     {format(new Date(client.updatedAt), 'PPpp')}
                   </p>
@@ -248,63 +296,93 @@ export function ClientDetailView({ clientId }: ClientDetailViewProps) {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Briefcase className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
-                <p className="text-lg font-semibold mb-2">No Cases Yet</p>
-                <p className="text-sm text-muted-foreground text-center max-w-sm">
-                  This client hasn&apos;t submitted any cases yet.
+                <p className="text-base sm:text-lg font-semibold mb-2">{t('clients.noCasesYet')}</p>
+                <p className="text-sm sm:text-base text-muted-foreground text-center max-w-sm leading-relaxed">
+                  {t('clients.thisClientHasNoCases')}
                 </p>
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {cases.map((caseItem) => {
                 const StatusIcon =
                   statusConfig[caseItem.status as keyof typeof statusConfig]?.icon || FileText;
                 return (
-                  <Card key={caseItem.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-2 flex-1">
-                          <div className="flex items-center gap-3">
-                            <StatusIcon className="h-5 w-5 text-muted-foreground" />
-                            <div>
+                  <Card
+                    key={caseItem.id}
+                    className="hover:shadow-md transition-shadow border shadow-sm"
+                  >
+                    <CardContent className="p-4 sm:p-6">
+                      {/* Mobile: Stacked layout, Desktop: Side by side */}
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                        <div className="space-y-3 flex-1 min-w-0">
+                          {/* Header: Reference and Service Type */}
+                          <div className="flex items-start gap-3">
+                            <StatusIcon className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                            <div className="min-w-0 flex-1">
                               <Link
                                 href={`/dashboard/cases/${caseItem.id}`}
-                                className="text-lg font-semibold hover:underline"
+                                className="text-base sm:text-lg font-semibold hover:underline block mb-1 truncate"
                               >
                                 {caseItem.referenceNumber}
                               </Link>
-                              <p className="text-sm text-muted-foreground">
-                                {caseItem.serviceType.replace(/_/g, ' ')}
+                              <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                                {t(`cases.serviceLabels.${caseItem.serviceType}`) ||
+                                  caseItem.serviceType.replace(/_/g, ' ')}
                               </p>
                             </div>
                           </div>
-                          <div className="flex flex-wrap gap-2 mt-2">
+
+                          {/* Badges: Status and Priority */}
+                          <div className="flex flex-wrap gap-2">
                             <Badge
                               variant="secondary"
                               className={cn(
+                                'text-xs whitespace-nowrap',
                                 statusConfig[caseItem.status as keyof typeof statusConfig]?.color
                               )}
                             >
-                              {caseItem.status.replace(/_/g, ' ')}
+                              {t(`cases.statusLabels.${caseItem.status}`) ||
+                                caseItem.status.replace(/_/g, ' ')}
                             </Badge>
-                            <Badge variant="outline">{caseItem.priority}</Badge>
+                            <Badge variant="outline" className="text-xs whitespace-nowrap">
+                              {t(`cases.priorityLabels.${caseItem.priority}`) || caseItem.priority}
+                            </Badge>
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground mt-3">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              {format(new Date(caseItem.submissionDate), 'MMM dd, yyyy')}
+
+                          {/* Dates: Mobile stacked, Desktop inline */}
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground pt-2 border-t border-border/50">
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate">
+                                {format(new Date(caseItem.submissionDate), 'MMM dd, yyyy')}
+                              </span>
                             </div>
                             {caseItem.lastUpdated && (
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
-                                Updated {format(new Date(caseItem.lastUpdated), 'MMM dd, yyyy')}
+                              <div className="flex items-center gap-1.5">
+                                <Clock className="h-3.5 w-3.5 shrink-0" />
+                                <span className="truncate">
+                                  {t('clients.updated')}{' '}
+                                  {format(new Date(caseItem.lastUpdated), 'MMM dd, yyyy')}
+                                </span>
                               </div>
                             )}
                           </div>
                         </div>
-                        <Button asChild variant="outline" size="sm">
-                          <Link href={`/dashboard/cases/${caseItem.id}`}>View Details</Link>
-                        </Button>
+
+                        {/* Action Button */}
+                        <div className="flex sm:flex-col items-start sm:items-end gap-2 shrink-0">
+                          <Button
+                            asChild
+                            variant="outline"
+                            size="sm"
+                            className="bg-black text-white hover:bg-black/90 hover:text-white border-black transition-colors w-full sm:w-auto"
+                          >
+                            <Link href={`/dashboard/cases/${caseItem.id}`}>
+                              {t('clients.viewCase')}
+                            </Link>
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

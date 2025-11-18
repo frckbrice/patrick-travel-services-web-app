@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { UploadDropzone } from '@/lib/utils/uploadthing';
 import { toast } from 'sonner';
 import { logger } from '@/lib/utils/logger';
@@ -16,6 +17,7 @@ interface FileUploaderProps {
  * Wrapper around UploadThing dropzone with error handling and notifications
  */
 export function FileUploader({ endpoint, onUploadComplete, onUploadError }: FileUploaderProps) {
+  const { t } = useTranslation();
   const [isUploading, setIsUploading] = useState(false);
 
   return (
@@ -30,21 +32,21 @@ export function FileUploader({ endpoint, onUploadComplete, onUploadError }: File
               name: file.name,
             })) || [];
 
-          toast.success(`${files.length} file(s) uploaded successfully!`);
+          toast.success(t('upload.filesUploaded', { count: files.length }));
           logger.info('Files uploaded', { count: files.length, endpoint });
 
           onUploadComplete?.(files);
         }}
         onUploadError={(error: Error) => {
           setIsUploading(false);
-          toast.error(`Upload failed: ${error.message}`);
+          toast.error(t('upload.uploadFailed', { error: error.message }));
           logger.error('Upload error', { error, endpoint });
 
           onUploadError?.(error);
         }}
         onUploadBegin={() => {
           setIsUploading(true);
-          toast.info('Uploading files...');
+          toast.info(t('upload.uploadingFiles'));
         }}
         config={{
           mode: 'auto',
@@ -58,7 +60,9 @@ export function FileUploader({ endpoint, onUploadComplete, onUploadError }: File
         }}
       />
       {isUploading && (
-        <p className="text-sm text-center text-muted-foreground mt-2">Uploading... Please wait</p>
+        <p className="text-sm text-center text-muted-foreground mt-2">
+          {t('upload.uploadingPleaseWait')}
+        </p>
       )}
     </div>
   );

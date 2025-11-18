@@ -18,6 +18,35 @@ export const API_CONFIG = {
   RETRY_ATTEMPTS: 3,
 };
 
+/**
+ * Get the application URL for server-side use (API routes, email generation, etc.)
+ * Uses APP_URL (server-side) first, then falls back to NEXT_PUBLIC_APP_URL for compatibility
+ */
+export function getAppUrl(): string {
+  // Server-side variable (preferred for API routes)
+  if (process.env.APP_URL) {
+    return process.env.APP_URL;
+  }
+
+  // Fallback to NEXT_PUBLIC_APP_URL (for backward compatibility)
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL;
+  }
+
+  // Development fallback
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:3000';
+  }
+
+  // Production fallback to Vercel URL
+  if (vercelUrl) {
+    return vercelUrl;
+  }
+
+  // Final fallback
+  return 'http://localhost:3000';
+}
+
 export const TOKEN_CONFIG = {
   ACCESS_TOKEN_EXPIRY: '15m',
   REFRESH_TOKEN_EXPIRY: '7d',

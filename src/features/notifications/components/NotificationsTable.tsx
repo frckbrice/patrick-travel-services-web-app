@@ -309,9 +309,9 @@ export function NotificationsTable({ onMarkAsRead, onMarkAllAsRead }: Notificati
           );
         },
         cell: ({ row }) => (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            {formatTime(row.original.createdAt)}
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+            <Clock className="h-3 w-3 shrink-0" />
+            <span className="truncate">{formatTime(row.original.createdAt)}</span>
           </div>
         ),
       },
@@ -337,7 +337,7 @@ export function NotificationsTable({ onMarkAsRead, onMarkAllAsRead }: Notificati
           );
         },
         cell: ({ row }) => (
-          <div className="text-sm text-muted-foreground">
+          <div className="text-xs sm:text-sm text-muted-foreground">
             {row.original.readAt ? formatTime(row.original.readAt) : '—'}
           </div>
         ),
@@ -370,7 +370,9 @@ export function NotificationsTable({ onMarkAsRead, onMarkAllAsRead }: Notificati
       <Card>
         <CardContent className="py-12 text-center">
           <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">{t('notifications.errorLoading')}</h3>
+          <h3 className="text-base sm:text-lg font-semibold mb-2">
+            {t('notifications.errorLoading')}
+          </h3>
           <Button onClick={() => refetch()} variant="outline" className="mt-4">
             {t('common.tryAgain')}
           </Button>
@@ -382,17 +384,21 @@ export function NotificationsTable({ onMarkAsRead, onMarkAllAsRead }: Notificati
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold">{t('notifications.pageTitle')}</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight wrap-break-word">
+              {t('notifications.pageTitle')}
+            </h1>
             {unreadCount > 0 && (
-              <Badge variant="default">
+              <Badge variant="default" className="shrink-0">
                 {unreadCount} {t('notifications.unread')}
               </Badge>
             )}
           </div>
-          <p className="text-muted-foreground mt-2">{t('notifications.pageSubtitle')}</p>
+          <p className="text-sm sm:text-base text-muted-foreground mt-2 leading-relaxed">
+            {t('notifications.pageSubtitle')}
+          </p>
         </div>
         {unreadCount > 0 && (
           <Button
@@ -422,7 +428,13 @@ export function NotificationsTable({ onMarkAsRead, onMarkAllAsRead }: Notificati
             </div>
 
             {/* Type filter */}
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <Select
+              value={typeFilter}
+              onValueChange={(value) => {
+                setTypeFilter(value);
+                setPage(1); // Reset to first page on filter change
+              }}
+            >
               <SelectTrigger className="w-full sm:w-[220px]">
                 <SelectValue placeholder={t('notifications.table.filterType')} />
               </SelectTrigger>
@@ -452,7 +464,13 @@ export function NotificationsTable({ onMarkAsRead, onMarkAllAsRead }: Notificati
             </Select>
 
             {/* Status filter */}
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => {
+                setStatusFilter(value);
+                setPage(1); // Reset to first page on filter change
+              }}
+            >
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder={t('notifications.table.filterStatus')} />
               </SelectTrigger>
@@ -483,7 +501,7 @@ export function NotificationsTable({ onMarkAsRead, onMarkAllAsRead }: Notificati
             </div>
           ) : (
             <>
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     {table.getHeaderGroups().map((headerGroup) => (

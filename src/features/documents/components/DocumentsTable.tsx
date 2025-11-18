@@ -5,6 +5,7 @@ import { useAuthStore } from '@/features/auth/store';
 import { useDocuments } from '../api';
 import type { Document } from '../types';
 import { DocumentStatus } from '../types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -114,16 +115,40 @@ export function DocumentsTable() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [groupBy, setGroupBy] = useState<'client' | 'case'>('client');
+  const [casePage, setCasePage] = useState(1);
   const [selectedClient, setSelectedClient] = useState<ClientDocumentsGroup | null>(null);
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
 
   const itemsPerPage = 10;
 
-  const { data, isLoading, error } = useDocuments({});
+  // Client grouping uses full dataset (existing behavior)
+  const {
+    data: clientData,
+    isLoading: isLoadingClient,
+    error: errorClient,
+  } = useDocuments(
+    {},
+    {
+      enabled: groupBy === 'client',
+    }
+  );
+
+  // Case grouping uses server-side pagination (incremental enhancement)
+  const {
+    data: caseData,
+    isLoading: isLoadingCase,
+    error: errorCase,
+  } = useDocuments(
+    { page: casePage, limit: itemsPerPage },
+    {
+      enabled: groupBy === 'case',
+    }
+  );
 
   // Group documents by client
   const clientGroups = useMemo(() => {
-    const documents: Document[] = data?.documents || [];
+    const documents: Document[] = clientData?.documents || [];
     const groups = new Map<string, ClientDocumentsGroup>();
 
     documents.forEach((doc) => {
@@ -165,7 +190,7 @@ export function DocumentsTable() {
       const bLatest = b.documents[0]?.uploadDate || '';
       return new Date(bLatest).getTime() - new Date(aLatest).getTime();
     });
-  }, [data?.documents]);
+  }, [clientData?.documents]);
 
   // Filter and search
   const filteredGroups = useMemo(() => {
@@ -297,9 +322,13 @@ export function DocumentsTable() {
 
   const isClient = user?.role === 'CLIENT';
 
-  if (isLoading) return <DocumentsTableSkeleton />;
+  // Loading states per mode
+  if ((groupBy === 'client' && isLoadingClient) || (groupBy === 'case' && isLoadingCase)) {
+    return <DocumentsTableSkeleton />;
+  }
 
-  if (error) {
+  // Error states per mode
+  if ((groupBy === 'client' && errorClient) || (groupBy === 'case' && errorCase)) {
     return (
       <div className="text-center py-12">
         <p className="text-red-600">{t('documents.errorLoadingShort')}</p>
@@ -310,9 +339,11 @@ export function DocumentsTable() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">{t('documents.title')}</h1>
-        <p className="text-muted-foreground mt-2">
+      <div className="min-w-0 flex-1">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight wrap-break-word">
+          {t('documents.title')}
+        </h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-2 leading-relaxed">
           {isClient
             ? t('documents.manageDocuments')
             : user?.role === 'ADMIN'
@@ -321,150 +352,187 @@ export function DocumentsTable() {
         </p>
       </div>
 
-      {/* Filters */}
+      {/* Grouping + Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t('documents.searchByClient')}
-                className="pl-10"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <Tabs
+                value={groupBy}
+                onValueChange={(v) => {
+                  // Prevent any default behavior and update filter client-side
+                  const next = (v as 'client' | 'case') || 'client';
+                  setGroupBy(next);
+                  setCurrentPage(1); // Reset pagination when switching views
+                  setCasePage(1);
                 }}
-              />
+                className="w-full sm:w-auto"
+              >
+                <TabsList>
+                  <TabsTrigger value="client" type="button" className="text-xs sm:text-sm">
+                    {t('documents.groupByClient')}
+                  </TabsTrigger>
+                  <TabsTrigger value="case" type="button" className="text-xs sm:text-sm">
+                    {t('documents.groupByCase')}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
-            <Select
-              value={statusFilter}
-              onValueChange={(value) => {
-                setStatusFilter(value);
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('documents.allStatus')}</SelectItem>
-                <SelectItem value={DocumentStatus.PENDING}>{t('documents.pending')}</SelectItem>
-                <SelectItem value={DocumentStatus.APPROVED}>{t('documents.approved')}</SelectItem>
-                <SelectItem value={DocumentStatus.REJECTED}>{t('documents.rejected')}</SelectItem>
-              </SelectContent>
-            </Select>
+
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={
+                    groupBy === 'client'
+                      ? t('documents.searchByClient')
+                      : t('documents.searchByCaseOrClient')
+                  }
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                    setCasePage(1);
+                  }}
+                />
+              </div>
+              <Select
+                value={statusFilter}
+                onValueChange={(value) => {
+                  // Client-side filtering - no page reload
+                  setStatusFilter(value);
+                  setCurrentPage(1);
+                  setCasePage(1);
+                }}
+              >
+                <SelectTrigger className="w-full md:w-[200px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('documents.allStatus')}</SelectItem>
+                  <SelectItem value={DocumentStatus.PENDING}>{t('documents.pending')}</SelectItem>
+                  <SelectItem value={DocumentStatus.APPROVED}>{t('documents.approved')}</SelectItem>
+                  <SelectItem value={DocumentStatus.REJECTED}>{t('documents.rejected')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Table */}
-      {filteredGroups.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4 opacity-50" />
-            <h3 className="text-lg font-semibold mb-2">{t('documents.noDocumentsFound')}</h3>
-            <p className="text-sm text-muted-foreground">
-              {searchQuery || statusFilter !== 'all'
-                ? t('documents.adjustFilters')
-                : t('documents.noDocumentsUploaded')}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('documents.client')}</TableHead>
-                  <TableHead>{t('documents.totalDocuments')}</TableHead>
-                  <TableHead>{t('documents.pendingReview')}</TableHead>
-                  <TableHead>{t('documents.latestUpload')}</TableHead>
-                  <TableHead className="text-right">{t('documents.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedGroups.map((group) => {
-                  const latestDoc = group.documents[0];
-                  return (
-                    <TableRow key={group.clientId}>
-                      <TableCell>
-                        <button
-                          onClick={() => openClientDocuments(group)}
-                          className="flex items-center gap-2 hover:underline text-left"
-                        >
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{group.clientName}</span>
-                        </button>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">
-                          {t('documents.documentsUploaded', {
-                            count: group.documentCount,
-                            type:
-                              group.documentCount === 1
-                                ? t('documents.document')
-                                : t('documents.documents_plural'),
-                          })}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {group.pendingCount > 0 ? (
-                          <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
-                            {t('documents.pendingCount', { count: group.pendingCount })}
-                          </Badge>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">
-                            {t('documents.none')}
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {latestDoc ? new Date(latestDoc.uploadDate).toLocaleDateString() : 'N/A'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Tooltip>
-                          <DropdownMenu>
-                            <TooltipTrigger asChild>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                            </TooltipTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openClientDocuments(group)}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                {t('documents.viewDocuments')}
-                              </DropdownMenuItem>
-                              {/* Link to most recent case */}
-                              {group.documents[0]?.case && (
-                                <DropdownMenuItem asChild>
-                                  <Link href={`/dashboard/cases/${group.documents[0].caseId}`}>
-                                    <Briefcase className="mr-2 h-4 w-4" />
-                                    {t('documents.viewLatestCase')}
-                                  </Link>
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                          <TooltipContent>
-                            <p>View Client Documents & Case</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TableCell>
+      {/* Client grouping table (existing behavior with client-side pagination) */}
+      {groupBy === 'client' &&
+        (filteredGroups.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4 opacity-50" />
+              <h3 className="text-lg font-semibold mb-2">{t('documents.noDocumentsFound')}</h3>
+              <p className="text-sm text-muted-foreground">
+                {searchQuery || statusFilter !== 'all'
+                  ? t('documents.adjustFilters')
+                  : t('documents.noDocumentsUploaded')}
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="p-0">
+              <div className="rounded-md border-0 overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('documents.client')}</TableHead>
+                      <TableHead>{t('documents.totalDocuments')}</TableHead>
+                      <TableHead>{t('documents.pendingReview')}</TableHead>
+                      <TableHead>{t('documents.latestUpload')}</TableHead>
+                      <TableHead className="text-right">{t('documents.actions')}</TableHead>
                     </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedGroups.map((group) => {
+                      const latestDoc = group.documents[0];
+                      return (
+                        <TableRow key={group.clientId}>
+                          <TableCell>
+                            <button
+                              onClick={() => openClientDocuments(group)}
+                              className="flex items-center gap-2 hover:underline text-left"
+                            >
+                              <User className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium">{group.clientName}</span>
+                            </button>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">
+                              {t('documents.documentsUploaded', {
+                                count: group.documentCount,
+                                type:
+                                  group.documentCount === 1
+                                    ? t('documents.document')
+                                    : t('documents.documents_plural'),
+                              })}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {group.pendingCount > 0 ? (
+                              <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
+                                {t('documents.pendingCount', { count: group.pendingCount })}
+                              </Badge>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">
+                                {t('documents.none')}
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {latestDoc
+                              ? new Date(latestDoc.uploadDate).toLocaleDateString()
+                              : t('documents.nA')}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Tooltip>
+                              <DropdownMenu>
+                                <TooltipTrigger asChild>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                </TooltipTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => openClientDocuments(group)}>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    {t('documents.viewDocuments')}
+                                  </DropdownMenuItem>
+                                  {/* Link to most recent case */}
+                                  {group.documents[0]?.case && (
+                                    <DropdownMenuItem asChild>
+                                      <Link href={`/dashboard/cases/${group.documents[0].caseId}`}>
+                                        <Briefcase className="mr-2 h-4 w-4" />
+                                        {t('documents.viewLatestCase')}
+                                      </Link>
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                              <TooltipContent>
+                                <p>{t('documents.viewClientDocumentsCase')}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
+      {/* Client grouping pagination */}
+      {groupBy === 'client' && totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
             {t('documents.showing', {
@@ -499,9 +567,176 @@ export function DocumentsTable() {
         </div>
       )}
 
+      {/* Case grouping table with server-side pagination */}
+      {groupBy === 'case' && (
+        <Card>
+          <CardContent className="p-0">
+            {(() => {
+              const allDocs: Document[] = (caseData?.documents || []).filter((doc) => {
+                // Apply simple client-side filters for status and query (kept minimal)
+                const statusOk = statusFilter === 'all' || doc.status === statusFilter;
+                if (!searchQuery) return statusOk;
+                const q = searchQuery.toLowerCase();
+                const clientName =
+                  `${doc.uploadedBy?.firstName || ''} ${doc.uploadedBy?.lastName || ''}`.toLowerCase();
+                const caseRef = doc.case?.referenceNumber?.toLowerCase() || '';
+                const fileName = (doc.originalName || '').toLowerCase();
+                return (
+                  statusOk &&
+                  (clientName.includes(q) || caseRef.includes(q) || fileName.includes(q))
+                );
+              });
+              const pagination = (caseData as any)?.pagination;
+              const total = pagination?.total || allDocs.length;
+              const totalPagesServer = pagination?.totalPages || Math.ceil(total / itemsPerPage);
+
+              return (
+                <>
+                  <div className="rounded-md border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t('documents.document')}</TableHead>
+                          <TableHead>{t('documents.client')}</TableHead>
+                          <TableHead>{t('documents.caseRef')}</TableHead>
+                          <TableHead>{t('documents.status')}</TableHead>
+                          <TableHead>{t('documents.uploaded')}</TableHead>
+                          <TableHead className="text-right">{t('documents.actions')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {allDocs.length === 0 ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={6}
+                              className="text-center py-8 text-muted-foreground"
+                            >
+                              {t('documents.noDocumentsFound')}
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          allDocs.map((doc) => {
+                            const StatusIcon = statusConfig[doc.status]?.icon || Clock;
+                            const clientName =
+                              `${doc.uploadedBy?.firstName || ''} ${doc.uploadedBy?.lastName || ''}`.trim();
+                            return (
+                              <TableRow key={doc.id}>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <FileText className="h-4 w-4 text-muted-foreground" />
+                                    <span className="font-medium truncate">{doc.originalName}</span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    {docTypeLabels[doc.documentType]} •{' '}
+                                    {formatFileSize(doc.fileSize)}
+                                  </p>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <User className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm">
+                                      {clientName || t('documents.unknownClient')}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  {doc.case ? (
+                                    <div className="flex items-center gap-2">
+                                      <Briefcase className="h-4 w-4 text-muted-foreground" />
+                                      <span className="text-sm font-medium">
+                                        {doc.case.referenceNumber}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground">—</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    className={cn(
+                                      'flex items-center gap-1',
+                                      statusConfig[doc.status]?.className
+                                    )}
+                                  >
+                                    <StatusIcon className="h-3 w-3" />
+                                    {statusConfig[doc.status]?.label}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-sm text-muted-foreground">
+                                  {new Date(doc.uploadDate).toLocaleDateString()}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleView(doc)}
+                                    >
+                                      <Eye className="h-4 w-4 mr-1" />
+                                      {t('documents.view')}
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleDownload(doc)}
+                                    >
+                                      <Download className="h-4 w-4 mr-1" />
+                                      {t('documents.download')}
+                                    </Button>
+                                    {doc.case && (
+                                      <Button variant="default" size="sm" asChild>
+                                        <Link href={`/dashboard/cases/${doc.caseId}`}>
+                                          <Briefcase className="h-4 w-4 mr-1" />
+                                          {t('documents.viewCase')}
+                                        </Link>
+                                      </Button>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Server-side pagination */}
+                  {totalPagesServer > 1 && (
+                    <div className="flex items-center justify-between px-2 py-4">
+                      <div className="text-sm text-muted-foreground">
+                        {t('documents.page', { current: casePage, total: totalPagesServer })}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCasePage((p) => Math.max(1, p - 1))}
+                          disabled={casePage === 1}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCasePage((p) => p + 1)}
+                          disabled={casePage >= totalPagesServer}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Client Documents Dialog */}
       <Dialog open={clientDialogOpen} onOpenChange={setClientDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />

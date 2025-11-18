@@ -34,17 +34,19 @@ export const StatCardPlaceholder = memo(function StatCardPlaceholder({
   loadingText = 'Loading...',
 }: StatCardPlaceholderProps) {
   return (
-    <Card className={className}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <h3 className="text-sm font-medium">{title}</h3>
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold text-muted-foreground/50 animate-pulse">--</div>
-        <p className="text-xs text-muted-foreground" suppressHydrationWarning>
+    <Card className={cn('p-3 sm:p-4', className)}>
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</span>
+        <Icon className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
+      </div>
+      <div className="flex items-baseline gap-2">
+        <span className="text-xl sm:text-2xl font-bold text-muted-foreground/50 animate-pulse">
+          --
+        </span>
+        <span className="text-xs text-muted-foreground truncate" suppressHydrationWarning>
           {loadingText}
-        </p>
-      </CardContent>
+        </span>
+      </div>
     </Card>
   );
 });

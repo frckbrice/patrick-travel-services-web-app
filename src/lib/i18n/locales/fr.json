@@ -902,7 +902,12 @@
       "error_network": "Erreur de réseau. Veuillez vérifier votre connexion Internet.",
       "cannotFind": "Vous ne trouvez pas ce que vous cherchez?",
       "supportTeam": "Notre équipe d'assistance est là pour vous aider",
-      "contactSupport": "Contacter le Support"
+      "contactSupport": "Contacter le Support",
+      "validation": {
+        "nameMin": "Le nom doit contenir au moins 2 caractères",
+        "emailInvalid": "Adresse e-mail invalide",
+        "messageMin": "Le message doit contenir au moins 10 caractères"
+      }
     },
     "footer": {
       "description": "Services d'immigration professionnels aidant les individus et les familles à réaliser leurs rêves mondiaux.",

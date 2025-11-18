@@ -251,3 +251,74 @@ export async function sendAppointmentScheduledEmail(options: {
     html: template.html,
   });
 }
+
+export async function sendPasswordResetEmail(to: string, resetLink: string, userName?: string) {
+  const displayName = userName || 'User';
+
+  await sendEmail({
+    to,
+    subject: 'Reset Your Password - Patrick Travel Services',
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
+          .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+          .header { background: linear-gradient(to right, #2563eb 0%, #0891b2 100%); color: white; padding: 30px 20px; text-align: center; }
+          .header h2 { margin: 0; font-size: 24px; color: white; }
+          .content { padding: 30px; }
+          .button-container { text-align: center; margin: 30px 0; }
+          .button { display: inline-block; padding: 14px 32px; background: linear-gradient(to right, #2563eb 0%, #0891b2 100%); color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }
+          .button:hover { opacity: 0.9; }
+          .info-box { background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 15px; margin: 20px 0; border-radius: 4px; }
+          .warning-box { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px; font-size: 14px; }
+          .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #6c757d; border-top: 1px solid #e5e7eb; }
+          .link-fallback { word-break: break-all; color: #2563eb; font-size: 12px; margin-top: 10px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2>🔐 Reset Your Password</h2>
+          </div>
+          <div class="content">
+            <p>Dear ${escapeHtml(displayName)},</p>
+            <p>We received a request to reset your password for your Patrick Travel Services account.</p>
+            
+            <div class="button-container">
+              <a href="${escapeHtml(resetLink)}" class="button">Reset Password</a>
+            </div>
+            
+            <div class="info-box">
+              <p style="margin: 0;"><strong>📋 Can't click the button?</strong></p>
+              <p style="margin: 5px 0 0 0;">Copy and paste this link into your browser:</p>
+              <p class="link-fallback">${escapeHtml(resetLink)}</p>
+            </div>
+            
+            <div class="warning-box">
+              <p style="margin: 0;"><strong>⚠️ Security Notice:</strong></p>
+              <ul style="margin: 10px 0 0 20px; padding: 0;">
+                <li>This link will expire in 1 hour for security reasons</li>
+                <li>If you didn't request this password reset, please ignore this email</li>
+                <li>Your password will remain unchanged until you click the link above</li>
+              </ul>
+            </div>
+            
+            <p style="margin-top: 30px;">If you continue to have problems, please contact our support team.</p>
+            
+            <p style="margin-top: 20px;">Best regards,<br><strong>Patrick Travel Services</strong><br>Immigration & Travel Document Services</p>
+          </div>
+          <div class="footer">
+            <p><strong>Patrick Travel Services</strong></p>
+            <p>This is an automated email. Please do not reply to this message.</p>
+            <p style="margin-top: 10px; font-size: 11px;">If you didn't request a password reset, you can safely ignore this email.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  });
+}

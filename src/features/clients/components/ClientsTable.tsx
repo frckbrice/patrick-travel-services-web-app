@@ -27,6 +27,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 import { getInitials } from '@/lib/utils/helpers';
+import { useTranslation } from 'react-i18next';
 
 export interface ClientWithCases {
   id: string;
@@ -59,6 +60,7 @@ export function ClientsTable({
   searchQuery,
   onSearchChange,
 }: ClientsTableProps) {
+  const { t } = useTranslation();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
@@ -67,7 +69,7 @@ export function ClientsTable({
     () => [
       {
         accessorKey: 'client',
-        header: 'Client',
+        header: t('clients.client'),
         cell: ({ row }) => {
           const client = row.original;
           return (
@@ -77,13 +79,13 @@ export function ClientsTable({
                   {getInitials(`${client.firstName} ${client.lastName}`)}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex flex-col">
-                <span className="font-medium">
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm sm:text-base font-medium truncate">
                   {client.firstName} {client.lastName}
                 </span>
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Mail className="h-3 w-3" />
-                  {client.email}
+                <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1 truncate">
+                  <Mail className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{client.email}</span>
                 </span>
               </div>
             </div>
@@ -92,26 +94,26 @@ export function ClientsTable({
       },
       {
         accessorKey: 'phone',
-        header: 'Phone',
+        header: t('clients.phone'),
         cell: ({ row }) => {
           const phone = row.original.phone;
           if (!phone) return <span className="text-muted-foreground text-sm">—</span>;
           return (
-            <span className="text-sm flex items-center gap-1">
-              <Phone className="h-3 w-3 text-muted-foreground" />
-              {phone}
+            <span className="text-xs sm:text-sm flex items-center gap-1">
+              <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
+              <span className="truncate">{phone}</span>
             </span>
           );
         },
       },
       {
         accessorKey: 'isActive',
-        header: 'Status',
+        header: t('clients.status'),
         cell: ({ row }) => {
           const isActive = row.original.isActive;
           return (
             <Badge variant={isActive ? 'default' : 'secondary'}>
-              {isActive ? 'Active' : 'Inactive'}
+              {isActive ? t('clients.active') : t('clients.inactive')}
             </Badge>
           );
         },
@@ -129,7 +131,7 @@ export function ClientsTable({
               className="h-8 data-[state=open]:bg-accent"
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
-              Total Cases
+              {t('clients.totalCases')}
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
@@ -149,7 +151,7 @@ export function ClientsTable({
               className="h-8 data-[state=open]:bg-accent"
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
-              Active Cases
+              {t('clients.activeCases')}
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
@@ -173,32 +175,36 @@ export function ClientsTable({
               className="h-8 data-[state=open]:bg-accent"
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
-              Joined Date
+              {t('clients.joinedDate')}
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
         },
         cell: ({ row }) => {
           const date = new Date(row.original.createdAt);
-          return <span className="text-sm text-muted-foreground">{date.toLocaleDateString()}</span>;
+          return (
+            <span className="text-xs sm:text-sm text-muted-foreground">
+              {date.toLocaleDateString()}
+            </span>
+          );
         },
       },
       {
         id: 'actions',
-        header: 'Actions',
+        header: t('clients.actions'),
         cell: ({ row }) => {
           return (
             <Button asChild variant="outline" size="sm">
               <Link href={`/dashboard/clients/${row.original.id}`}>
                 <Eye className="h-4 w-4 mr-1" />
-                View
+                {t('clients.view')}
               </Link>
             </Button>
           );
         },
       },
     ],
-    []
+    [t]
   );
 
   // Table instance
@@ -227,14 +233,14 @@ export function ClientsTable({
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <Input
-                placeholder="Search by name or email..."
+                placeholder={t('clients.searchByNameOrEmail')}
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
                 className="max-w-sm"
               />
             </div>
-            <div className="text-sm text-muted-foreground flex items-center">
-              Showing {data.length} of {totalItems} clients
+            <div className="text-sm sm:text-base text-muted-foreground flex items-center">
+              {t('clients.showing', { count: data.length, total: totalItems })}
             </div>
           </div>
         </CardContent>
@@ -272,7 +278,7 @@ export function ClientsTable({
                 ) : (
                   <TableRow>
                     <TableCell colSpan={columns.length} className="h-24 text-center">
-                      No clients found.
+                      {t('clients.noClientsFoundTable')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -288,7 +294,7 @@ export function ClientsTable({
           <CardContent className="py-4">
             <div className="flex items-center justify-between gap-4">
               <div className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
+                {t('clients.page', { current: currentPage, total: totalPages })}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -298,7 +304,7 @@ export function ClientsTable({
                   disabled={currentPage === 1}
                 >
                   <ChevronLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline ml-1">Previous</span>
+                  <span className="hidden sm:inline ml-1">{t('clients.previous')}</span>
                 </Button>
 
                 {/* Page numbers */}
@@ -330,7 +336,7 @@ export function ClientsTable({
                   onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
                 >
-                  <span className="hidden sm:inline mr-1">Next</span>
+                  <span className="hidden sm:inline mr-1">{t('clients.next')}</span>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>

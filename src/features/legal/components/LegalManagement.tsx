@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/features/auth/store';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ import {
 type LegalTab = 'TERMS' | 'PRIVACY';
 
 export function LegalManagement() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<LegalTab>('TERMS');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -66,8 +68,8 @@ export function LegalManagement() {
       <Card>
         <CardContent className="py-12 text-center">
           <HelpCircle className="mx-auto h-12 w-12 text-destructive mb-4 opacity-50" />
-          <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
-          <p className="text-muted-foreground">Only administrators can manage legal documents</p>
+          <h3 className="text-lg font-semibold mb-2">{t('legal.management.accessDenied')}</h3>
+          <p className="text-muted-foreground">{t('legal.management.onlyAdministrators')}</p>
         </CardContent>
       </Card>
     );
@@ -79,8 +81,8 @@ export function LegalManagement() {
       <Card>
         <CardContent className="py-12 text-center">
           <HelpCircle className="mx-auto h-12 w-12 text-destructive mb-4 opacity-50" />
-          <h3 className="text-lg font-semibold mb-2">Failed to load documents</h3>
-          <p className="text-muted-foreground">Please try refreshing the page</p>
+          <h3 className="text-lg font-semibold mb-2">{t('legal.management.failedToLoad')}</h3>
+          <p className="text-muted-foreground">{t('legal.management.tryRefreshing')}</p>
         </CardContent>
       </Card>
     );
@@ -171,31 +173,35 @@ export function LegalManagement() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Legal Management</h1>
-          <p className="text-muted-foreground mt-2">Create and manage Terms & Privacy content</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('legal.management.title')}</h1>
+          <p className="text-muted-foreground mt-2">{t('legal.management.description')}</p>
         </div>
         <Button onClick={() => setIsCreateDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Document
+          {t('legal.management.addDocument')}
         </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as LegalTab)}>
         <TabsList>
           <TabsTrigger value="TERMS">
-            <FileText className="h-4 w-4 mr-2" /> Terms
+            <FileText className="h-4 w-4 mr-2" /> {t('legal.management.terms')}
           </TabsTrigger>
           <TabsTrigger value="PRIVACY">
-            <Shield className="h-4 w-4 mr-2" /> Privacy
+            <Shield className="h-4 w-4 mr-2" /> {t('legal.management.privacy')}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab}>
           <Card>
             <CardHeader className="pb-3">
-              <CardDescription>Documents ({documents.length})</CardDescription>
+              <CardDescription>
+                {t('legal.management.documents')} ({documents.length})
+              </CardDescription>
               <CardTitle className="text-3xl">
-                {activeTab === 'TERMS' ? 'Terms' : 'Privacy'} Documents
+                {activeTab === 'TERMS'
+                  ? t('legal.management.termsDocuments')
+                  : t('legal.management.privacyDocuments')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -203,14 +209,16 @@ export function LegalManagement() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left border-b">
-                      <th className="py-2 pr-4">Title</th>
-                      <th className="py-2 pr-4">Language</th>
-                      <th className="py-2 pr-4">Slug</th>
-                      <th className="py-2 pr-4">Version</th>
-                      <th className="py-2 pr-4">Active</th>
-                      <th className="py-2 pr-4">Published</th>
-                      <th className="py-2 pr-4">Updated</th>
-                      <th className="py-2 pr-4 text-right">Actions</th>
+                      <th className="py-2 pr-4">{t('legal.management.table.title')}</th>
+                      <th className="py-2 pr-4">{t('legal.management.table.language')}</th>
+                      <th className="py-2 pr-4">{t('legal.management.table.slug')}</th>
+                      <th className="py-2 pr-4">{t('legal.management.table.version')}</th>
+                      <th className="py-2 pr-4">{t('legal.management.table.active')}</th>
+                      <th className="py-2 pr-4">{t('legal.management.table.published')}</th>
+                      <th className="py-2 pr-4">{t('legal.management.table.updated')}</th>
+                      <th className="py-2 pr-4 text-right">
+                        {t('legal.management.table.actions')}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -224,21 +232,23 @@ export function LegalManagement() {
                         </td>
                         <td className="py-2 pr-4">{doc.slug}</td>
                         <td className="py-2 pr-4">{doc.version || '-'}</td>
-                        <td className="py-2 pr-4">{doc.isActive ? 'Yes' : 'No'}</td>
+                        <td className="py-2 pr-4">
+                          {doc.isActive ? t('legal.management.yes') : t('legal.management.no')}
+                        </td>
                         <td className="py-2 pr-4">
                           {doc.publishedAt ? new Date(doc.publishedAt).toLocaleDateString() : '-'}
                         </td>
                         <td className="py-2 pr-4">{new Date(doc.updatedAt).toLocaleString()}</td>
                         <td className="py-2 pr-0 text-right space-x-2">
                           <Button variant="outline" size="sm" onClick={() => openEditDialog(doc)}>
-                            Edit
+                            {t('legal.management.edit')}
                           </Button>
                           <Button
                             variant="destructive"
                             size="sm"
                             onClick={() => openDeleteDialog(doc)}
                           >
-                            Delete
+                            {t('legal.management.delete')}
                           </Button>
                         </td>
                       </tr>
@@ -246,7 +256,7 @@ export function LegalManagement() {
                     {documents.length === 0 && (
                       <tr>
                         <td className="py-8 text-center text-muted-foreground" colSpan={8}>
-                          No documents yet. Click &quot;Add Document&quot; to create one.
+                          {t('legal.management.noDocuments')}
                         </td>
                       </tr>
                     )}
@@ -262,12 +272,12 @@ export function LegalManagement() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create Document</DialogTitle>
-            <DialogDescription>Add a new legal document</DialogDescription>
+            <DialogTitle>{t('legal.management.create.title')}</DialogTitle>
+            <DialogDescription>{t('legal.management.create.description')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="title">Title</Label>
+              <Label htmlFor="title">{t('legal.management.form.title')}</Label>
               <Input
                 id="title"
                 value={formData.title}
@@ -276,7 +286,7 @@ export function LegalManagement() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="language">Language</Label>
+                <Label htmlFor="language">{t('legal.management.form.language')}</Label>
                 <Select
                   value={formData.language}
                   onValueChange={(value) => setFormData({ ...formData, language: value })}
@@ -285,32 +295,32 @@ export function LegalManagement() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="en">English (en)</SelectItem>
-                    <SelectItem value="fr">Français (fr)</SelectItem>
+                    <SelectItem value="en">{t('legal.management.languages.en')}</SelectItem>
+                    <SelectItem value="fr">{t('legal.management.languages.fr')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="slug">Slug</Label>
+                <Label htmlFor="slug">{t('legal.management.form.slug')}</Label>
                 <Input
                   id="slug"
                   value={formData.slug}
                   onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  placeholder="e.g. terms-v1"
+                  placeholder={t('legal.management.form.slugPlaceholder')}
                 />
               </div>
             </div>
             <div>
-              <Label htmlFor="version">Version</Label>
+              <Label htmlFor="version">{t('legal.management.form.version')}</Label>
               <Input
                 id="version"
                 value={formData.version}
                 onChange={(e) => setFormData({ ...formData, version: e.target.value })}
-                placeholder="e.g. 1.0.0"
+                placeholder={t('legal.management.form.versionPlaceholder')}
               />
             </div>
             <div>
-              <Label htmlFor="content">Content</Label>
+              <Label htmlFor="content">{t('legal.management.form.content')}</Label>
               <Textarea
                 id="content"
                 rows={12}
@@ -320,7 +330,7 @@ export function LegalManagement() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center justify-between">
-                <Label htmlFor="isActive">Active</Label>
+                <Label htmlFor="isActive">{t('legal.management.form.active')}</Label>
                 <Switch
                   id="isActive"
                   checked={formData.isActive}
@@ -328,7 +338,7 @@ export function LegalManagement() {
                 />
               </div>
               <div>
-                <Label htmlFor="publishedAt">Published At (optional)</Label>
+                <Label htmlFor="publishedAt">{t('legal.management.form.publishedAt')}</Label>
                 <Input
                   id="publishedAt"
                   type="datetime-local"
@@ -340,7 +350,7 @@ export function LegalManagement() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-              Cancel
+              {t('legal.management.form.cancel')}
             </Button>
             <Button
               onClick={handleCreate}
@@ -352,7 +362,9 @@ export function LegalManagement() {
                 !formData.language
               }
             >
-              {createMutation.isPending ? 'Creating...' : 'Create'}
+              {createMutation.isPending
+                ? t('legal.management.create.creating')
+                : t('legal.management.create.button')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -362,12 +374,12 @@ export function LegalManagement() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Document</DialogTitle>
-            <DialogDescription>Update the document</DialogDescription>
+            <DialogTitle>{t('legal.management.edit.title')}</DialogTitle>
+            <DialogDescription>{t('legal.management.edit.description')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="edit-title">Title</Label>
+              <Label htmlFor="edit-title">{t('legal.management.form.title')}</Label>
               <Input
                 id="edit-title"
                 value={formData.title}
@@ -376,7 +388,7 @@ export function LegalManagement() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="edit-language">Language</Label>
+                <Label htmlFor="edit-language">{t('legal.management.form.language')}</Label>
                 <Select
                   value={formData.language}
                   onValueChange={(value) => setFormData({ ...formData, language: value })}
@@ -385,13 +397,13 @@ export function LegalManagement() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="en">English (en)</SelectItem>
-                    <SelectItem value="fr">Français (fr)</SelectItem>
+                    <SelectItem value="en">{t('legal.management.languages.en')}</SelectItem>
+                    <SelectItem value="fr">{t('legal.management.languages.fr')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="edit-slug">Slug</Label>
+                <Label htmlFor="edit-slug">{t('legal.management.form.slug')}</Label>
                 <Input
                   id="edit-slug"
                   value={formData.slug}
@@ -400,7 +412,7 @@ export function LegalManagement() {
               </div>
             </div>
             <div>
-              <Label htmlFor="edit-version">Version</Label>
+              <Label htmlFor="edit-version">{t('legal.management.form.version')}</Label>
               <Input
                 id="edit-version"
                 value={formData.version}
@@ -408,7 +420,7 @@ export function LegalManagement() {
               />
             </div>
             <div>
-              <Label htmlFor="edit-content">Content</Label>
+              <Label htmlFor="edit-content">{t('legal.management.form.content')}</Label>
               <Textarea
                 id="edit-content"
                 rows={12}
@@ -418,7 +430,7 @@ export function LegalManagement() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center justify-between">
-                <Label htmlFor="edit-isActive">Active</Label>
+                <Label htmlFor="edit-isActive">{t('legal.management.form.active')}</Label>
                 <Switch
                   id="edit-isActive"
                   checked={formData.isActive}
@@ -426,7 +438,7 @@ export function LegalManagement() {
                 />
               </div>
               <div>
-                <Label htmlFor="edit-publishedAt">Published At (optional)</Label>
+                <Label htmlFor="edit-publishedAt">{t('legal.management.form.publishedAt')}</Label>
                 <Input
                   id="edit-publishedAt"
                   type="datetime-local"
@@ -438,7 +450,7 @@ export function LegalManagement() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
+              {t('legal.management.form.cancel')}
             </Button>
             <Button
               onClick={handleEdit}
@@ -450,7 +462,9 @@ export function LegalManagement() {
                 !formData.language
               }
             >
-              {updateMutation.isPending ? 'Updating...' : 'Update'}
+              {updateMutation.isPending
+                ? t('legal.management.edit.updating')
+                : t('legal.management.edit.button')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -461,10 +475,10 @@ export function LegalManagement() {
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         onConfirm={handleDelete}
-        title="Delete Document"
-        description={`Are you sure you want to delete "${selectedDoc?.title}"? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('legal.management.delete.title')}
+        description={t('legal.management.delete.description', { title: selectedDoc?.title || '' })}
+        confirmText={t('legal.management.delete.button')}
+        cancelText={t('legal.management.form.cancel')}
         variant="destructive"
         isLoading={deleteMutation.isPending}
       />

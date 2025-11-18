@@ -171,7 +171,7 @@ export function DocumentCard({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>View Document</p>
+                  <p>{t('documents.viewDocument')}</p>
                 </TooltipContent>
               </Tooltip>
 
@@ -187,7 +187,7 @@ export function DocumentCard({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Download Document</p>
+                  <p>{t('documents.downloadDocument')}</p>
                 </TooltipContent>
               </Tooltip>
 
@@ -205,7 +205,7 @@ export function DocumentCard({
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Delete Document</p>
+                    <p>{t('documents.deleteDocument')}</p>
                   </TooltipContent>
                 </Tooltip>
               )}

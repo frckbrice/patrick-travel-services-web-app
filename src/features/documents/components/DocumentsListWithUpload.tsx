@@ -397,10 +397,12 @@ export function DocumentsList() {
         open={confirmDialogOpen}
         onOpenChange={setConfirmDialogOpen}
         onConfirm={handleConfirmDelete}
-        title="Delete Document"
-        description={`Are you sure you want to delete "${documentToDelete?.originalName}"? This action cannot be undone.`}
-        confirmText="Delete Document"
-        cancelText="Cancel"
+        title={t('documents.deleteDialog.title')}
+        description={t('documents.deleteDialog.description', {
+          name: documentToDelete?.originalName || '',
+        })}
+        confirmText={t('documents.deleteDialog.confirm')}
+        cancelText={t('common.cancel')}
         variant="destructive"
         isLoading={deleteDocument.isPending}
       />

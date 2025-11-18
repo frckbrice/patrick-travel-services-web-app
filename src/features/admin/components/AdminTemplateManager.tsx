@@ -196,7 +196,7 @@ export function AdminTemplateManager() {
         return old.map((template) => (template.id.startsWith('temp-') ? realTemplate : template));
       });
 
-      toast.success('Template created successfully');
+      toast.success(t('templates.admin.templateCreated'));
       handleReset();
       setUploadDialogOpen(false);
     },
@@ -205,7 +205,7 @@ export function AdminTemplateManager() {
       if (context?.previousTemplates) {
         queryClient.setQueryData(['admin-templates'], context.previousTemplates);
       }
-      toast.error(error.response?.data?.error || 'Failed to create template');
+      toast.error(error.response?.data?.error || t('templates.admin.failedToCreate'));
     },
   });
 
@@ -240,7 +240,7 @@ export function AdminTemplateManager() {
         )
       );
 
-      toast.success('Template updated successfully');
+      toast.success(t('templates.admin.templateUpdated'));
       handleReset();
       setEditDialogOpen(false);
       setEditingTemplate(null);
@@ -250,7 +250,7 @@ export function AdminTemplateManager() {
       if (context?.previousTemplates) {
         queryClient.setQueryData(['admin-templates'], context.previousTemplates);
       }
-      toast.error(error.response?.data?.error || 'Failed to update template');
+      toast.error(error.response?.data?.error || t('templates.admin.failedToUpdate'));
     },
   });
 
@@ -275,14 +275,14 @@ export function AdminTemplateManager() {
     onSuccess: () => {
       // Don't invalidate queries to preserve pagination state
       // The optimistic update already shows the correct state
-      toast.success('Template deleted');
+      toast.success(t('templates.admin.templateDeleted'));
     },
     onError: (error: any, id, context) => {
       // Revert optimistic update on error
       if (context?.previousTemplates) {
         queryClient.setQueryData(['admin-templates'], context.previousTemplates);
       }
-      toast.error('Failed to delete template');
+      toast.error(t('templates.admin.failedToDelete'));
     },
   });
 
@@ -307,7 +307,7 @@ export function AdminTemplateManager() {
     onSuccess: () => {
       // Don't invalidate queries to preserve pagination state
       // The optimistic update already shows the correct state
-      toast.success('Templates deleted successfully');
+      toast.success(t('templates.admin.templatesDeleted'));
       setRowSelection({});
     },
     onError: (error: any, ids, context) => {
@@ -315,7 +315,7 @@ export function AdminTemplateManager() {
       if (context?.previousTemplates) {
         queryClient.setQueryData(['admin-templates'], context.previousTemplates);
       }
-      toast.error('Failed to delete templates');
+      toast.error(t('templates.admin.failedToDeleteTemplates'));
     },
   });
 
@@ -340,14 +340,14 @@ export function AdminTemplateManager() {
     onSuccess: () => {
       // Don't invalidate queries to preserve pagination state
       // The optimistic update already shows the correct state
-      toast.success('Template status updated');
+      toast.success(t('templates.admin.templateStatusUpdated'));
     },
     onError: (error: any, variables, context) => {
       // Revert optimistic update on error
       if (context?.previousTemplates) {
         queryClient.setQueryData(['admin-templates'], context.previousTemplates);
       }
-      toast.error('Failed to update template status');
+      toast.error(t('templates.admin.failedToUpdateStatus'));
     },
   });
 
@@ -407,14 +407,14 @@ export function AdminTemplateManager() {
         return old.map((template) => (template.id.startsWith('temp-') ? realTemplate : template));
       });
 
-      toast.success('Template duplicated successfully');
+      toast.success(t('templates.admin.templateDuplicated'));
     },
     onError: (error: any, template, context) => {
       // Revert optimistic update on error
       if (context?.previousTemplates) {
         queryClient.setQueryData(['admin-templates'], context.previousTemplates);
       }
-      toast.error('Failed to duplicate template');
+      toast.error(t('templates.admin.failedToDuplicate'));
     },
   });
 
@@ -427,14 +427,14 @@ export function AdminTemplateManager() {
           <Checkbox
             checked={table.getIsAllPageRowsSelected()}
             onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Select all"
+            aria-label={t('templates.admin.selectAll')}
           />
         ),
         cell: ({ row }) => (
           <Checkbox
             checked={row.getIsSelected()}
             onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
+            aria-label={t('templates.admin.selectRow')}
           />
         ),
         enableSorting: false,
@@ -449,7 +449,7 @@ export function AdminTemplateManager() {
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
               className="h-8 px-2 lg:px-3"
             >
-              Name
+              {t('templates.admin.name')}
               {column.getIsSorted() === 'asc' ? (
                 <ArrowUp className="ml-2 h-4 w-4" />
               ) : column.getIsSorted() === 'desc' ? (
@@ -466,13 +466,13 @@ export function AdminTemplateManager() {
               {row.getValue('name')}
               {row.original.id.startsWith('temp-') && (
                 <Badge variant="outline" className="text-xs animate-pulse">
-                  Creating...
+                  {t('templates.admin.creating')}
                 </Badge>
               )}
             </div>
             {row.original.isRequired && (
               <Badge variant="destructive" className="mt-1 text-xs">
-                Required
+                {t('templates.required')}
               </Badge>
             )}
             {row.original.version && (
@@ -483,7 +483,7 @@ export function AdminTemplateManager() {
       },
       {
         accessorKey: 'serviceType',
-        header: 'Service Type',
+        header: t('templates.admin.serviceType'),
         cell: ({ row }) => {
           const serviceType = row.getValue('serviceType') as string;
           return serviceType ? (
@@ -491,7 +491,7 @@ export function AdminTemplateManager() {
               {serviceType.replace('_', ' ')}
             </Badge>
           ) : (
-            <span className="text-muted-foreground text-sm">General</span>
+            <span className="text-muted-foreground text-sm">{t('templates.admin.general')}</span>
           );
         },
         filterFn: (row, id, value) => {
@@ -501,7 +501,7 @@ export function AdminTemplateManager() {
       },
       {
         accessorKey: 'category',
-        header: 'Category',
+        header: t('templates.admin.category'),
         cell: ({ row }) => (
           <Badge variant="secondary" className="text-xs">
             {row.getValue('category')}
@@ -513,7 +513,7 @@ export function AdminTemplateManager() {
       },
       {
         accessorKey: 'fileName',
-        header: 'File',
+        header: t('templates.admin.file'),
         cell: ({ row }) => {
           const template = row.original;
           return (
@@ -535,7 +535,7 @@ export function AdminTemplateManager() {
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
               className="h-8 px-2 lg:px-3"
             >
-              Downloads
+              {t('templates.admin.downloads')}
               {column.getIsSorted() === 'asc' ? (
                 <ArrowUp className="ml-2 h-4 w-4" />
               ) : column.getIsSorted() === 'desc' ? (
@@ -556,7 +556,7 @@ export function AdminTemplateManager() {
       },
       {
         accessorKey: 'isActive',
-        header: 'Status',
+        header: t('templates.admin.status'),
         cell: ({ row }) => {
           const isActive = row.getValue('isActive') as boolean;
           const isUpdating =
@@ -569,7 +569,7 @@ export function AdminTemplateManager() {
                 variant={isActive ? 'default' : 'secondary'}
                 className={`text-xs ${isUpdating ? 'opacity-50' : ''}`}
               >
-                {isActive ? 'Active' : 'Inactive'}
+                {isActive ? t('templates.admin.active') : t('templates.admin.inactive')}
               </Badge>
               <Button
                 variant="ghost"
@@ -608,7 +608,7 @@ export function AdminTemplateManager() {
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
               className="h-8 px-2 lg:px-3"
             >
-              Created
+              {t('templates.admin.created')}
               {column.getIsSorted() === 'asc' ? (
                 <ArrowUp className="ml-2 h-4 w-4" />
               ) : column.getIsSorted() === 'desc' ? (
@@ -650,7 +650,7 @@ export function AdminTemplateManager() {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Edit Template</p>
+                  <p>{t('templates.admin.editTemplateTooltip')}</p>
                 </TooltipContent>
               </Tooltip>
 
@@ -672,7 +672,7 @@ export function AdminTemplateManager() {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Duplicate Template</p>
+                  <p>{t('templates.admin.duplicateTemplateTooltip')}</p>
                 </TooltipContent>
               </Tooltip>
 
@@ -692,7 +692,7 @@ export function AdminTemplateManager() {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Download Template</p>
+                  <p>{t('templates.admin.downloadTemplateTooltip')}</p>
                 </TooltipContent>
               </Tooltip>
 
@@ -712,7 +712,7 @@ export function AdminTemplateManager() {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>View Template</p>
+                  <p>{t('templates.admin.viewTemplateTooltip')}</p>
                 </TooltipContent>
               </Tooltip>
 
@@ -734,7 +734,7 @@ export function AdminTemplateManager() {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Delete Template</p>
+                  <p>{t('templates.admin.deleteTemplateTooltip')}</p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -800,7 +800,7 @@ export function AdminTemplateManager() {
 
     // Validate file size (max 16MB)
     if (file.size > 16 * 1024 * 1024) {
-      toast.error('File size must be less than 16MB');
+      toast.error(t('templates.admin.fileSizeMustBeLessThan'));
       return;
     }
 
@@ -836,11 +836,11 @@ export function AdminTemplateManager() {
           size: uploaded[0].size,
           type: uploaded[0].type,
         });
-        toast.success('File uploaded successfully');
+        toast.success(t('templates.admin.fileUploadedSuccessfully'));
       }
     } catch (error) {
       logger.error('File upload error', error);
-      toast.error('Failed to upload file');
+      toast.error(t('templates.admin.failedToUploadFile'));
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -869,7 +869,7 @@ export function AdminTemplateManager() {
 
   const handleSubmit = async () => {
     if (!name || !category) {
-      toast.error('Please fill all required fields');
+      toast.error(t('templates.admin.pleaseFillAllRequiredFields'));
       return;
     }
 
@@ -904,7 +904,7 @@ export function AdminTemplateManager() {
       } else {
         // Create new template
         if (!uploadedFile) {
-          toast.error('Please upload a file');
+          toast.error(t('templates.admin.pleaseUploadAFile'));
           return;
         }
         await createTemplate.mutateAsync({
@@ -951,10 +951,8 @@ export function AdminTemplateManager() {
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold">Template Management</h1>
-            <p className="text-muted-foreground mt-2">
-              Manage downloadable forms and guides for clients
-            </p>
+            <h1 className="text-3xl font-bold">{t('templates.admin.title')}</h1>
+            <p className="text-muted-foreground mt-2">{t('templates.admin.description')}</p>
           </div>
           <div className="flex gap-2">
             <Button
@@ -963,11 +961,11 @@ export function AdminTemplateManager() {
               disabled={isLoading}
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
+              {t('common.retry')}
             </Button>
             <Button onClick={() => setUploadDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Template
+              {t('templates.admin.uploadTemplate')}
             </Button>
           </div>
         </div>
@@ -988,7 +986,7 @@ export function AdminTemplateManager() {
                       disabled={bulkDeleteTemplates.isPending}
                     >
                       <Trash className="h-4 w-4 mr-1" />
-                      Delete Selected
+                      {t('templates.admin.deleteSelected')}
                     </Button>
                   </div>
                 )}
@@ -999,7 +997,7 @@ export function AdminTemplateManager() {
                 <div className="relative">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search templates..."
+                    placeholder={t('templates.admin.searchPlaceholder')}
                     value={globalFilter ?? ''}
                     onChange={(event) => setGlobalFilter(String(event.target.value))}
                     className="pl-8 w-full sm:w-[300px]"
@@ -1039,13 +1037,13 @@ export function AdminTemplateManager() {
             {templates.length === 0 ? (
               <div className="text-center py-12">
                 <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Templates Yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Get started by uploading your first template
-                </p>
+                <h3 className="text-lg font-semibold mb-2">
+                  {t('templates.admin.noTemplatesYet')}
+                </h3>
+                <p className="text-muted-foreground mb-4">{t('templates.admin.noTemplatesYet')}</p>
                 <Button onClick={() => setUploadDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Upload First Template
+                  {t('templates.admin.uploadTemplate')}
                 </Button>
               </div>
             ) : (
@@ -1094,7 +1092,7 @@ export function AdminTemplateManager() {
                 <div className="flex items-center justify-between px-2">
                   <div className="flex items-center space-x-6 lg:space-x-8">
                     <div className="flex items-center space-x-2">
-                      <p className="text-sm font-medium">Rows per page</p>
+                      <p className="text-sm font-medium">{t('templates.admin.rowsPerPage')}</p>
                       <Select
                         value={`${table.getState().pagination.pageSize}`}
                         onValueChange={(value) => {
@@ -1114,7 +1112,10 @@ export function AdminTemplateManager() {
                       </Select>
                     </div>
                     <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-                      Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                      {t('templates.admin.page', {
+                        current: table.getState().pagination.pageIndex + 1,
+                        total: table.getPageCount(),
+                      })}
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -1163,17 +1164,15 @@ export function AdminTemplateManager() {
 
         {/* Upload Dialog */}
         <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Add New Template</DialogTitle>
-              <DialogDescription>
-                Upload a form, guide, or checklist for clients to download
-              </DialogDescription>
+              <DialogTitle>{t('templates.admin.uploadTemplate')}</DialogTitle>
+              <DialogDescription>{t('templates.admin.description')}</DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="template-name">Template Name *</Label>
+                <Label htmlFor="template-name">{t('templates.admin.templateName')} *</Label>
                 <Input
                   id="template-name"
                   value={name}
@@ -1198,7 +1197,7 @@ export function AdminTemplateManager() {
                   <Label htmlFor="service-type">Service Type</Label>
                   <Select value={serviceType} onValueChange={setServiceType}>
                     <SelectTrigger id="service-type">
-                      <SelectValue placeholder="Select service (optional)" />
+                      <SelectValue placeholder={t('templates.admin.selectServiceType')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">General (All Services)</SelectItem>
@@ -1213,16 +1212,18 @@ export function AdminTemplateManager() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category *</Label>
+                  <Label htmlFor="category">{t('templates.admin.category')} *</Label>
                   <Select value={category} onValueChange={setCategory}>
                     <SelectTrigger id="category">
-                      <SelectValue />
+                      <SelectValue placeholder={t('templates.admin.selectCategory')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="FORM">Form</SelectItem>
-                      <SelectItem value="GUIDE">Guide</SelectItem>
-                      <SelectItem value="SAMPLE">Sample</SelectItem>
-                      <SelectItem value="CHECKLIST">Checklist</SelectItem>
+                      <SelectItem value="FORM">{t('templates.categories.FORM')}</SelectItem>
+                      <SelectItem value="GUIDE">{t('templates.categories.GUIDE')}</SelectItem>
+                      <SelectItem value="SAMPLE">{t('templates.categories.SAMPLE')}</SelectItem>
+                      <SelectItem value="CHECKLIST">
+                        {t('templates.categories.CHECKLIST')}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1248,13 +1249,13 @@ export function AdminTemplateManager() {
                     className="h-4 w-4"
                   />
                   <Label htmlFor="is-required" className="cursor-pointer">
-                    Required document
+                    {t('templates.admin.isRequired')}
                   </Label>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Upload File *</Label>
+                <Label>{t('templates.admin.uploadFile')} *</Label>
                 {uploadedFile ? (
                   <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
                     <FileText className="h-5 w-5 text-primary" />
@@ -1265,7 +1266,7 @@ export function AdminTemplateManager() {
                       </p>
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => setUploadedFile(null)}>
-                      Remove
+                      {t('common.delete')}
                     </Button>
                   </div>
                 ) : (
@@ -1274,7 +1275,7 @@ export function AdminTemplateManager() {
                       <div className="space-y-3">
                         <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary" />
                         <div className="space-y-2">
-                          <p className="text-sm font-medium">Uploading file...</p>
+                          <p className="text-sm font-medium">{t('templates.admin.uploading')}</p>
                           <Progress value={uploadProgress} className="w-full max-w-xs mx-auto" />
                           <p className="text-xs text-muted-foreground">
                             {uploadProgress}% complete
@@ -1292,7 +1293,7 @@ export function AdminTemplateManager() {
                           disabled={isUploading}
                         />
                         <p className="text-xs text-muted-foreground mt-2">
-                          PDF, DOC, DOCX, XLSX • Max 16MB
+                          {t('templates.admin.maxFileSize')}
                         </p>
                       </>
                     )}
@@ -1310,7 +1311,7 @@ export function AdminTemplateManager() {
                 }}
                 disabled={createTemplate.isPending}
               >
-                Cancel
+                {t('templates.admin.cancel')}
               </Button>
               <Button
                 onClick={handleSubmit}
@@ -1327,20 +1328,20 @@ export function AdminTemplateManager() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {isUploading ? 'Uploading...' : 'Creating...'}
+                    {isUploading ? t('templates.admin.uploading') : t('templates.admin.creating')}
                   </>
                 ) : createTemplate.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Creating...
+                    {t('templates.admin.creating')}
                   </>
                 ) : isUploading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Uploading...
+                    {t('templates.admin.uploading')}
                   </>
                 ) : (
-                  'Create Template'
+                  t('templates.admin.uploadTemplate')
                 )}
               </Button>
             </DialogFooter>
@@ -1349,15 +1350,15 @@ export function AdminTemplateManager() {
 
         {/* Edit Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Edit Template</DialogTitle>
-              <DialogDescription>Update template information and upload new file</DialogDescription>
+              <DialogTitle>{t('templates.admin.editTemplate')}</DialogTitle>
+              <DialogDescription>{t('templates.admin.editTemplate')}</DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-template-name">Template Name *</Label>
+                <Label htmlFor="edit-template-name">{t('templates.admin.templateName')} *</Label>
                 <Input
                   id="edit-template-name"
                   value={name}
@@ -1367,7 +1368,7 @@ export function AdminTemplateManager() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-description">Description</Label>
+                <Label htmlFor="edit-description">{t('templates.admin.templateDescription')}</Label>
                 <Textarea
                   id="edit-description"
                   value={description}
@@ -1382,7 +1383,7 @@ export function AdminTemplateManager() {
                   <Label htmlFor="edit-service-type">Service Type</Label>
                   <Select value={serviceType} onValueChange={setServiceType}>
                     <SelectTrigger id="edit-service-type">
-                      <SelectValue placeholder="Select service (optional)" />
+                      <SelectValue placeholder={t('templates.admin.selectServiceType')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">General (All Services)</SelectItem>
@@ -1438,7 +1439,7 @@ export function AdminTemplateManager() {
               </div>
 
               <div className="space-y-2">
-                <Label>Upload New File (optional)</Label>
+                <Label>{t('templates.admin.uploadFile')} (optional)</Label>
                 {uploadedFile ? (
                   <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
                     <FileText className="h-5 w-5 text-primary" />
@@ -1449,7 +1450,7 @@ export function AdminTemplateManager() {
                       </p>
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => setUploadedFile(null)}>
-                      Remove
+                      {t('common.delete')}
                     </Button>
                   </div>
                 ) : (
@@ -1458,7 +1459,7 @@ export function AdminTemplateManager() {
                       <div className="space-y-3">
                         <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary" />
                         <div className="space-y-2">
-                          <p className="text-sm font-medium">Uploading file...</p>
+                          <p className="text-sm font-medium">{t('templates.admin.uploading')}</p>
                           <Progress value={uploadProgress} className="w-full max-w-xs mx-auto" />
                           <p className="text-xs text-muted-foreground">
                             {uploadProgress}% complete
@@ -1476,7 +1477,7 @@ export function AdminTemplateManager() {
                           disabled={isUploading}
                         />
                         <p className="text-xs text-muted-foreground mt-2">
-                          PDF, DOC, DOCX, XLSX • Max 16MB
+                          {t('templates.admin.maxFileSize')}
                         </p>
                         {editingTemplate?.fileUrl &&
                           !editingTemplate.fileUrl.startsWith('/templates/') && (
@@ -1501,7 +1502,7 @@ export function AdminTemplateManager() {
                 }}
                 disabled={updateTemplate.isPending}
               >
-                Cancel
+                {t('templates.admin.cancel')}
               </Button>
               <Button
                 onClick={handleSubmit}
@@ -1513,20 +1514,20 @@ export function AdminTemplateManager() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {isUploading ? 'Uploading...' : 'Updating...'}
+                    {isUploading ? t('templates.admin.uploading') : t('templates.admin.updating')}
                   </>
                 ) : updateTemplate.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Updating...
+                    {t('templates.admin.updating')}
                   </>
                 ) : isUploading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Uploading...
+                    {t('templates.admin.uploading')}
                   </>
                 ) : (
-                  'Update Template'
+                  t('templates.admin.update')
                 )}
               </Button>
             </DialogFooter>
@@ -1538,10 +1539,10 @@ export function AdminTemplateManager() {
           open={confirmDialogOpen}
           onOpenChange={setConfirmDialogOpen}
           onConfirm={handleConfirmDelete}
-          title="Delete Template"
-          description={`Are you sure you want to delete "${templateToDelete?.name}"? This action cannot be undone.`}
-          confirmText="Delete Template"
-          cancelText="Cancel"
+          title={t('templates.admin.deleteTemplate')}
+          description={`${t('templates.admin.deleteConfirm')} "${templateToDelete?.name}"? ${t('templates.admin.thisActionCannotBeUndone')}`}
+          confirmText={t('templates.admin.deleteTemplate')}
+          cancelText={t('templates.admin.cancel')}
           variant="destructive"
           isLoading={deleteTemplate.isPending}
         />
@@ -1550,10 +1551,10 @@ export function AdminTemplateManager() {
           open={bulkDeleteConfirmOpen}
           onOpenChange={setBulkDeleteConfirmOpen}
           onConfirm={handleConfirmBulkDelete}
-          title="Delete Selected Templates"
-          description={`Are you sure you want to delete ${table.getFilteredSelectedRowModel().rows.length} selected template(s)? This action cannot be undone.`}
-          confirmText="Delete Selected"
-          cancelText="Cancel"
+          title={t('templates.admin.bulkDelete')}
+          description={`${t('templates.admin.deleteConfirmMultiple', { count: table.getFilteredSelectedRowModel().rows.length })} ${t('templates.admin.thisActionCannotBeUndone')}`}
+          confirmText={t('templates.admin.deleteSelected')}
+          cancelText={t('templates.admin.cancel')}
           variant="destructive"
           isLoading={bulkDeleteTemplates.isPending}
         />

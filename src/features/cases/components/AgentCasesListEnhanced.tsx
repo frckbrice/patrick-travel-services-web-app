@@ -297,8 +297,8 @@ export function AgentCasesListEnhanced() {
     if (validCaseIds.length === 0) {
       const errorMessage =
         user?.role === 'ADMIN'
-          ? 'No valid cases to assign.'
-          : 'No valid cases to assign. Approved cases cannot be assigned.';
+          ? t('cases.management.noValidCasesToAssign')
+          : t('cases.management.noValidCasesToAssignApproved');
       toast.error(errorMessage);
       return;
     }
@@ -326,8 +326,8 @@ export function AgentCasesListEnhanced() {
     if (validCaseIds.length === 0) {
       const errorMessage =
         user?.role === 'ADMIN'
-          ? 'No valid cases to update.'
-          : 'No valid cases to update. Approved cases cannot be updated.';
+          ? t('cases.management.noValidCasesToUpdate')
+          : t('cases.management.noValidCasesToUpdateApproved');
       toast.error(errorMessage);
       return;
     }
@@ -355,8 +355,8 @@ export function AgentCasesListEnhanced() {
     if (validCaseIds.length === 0) {
       const errorMessage =
         user?.role === 'ADMIN'
-          ? 'No valid cases to unassign.'
-          : 'No valid cases to unassign. Approved cases cannot be unassigned.';
+          ? t('cases.management.noValidCasesToUnassign')
+          : t('cases.management.noValidCasesToUnassignApproved');
       toast.error(errorMessage);
       return;
     }
@@ -385,7 +385,7 @@ export function AgentCasesListEnhanced() {
   if (error)
     return (
       <div className="text-center py-12">
-        <p className="text-red-600">Error loading cases</p>
+        <p className="text-red-600">{t('cases.management.errorLoadingCases')}</p>
       </div>
     );
 
@@ -396,12 +396,12 @@ export function AgentCasesListEnhanced() {
         <Card>
           <CardContent className="py-12 text-center">
             <AlertTriangle className="mx-auto h-12 w-12 text-amber-500 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Could Not Determine Current User</h3>
-            <p className="text-muted-foreground mb-4">
-              Please try refreshing the page or logging in again.
-            </p>
+            <h3 className="text-lg font-semibold mb-2">
+              {t('cases.management.couldNotDetermineUser')}
+            </h3>
+            <p className="text-muted-foreground mb-4">{t('cases.management.refreshOrLogin')}</p>
             <Button asChild variant="default">
-              <Link href="/login">Return to Login</Link>
+              <Link href="/login">{t('cases.management.returnToLogin')}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -415,22 +415,26 @@ export function AgentCasesListEnhanced() {
     <TooltipProvider>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight wrap-break-word">
               {user.role === 'ADMIN' ? t('cases.allCases') : t('cases.myCases')}
             </h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-sm sm:text-base text-muted-foreground mt-2 leading-relaxed">
               {user.role === 'ADMIN'
                 ? t('cases.management.manageAll')
                 : t('cases.management.manageAssigned')}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <Tooltip>
               <DropdownMenu>
                 <TooltipTrigger asChild>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="bg-transparent hover:bg-muted/80 transition-colors"
+                    >
                       <Download className="mr-2 h-4 w-4" />
                       {t('cases.management.export')}
                     </Button>
@@ -451,7 +455,10 @@ export function AgentCasesListEnhanced() {
                 <p>{t('cases.management.exportTooltip')}</p>
               </TooltipContent>
             </Tooltip>
-            <Badge variant="secondary" className="text-base px-4 py-2">
+            <Badge
+              variant="secondary"
+              className="text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2 shrink-0"
+            >
               {totalCases}{' '}
               {totalCases === 1 ? t('cases.management.case') : t('cases.management.cases')}
             </Badge>
@@ -460,10 +467,10 @@ export function AgentCasesListEnhanced() {
 
         {/* Filters Card */}
         <Card>
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <CardContent className="pt-4 sm:pt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
               {/* Search */}
-              <div className="relative lg:col-span-2">
+              <div className="relative sm:col-span-2 lg:col-span-2">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder={t('cases.management.searchPlaceholder')}
@@ -606,7 +613,12 @@ export function AgentCasesListEnhanced() {
                   </span>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="ghost" size="sm" onClick={() => setSelectedCases(new Set())}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedCases(new Set())}
+                        className="bg-transparent hover:bg-muted/80 transition-colors"
+                      >
                         <XSquare className="mr-2 h-4 w-4" />
                         {t('cases.management.clear')}
                       </Button>
@@ -621,8 +633,12 @@ export function AgentCasesListEnhanced() {
                     <DropdownMenu>
                       <TooltipTrigger asChild>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm">
-                            <UserPlus className="mr-2 h-4 w-4" />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs sm:text-sm whitespace-nowrap bg-transparent hover:bg-muted/80 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground transition-colors"
+                          >
+                            <UserPlus className="mr-1 sm:mr-2 h-4 w-4 shrink-0" />
                             {t('cases.management.bulkAssign')}
                           </Button>
                         </DropdownMenuTrigger>
@@ -649,8 +665,12 @@ export function AgentCasesListEnhanced() {
                     <DropdownMenu>
                       <TooltipTrigger asChild>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm">
-                            <Filter className="mr-2 h-4 w-4" />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs sm:text-sm whitespace-nowrap bg-transparent hover:bg-muted/80 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground transition-colors"
+                          >
+                            <Filter className="mr-1 sm:mr-2 h-4 w-4 shrink-0" />
                             {t('cases.management.bulkStatus')}
                           </Button>
                         </DropdownMenuTrigger>
@@ -672,13 +692,18 @@ export function AgentCasesListEnhanced() {
 
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="outline" size="sm" onClick={handleBulkUnassign}>
-                        <XSquare className="mr-2 h-4 w-4" />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleBulkUnassign}
+                        className="text-xs sm:text-sm whitespace-nowrap bg-transparent hover:bg-muted/80 transition-colors"
+                      >
+                        <XSquare className="mr-1 sm:mr-2 h-4 w-4 shrink-0" />
                         {t('cases.management.bulkUnassign')}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Unassign selected cases from their agents</p>
+                      <p>{t('cases.management.unassignSelectedCases')}</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -697,8 +722,157 @@ export function AgentCasesListEnhanced() {
           </Card>
         ) : (
           <>
-            {/* Cases Table - Mobile Responsive with Horizontal Scroll */}
-            <div className="overflow-x-auto -mx-4 sm:mx-0">
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {cases.map((c) => (
+                <Card
+                  key={c.id}
+                  className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <CardContent className="p-4 space-y-3">
+                    {/* Header with Checkbox and Reference */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        {user.role === 'ADMIN' && (
+                          <Checkbox
+                            checked={selectedCases.has(c.id)}
+                            onCheckedChange={() => handleSelectCase(c.id)}
+                            disabled={c.status === 'APPROVED' && user?.role !== 'ADMIN'}
+                            className="mt-1 shrink-0"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Briefcase className="h-4 w-4 text-primary shrink-0" />
+                            <span className="text-sm font-semibold truncate">
+                              {c.referenceNumber}
+                            </span>
+                          </div>
+                          <Badge
+                            className={cn(
+                              translatedStatusConfig[c.status]?.color || '',
+                              'text-xs whitespace-nowrap'
+                            )}
+                          >
+                            {translatedStatusConfig[c.status]?.label || c.status}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                asChild
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 bg-transparent hover:bg-muted/80 transition-colors"
+                              >
+                                <Link href={`/dashboard/cases/${c.id}`}>
+                                  <Edit className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{t('cases.management.viewEditCaseDetails')}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        {user.role === 'ADMIN' && !c.assignedAgentId && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 bg-transparent hover:bg-muted/80 transition-colors"
+                                  onClick={() => {
+                                    setSelectedCaseForAssignment(c);
+                                    setAssignDialogOpen(true);
+                                  }}
+                                >
+                                  <UserPlus className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{t('cases.management.assignCaseToAgent')}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Client Info */}
+                    <div className="space-y-1.5 pt-3 border-t border-border/50">
+                      <div className="flex items-start gap-2.5">
+                        <User className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate mb-0.5">
+                            {c.client?.firstName} {c.client?.lastName}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {c.client?.email}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Service Type and Date */}
+                    <div className="grid grid-cols-2 gap-4 pt-3 border-t border-border/50">
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          {t('cases.table.serviceType')}
+                        </p>
+                        <p className="text-sm font-medium truncate">
+                          {translatedServiceLabels[c.serviceType] || c.serviceType}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          {t('cases.table.date')}
+                        </p>
+                        <p className="text-sm font-medium">
+                          {new Date(c.submissionDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Assigned Agent */}
+                    <div className="pt-3 border-t border-border/50">
+                      {c.assignedAgent ? (
+                        <div className="flex items-start gap-2.5">
+                          <UserPlus className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
+                              {t('cases.table.assignedAgent')}
+                            </p>
+                            <p className="text-sm font-medium truncate">
+                              {c.assignedAgent.firstName} {c.assignedAgent.lastName}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2.5">
+                          <UserPlus className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
+                              {t('cases.table.assignedAgent')}
+                            </p>
+                            <span className="text-xs text-muted-foreground">
+                              {t('cases.management.unassigned')}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto -mx-4 sm:mx-0">
               <div className="inline-block min-w-full align-middle">
                 <div className="overflow-hidden shadow-sm ring-1 ring-black ring-opacity-5 sm:rounded-lg">
                   <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -716,25 +890,25 @@ export function AgentCasesListEnhanced() {
                             />
                           </th>
                         )}
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           {t('cases.table.reference')}
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           {t('cases.table.customer')}
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           {t('cases.table.serviceType')}
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           {t('cases.table.status')}
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           {t('cases.table.date')}
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           {t('cases.table.assignedAgent')}
                         </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           {t('cases.table.actions')}
                         </th>
                       </tr>
@@ -750,64 +924,76 @@ export function AgentCasesListEnhanced() {
                                 disabled={c.status === 'APPROVED' && user?.role !== 'ADMIN'}
                                 title={
                                   c.status === 'APPROVED' && user?.role !== 'ADMIN'
-                                    ? 'Approved cases cannot be selected for bulk operations (Admin only)'
+                                    ? t('cases.management.approvedCasesCannotBeSelected')
                                     : undefined
                                 }
                               />
                             </td>
                           )}
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <Briefcase className="h-4 w-4 text-primary mr-2" />
-                              <span className="text-sm font-medium">{c.referenceNumber}</span>
+                          <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center min-w-0">
+                              <Briefcase className="h-4 w-4 text-primary mr-2 shrink-0" />
+                              <span className="text-sm font-medium truncate">
+                                {c.referenceNumber}
+                              </span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm">
-                              <div className="font-medium">
+                          <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm min-w-0">
+                              <div className="font-medium truncate">
                                 {c.client?.firstName} {c.client?.lastName}
                               </div>
-                              <div className="text-gray-500 dark:text-gray-400 text-xs">
+                              <div className="text-gray-500 dark:text-gray-400 text-xs truncate">
                                 {c.client?.email}
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm">
+                          <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                            <span className="text-sm truncate block max-w-[120px] sm:max-w-none">
                               {translatedServiceLabels[c.serviceType] || c.serviceType}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge className={cn(translatedStatusConfig[c.status]?.color || '')}>
+                          <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                            <Badge
+                              className={cn(
+                                translatedStatusConfig[c.status]?.color || '',
+                                'text-xs whitespace-nowrap'
+                              )}
+                            >
                               {translatedStatusConfig[c.status]?.label || c.status}
                             </Badge>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             {new Date(c.submissionDate).toLocaleDateString()}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                             {c.assignedAgent ? (
                               <div className="text-sm">
                                 {c.assignedAgent.firstName} {c.assignedAgent.lastName}
                               </div>
                             ) : (
                               <span className="text-xs text-gray-400 dark:text-gray-500">
-                                Unassigned
+                                {t('cases.management.unassigned')}
                               </span>
                             )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div className="flex justify-end gap-2">
+                          <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex justify-end gap-1 sm:gap-2">
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button asChild variant="ghost" size="sm">
+                                  <Button
+                                    asChild
+                                    variant="ghost"
+                                    size="sm"
+                                    className="bg-transparent hover:bg-muted/80 transition-colors"
+                                  >
                                     <Link href={`/dashboard/cases/${c.id}`}>
                                       <Edit className="h-4 w-4" />
                                     </Link>
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>View & Edit Case Details</p>
+                                  <p>{t('cases.management.viewEditCaseDetails')}</p>
                                 </TooltipContent>
                               </Tooltip>
 
@@ -817,6 +1003,7 @@ export function AgentCasesListEnhanced() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
+                                      className="bg-transparent hover:bg-muted/80 transition-colors"
                                       onClick={() => {
                                         setSelectedCaseForAssignment(c);
                                         setAssignDialogOpen(true);
@@ -826,7 +1013,7 @@ export function AgentCasesListEnhanced() {
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>Assign Case to Agent</p>
+                                    <p>{t('cases.management.assignCaseToAgent')}</p>
                                   </TooltipContent>
                                 </Tooltip>
                               )}
@@ -844,22 +1031,28 @@ export function AgentCasesListEnhanced() {
             {totalPages > 1 && (
               <Card>
                 <CardContent className="py-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="text-sm text-muted-foreground">
-                      Showing {(currentPage - 1) * itemsPerPage + 1}-
-                      {Math.min(currentPage * itemsPerPage, totalCases)} of {totalCases}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="text-sm text-muted-foreground text-center sm:text-left">
+                      {t('cases.management.showing', {
+                        from: (currentPage - 1) * itemsPerPage + 1,
+                        to: Math.min(currentPage * itemsPerPage, totalCases),
+                        total: totalCases,
+                      })}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap justify-center">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
+                        className="bg-transparent hover:bg-muted/80 disabled:opacity-50 transition-colors"
                       >
                         <ChevronLeft className="h-4 w-4" />
-                        <span className="hidden sm:inline ml-1">Previous</span>
+                        <span className="hidden sm:inline ml-1">
+                          {t('cases.management.previous')}
+                        </span>
                       </Button>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 flex-wrap justify-center">
                         {Array.from({ length: totalPages }, (_, i) => i + 1)
                           .filter((page) => {
                             return (
@@ -869,13 +1062,20 @@ export function AgentCasesListEnhanced() {
                           .map((page, index, array) => (
                             <div key={page} className="flex items-center">
                               {index > 0 && array[index - 1] !== page - 1 && (
-                                <span className="px-2 text-muted-foreground">...</span>
+                                <span className="px-1 sm:px-2 text-muted-foreground text-xs sm:text-sm">
+                                  ...
+                                </span>
                               )}
                               <Button
                                 variant={currentPage === page ? 'default' : 'ghost'}
                                 size="sm"
                                 onClick={() => setCurrentPage(page)}
-                                className="h-8 w-8 p-0"
+                                className={cn(
+                                  'h-8 w-8 p-0 text-xs sm:text-sm transition-colors',
+                                  currentPage === page
+                                    ? 'bg-primary text-primary-foreground shadow-sm'
+                                    : 'bg-transparent hover:bg-muted/80'
+                                )}
                               >
                                 {page}
                               </Button>
@@ -887,8 +1087,9 @@ export function AgentCasesListEnhanced() {
                         size="sm"
                         onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
+                        className="bg-transparent hover:bg-muted/80 disabled:opacity-50 transition-colors"
                       >
-                        <span className="hidden sm:inline mr-1">Next</span>
+                        <span className="hidden sm:inline mr-1">{t('cases.management.next')}</span>
                         <ChevronRight className="h-4 w-4" />
                       </Button>
                     </div>

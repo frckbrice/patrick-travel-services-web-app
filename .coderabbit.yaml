@@ -1,0 +1,156 @@
+# CodeRabbit Configuration
+# This file configures CodeRabbit AI code review tool
+# For more information, visit: https://coderabbit.ai
+
+# General settings
+language: en
+reviews:
+  # Review pull requests
+  pull_requests:
+    enabled: true
+    # Review title and description
+    review_title: true
+    review_description: true
+    # Review code changes
+    review_code: true
+    # Review test files
+    review_tests: true
+    # Review documentation
+    review_docs: true
+    # Review configuration files
+    review_config: true
+    # Review dependencies
+    review_dependencies: true
+
+# Paths to include/exclude
+paths:
+  # Include all source files
+  include:
+    - "src/**/*"
+    - "*.ts"
+    - "*.tsx"
+    - "*.js"
+    - "*.jsx"
+    - "*.json"
+    - "*.yaml"
+    - "*.yml"
+  
+  # Exclude patterns
+  exclude:
+    - "node_modules/**"
+    - ".next/**"
+    - "dist/**"
+    - "build/**"
+    - "coverage/**"
+    - "*.min.js"
+    - "*.min.css"
+    - "pnpm-lock.yaml"
+    - "package-lock.json"
+    - "yarn.lock"
+    - ".git/**"
+    - ".vscode/**"
+    - ".idea/**"
+    - "*.log"
+    - "*.cache"
+
+# Code review settings
+code_review:
+  # Focus areas for this project
+  focus_areas:
+    - "security"
+    - "performance"
+    - "accessibility"
+    - "best_practices"
+    - "code_quality"
+    - "type_safety"
+    - "error_handling"
+    - "testing"
+  
+  # Language-specific settings
+  typescript:
+    enabled: true
+    strict_mode: true
+    check_types: true
+  
+  react:
+    enabled: true
+    check_hooks: true
+    check_props: true
+    check_state_management: true
+  
+  nextjs:
+    enabled: true
+    check_routing: true
+    check_api_routes: true
+    check_server_components: true
+    check_client_components: true
+
+# Security settings
+security:
+  enabled: true
+  check_secrets: true
+  check_dependencies: true
+  check_sql_injection: true
+  check_xss: true
+  check_csrf: true
+  check_authentication: true
+  check_authorization: true
+
+# Performance settings
+performance:
+  enabled: true
+  check_bundle_size: true
+  check_image_optimization: true
+  check_lazy_loading: true
+  check_memoization: true
+  check_database_queries: true
+
+# Accessibility settings
+accessibility:
+  enabled: true
+  check_aria_labels: true
+  check_keyboard_navigation: true
+  check_screen_reader: true
+  check_color_contrast: true
+
+# Comment settings
+comments:
+  # Comment style
+  style: "polite"
+  # Include suggestions
+  include_suggestions: true
+  # Include code examples
+  include_code_examples: true
+  # Minimum confidence level (0-1)
+  min_confidence: 0.7
+
+# Auto-approve settings (use with caution)
+auto_approve:
+  enabled: false
+  # Only auto-approve if all checks pass
+  require_all_checks: true
+
+# Notification settings
+notifications:
+  # Notify on new reviews
+  on_review: true
+  # Notify on approval
+  on_approval: true
+  # Notify on changes requested
+  on_changes_requested: true
+
+# Custom instructions for this project
+custom_instructions: |
+  This is a Next.js 15 project with TypeScript, React 19, and Prisma.
+  Please focus on:
+  - Next.js best practices (App Router, Server Components, etc.)
+  - TypeScript type safety
+  - React 19 patterns and hooks
+  - Prisma query optimization
+  - Firebase integration best practices
+  - Internationalization (i18n) considerations
+  - Mobile responsiveness
+  - Performance optimization
+  - Security best practices for authentication and authorization
+  - Accessibility (WCAG 2.1 AA compliance)
+

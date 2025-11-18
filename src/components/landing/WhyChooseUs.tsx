@@ -28,23 +28,23 @@ const FeatureCardComponent = ({
       isDesktop ? `absolute w-56 ${position} z-20 bg-card/95 backdrop-blur-sm` : ''
     }`}
   >
-    <CardContent className="space-y-3 p-5">
+    <CardContent className="space-y-2 sm:space-y-3 p-3 sm:p-5">
       <div className="relative">
         <div
-          className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br ${gradient} shadow-lg`}
+          className={`flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl sm:rounded-2xl bg-linear-to-br ${gradient} shadow-lg`}
           aria-label={title}
         >
-          <Icon className="h-6 w-6 text-white" />
+          <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
         </div>
         <div
-          className={`pointer-events-none absolute inset-0 rounded-2xl bg-linear-to-br ${gradient} opacity-20 blur-xl`}
+          className={`pointer-events-none absolute inset-0 rounded-xl sm:rounded-2xl bg-linear-to-br ${gradient} opacity-20 blur-xl`}
         />
       </div>
       <div className={isDesktop ? 'space-y-2' : 'space-y-1'}>
-        <h3 className="text-lg font-bold text-primary">
+        <h3 className="text-sm sm:text-lg font-bold text-primary leading-tight">
           <span suppressHydrationWarning>{title}</span>
         </h3>
-        <p className="text-xs leading-relaxed text-muted-foreground">
+        <p className="text-[11px] sm:text-xs leading-relaxed text-muted-foreground line-clamp-2 sm:line-clamp-none">
           <span suppressHydrationWarning>{description}</span>
         </p>
       </div>
@@ -148,7 +148,7 @@ export function WhyChooseUs() {
         {/* Circular Layout - Hidden on mobile, grid on small screens, circular on large */}
         <div className="relative pt-12 lg:pt-20 lg:pb-10">
           {/* Mobile/Tablet: Simple Grid Layout */}
-          <div className="grid sm:grid-cols-2 lg:hidden gap-6 max-w-2xl mx-auto">
+          <div className="grid sm:grid-cols-2 lg:hidden gap-3 sm:gap-6 max-w-2xl mx-auto">
             {localizedFeatures.map((feature, index) => (
               <FeatureCard
                 key={index}

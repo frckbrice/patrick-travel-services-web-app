@@ -41,8 +41,12 @@ export function LanguageSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-2">
-          <Globe className="h-4 w-4" />
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2 w-auto min-w-[80px] h-10 justify-center border border-border bg-background shadow-sm"
+        >
+          <Globe className="h-4 w-4 flex-shrink-0" />
           {mounted && (
             <span className="text-sm font-medium">{currentLanguage.code.toUpperCase()}</span>
           )}

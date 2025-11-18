@@ -24,17 +24,17 @@ import { AxiosError } from 'axios';
 import { contactInfo } from './api/data';
 import { hashPII } from '@/lib/utils/pii-hash';
 
-const contactSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  phone: z.string().optional(),
-  message: z.string().min(10, 'Message must be at least 10 characters'),
-});
-
-type ContactInput = z.infer<typeof contactSchema>;
-
 export function Contact() {
   const { t } = useTranslation();
+
+  const contactSchema = z.object({
+    name: z.string().min(2, t('landing.contact.validation.nameMin')),
+    email: z.string().email(t('landing.contact.validation.emailInvalid')),
+    phone: z.string().optional(),
+    message: z.string().min(10, t('landing.contact.validation.messageMin')),
+  });
+
+  type ContactInput = z.infer<typeof contactSchema>;
 
   const form = useForm<ContactInput>({
     resolver: zodResolver(contactSchema),
@@ -103,9 +103,9 @@ export function Contact() {
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-5 gap-8 max-w-7xl mx-auto">
+        <div className="grid lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8 max-w-7xl mx-auto">
           {/* Contact Information - Left Side */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-3 sm:space-y-6">
             {/* Contact Cards */}
             {contactInfo(t).map((info, index) => {
               const Icon = info.icon;
@@ -114,17 +114,19 @@ export function Contact() {
                   key={index}
                   className="hover:shadow-lg transition-shadow duration-200 border-2"
                 >
-                  <CardContent className="flex items-start space-x-4 p-6">
-                    <div className={`${info.bgColor} p-4 rounded-xl`}>
-                      <Icon className={`h-6 w-6 ${info.color}`} />
+                  <CardContent className="flex items-start space-x-3 sm:space-x-4 p-4 sm:p-6">
+                    <div
+                      className={`${info.bgColor} p-2.5 sm:p-4 rounded-lg sm:rounded-xl flex-shrink-0`}
+                    >
+                      <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${info.color}`} />
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold mb-2 text-lg">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold mb-1 sm:mb-2 text-sm sm:text-lg leading-tight">
                         <span suppressHydrationWarning>{info.title}</span>
                       </h3>
                       <a
                         href={info.href}
-                        className="text-muted-foreground hover:text-primary transition-colors text-sm"
+                        className="text-muted-foreground hover:text-primary transition-colors text-xs sm:text-sm break-words"
                       >
                         {info.value}
                       </a>
@@ -136,32 +138,54 @@ export function Contact() {
 
             {/* Office Hours */}
             <Card className="border-2 bg-gradient-to-br from-primary/5 to-background">
-              <CardHeader>
+              <CardHeader className="p-4 sm:p-6 pb-3 sm:pb-6">
                 <div className="flex items-center space-x-2">
-                  <Clock className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg">
+                  <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                  <CardTitle className="text-base sm:text-lg">
                     <span suppressHydrationWarning>{t('landing.contact.hours')}</span>
                   </CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                  <span className="text-muted-foreground font-medium" suppressHydrationWarning>
+              <CardContent className="space-y-2 sm:space-y-3 p-4 sm:p-6 pt-0">
+                <div className="flex justify-between items-center p-2 sm:p-3 bg-background rounded-lg">
+                  <span
+                    className="text-muted-foreground font-medium text-xs sm:text-sm"
+                    suppressHydrationWarning
+                  >
                     {t('landing.contact.weekdays')}
                   </span>
-                  <Badge variant="secondary">9:00 AM - 6:00 PM</Badge>
+                  <Badge
+                    variant="secondary"
+                    className="text-[10px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1"
+                  >
+                    9:00 AM - 6:00 PM
+                  </Badge>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                  <span className="text-muted-foreground font-medium" suppressHydrationWarning>
+                <div className="flex justify-between items-center p-2 sm:p-3 bg-background rounded-lg">
+                  <span
+                    className="text-muted-foreground font-medium text-xs sm:text-sm"
+                    suppressHydrationWarning
+                  >
                     {t('landing.contact.saturday')}
                   </span>
-                  <Badge variant="secondary">10:00 AM - 4:00 PM</Badge>
+                  <Badge
+                    variant="secondary"
+                    className="text-[10px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1"
+                  >
+                    10:00 AM - 4:00 PM
+                  </Badge>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                  <span className="text-muted-foreground font-medium" suppressHydrationWarning>
+                <div className="flex justify-between items-center p-2 sm:p-3 bg-background rounded-lg">
+                  <span
+                    className="text-muted-foreground font-medium text-xs sm:text-sm"
+                    suppressHydrationWarning
+                  >
                     {t('landing.contact.sunday')}
                   </span>
-                  <Badge variant="outline">
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1"
+                  >
                     <span suppressHydrationWarning>{t('landing.contact.closed')}</span>
                   </Badge>
                 </div>
@@ -171,28 +195,32 @@ export function Contact() {
 
           {/* Contact Form - Right Side */}
           <Card className="lg:col-span-3 border-2 shadow-xl">
-            <CardHeader className="pb-6">
-              <CardTitle className="text-2xl">
+            <CardHeader className="pb-4 sm:pb-6 p-4 sm:p-6">
+              <CardTitle className="text-xl sm:text-2xl">
                 <span suppressHydrationWarning>{t('landing.contact.formTitle')}</span>
               </CardTitle>
-              <CardDescription className="text-base">
+              <CardDescription className="text-sm sm:text-base">
                 <span suppressHydrationWarning>{t('landing.contact.formSubtitle')}</span>
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6">
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
+                  <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
                     <FormField
                       control={form.control}
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base">
+                          <FormLabel className="text-sm sm:text-base">
                             <span suppressHydrationWarning>{t('landing.contact.name')}</span>
                           </FormLabel>
                           <FormControl>
-                            <Input placeholder="franck brice" className="h-12" {...field} />
+                            <Input
+                              placeholder="franck brice"
+                              className="h-10 sm:h-12 text-sm sm:text-base"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -204,14 +232,14 @@ export function Contact() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base">
+                          <FormLabel className="text-sm sm:text-base">
                             <span suppressHydrationWarning>{t('landing.contact.emailLabel')}</span>
                           </FormLabel>
                           <FormControl>
                             <Input
                               type="email"
                               placeholder="john@example.com"
-                              className="h-12"
+                              className="h-10 sm:h-12 text-sm sm:text-base"
                               {...field}
                             />
                           </FormControl>
@@ -226,14 +254,14 @@ export function Contact() {
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base">
+                        <FormLabel className="text-sm sm:text-base">
                           <span suppressHydrationWarning>{t('landing.contact.phoneLabel')}</span>
                         </FormLabel>
                         <FormControl>
                           <Input
                             type="tel"
                             placeholder="+1 (234) 567-890"
-                            className="h-12"
+                            className="h-10 sm:h-12 text-sm sm:text-base"
                             {...field}
                           />
                         </FormControl>
@@ -247,13 +275,13 @@ export function Contact() {
                     name="message"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base">
+                        <FormLabel className="text-sm sm:text-base">
                           <span suppressHydrationWarning>{t('landing.contact.message')}</span>
                         </FormLabel>
                         <FormControl>
                           <textarea
                             placeholder={t('landing.contact.messagePlaceholder')}
-                            className="w-full min-h-[160px] px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background resize-none"
+                            className="w-full min-h-[120px] sm:min-h-[160px] px-3 sm:px-4 py-2 sm:py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background resize-none text-sm sm:text-base"
                             {...field}
                           />
                         </FormControl>
@@ -264,7 +292,7 @@ export function Contact() {
 
                   <Button
                     type="submit"
-                    className="w-full h-12 text-base"
+                    className="w-full h-10 sm:h-12 text-sm sm:text-base"
                     size="lg"
                     disabled={form.formState.isSubmitting}
                   >

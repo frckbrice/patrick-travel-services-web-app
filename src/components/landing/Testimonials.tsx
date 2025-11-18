@@ -132,8 +132,8 @@ export function Testimonials({
 
         {/* Testimonials Layout */}
         <div className="relative">
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px]">
-            <div className="grid gap-6 sm:grid-cols-2">
+          <div className="grid gap-4 sm:gap-6 lg:gap-10 lg:grid-cols-[minmax(0,1fr)_380px]">
+            <div className="grid gap-4 sm:gap-6 sm:grid-cols-2">
               {mosaicTestimonials.map((testimonial) => (
                 <TestimonialCard key={testimonial.name} testimonial={testimonial} />
               ))}
@@ -143,19 +143,19 @@ export function Testimonials({
         </div>
 
         {/* Stats Row */}
-        <div className="mt-16 grid sm:grid-cols-3 gap-4">
+        <div className="mt-12 sm:mt-16 grid sm:grid-cols-3 gap-3 sm:gap-4">
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className="relative overflow-hidden rounded-2xl border border-border/60 bg-card/80 p-6 text-center backdrop-blur"
+              className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-border/60 bg-card/80 p-4 sm:p-6 text-center backdrop-blur"
             >
               <div className="absolute inset-0 bg-linear-to-tr from-white/5 via-transparent to-primary/5"></div>
-              <div className="relative space-y-2">
-                <p className="text-3xl font-black text-primary">{stat.value}</p>
-                <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              <div className="relative space-y-1 sm:space-y-2">
+                <p className="text-2xl sm:text-3xl font-black text-primary">{stat.value}</p>
+                <p className="text-xs sm:text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                   <span suppressHydrationWarning>{stat.label}</span>
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-2 sm:line-clamp-none">
                   <span suppressHydrationWarning>{stat.caption}</span>
                 </p>
               </div>
@@ -174,13 +174,13 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
         className={`absolute inset-0 opacity-60 bg-linear-to-br ${testimonial.gradient} pointer-events-none`}
         aria-hidden
       />
-      <CardContent className="relative space-y-5 p-6">
-        <Quote className="h-10 w-10 text-primary/40" aria-hidden="true" />
-        <p className="text-muted-foreground leading-relaxed">
+      <CardContent className="relative space-y-3 sm:space-y-5 p-4 sm:p-6">
+        <Quote className="h-6 w-6 sm:h-10 sm:w-10 text-primary/40" aria-hidden="true" />
+        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed line-clamp-4 sm:line-clamp-none">
           <span suppressHydrationWarning>&ldquo;{testimonial.content}&rdquo;</span>
         </p>
-        <div className="flex items-center gap-4 pt-4 border-t border-border/60">
-          <Avatar className="h-16 w-16 ring-2 ring-white/80 dark:ring-white/30">
+        <div className="flex items-center gap-3 sm:gap-4 pt-3 sm:pt-4 border-t border-border/60">
+          <Avatar className="h-12 w-12 sm:h-16 sm:w-16 ring-2 ring-white/80 dark:ring-white/30">
             <AvatarImage
               src={testimonial.avatarSrc}
               alt={testimonial.name}
@@ -189,17 +189,17 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
               className="object-cover"
             />
             <AvatarFallback
-              className={`${testimonial.avatarColor} text-white text-lg font-semibold`}
+              className={`${testimonial.avatarColor} text-white text-sm sm:text-lg font-semibold`}
             >
               {testimonial.avatarInitials}
             </AvatarFallback>
           </Avatar>
-          <div className="space-y-1">
-            <p className="font-semibold text-base">{testimonial.name}</p>
-            <p className="text-sm text-muted-foreground">
+          <div className="space-y-0.5 sm:space-y-1 min-w-0 flex-1">
+            <p className="font-semibold text-sm sm:text-base truncate">{testimonial.name}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">
               <span suppressHydrationWarning>{testimonial.role}</span>
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
               <span suppressHydrationWarning>{testimonial.location}</span>
             </p>
           </div>
@@ -214,23 +214,23 @@ function SpotlightCard({ testimonial, badge }: { testimonial: Testimonial; badge
     <Card className="relative isolate overflow-hidden border border-white/15 bg-slate-950 text-white shadow-[0_20px_80px_rgba(15,23,42,0.55)]">
       <div className="absolute inset-[-40%] bg-linear-to-br from-blue-500/40 via-cyan-500/30 to-purple-500/30 blur-3xl opacity-80" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.15),transparent_70%)]" />
-      <CardContent className="relative flex h-full flex-col gap-6 p-8 lg:p-10">
-        <div className="flex items-center gap-3 text-yellow-300">
-          <div className="flex items-center gap-1">
+      <CardContent className="relative flex h-full flex-col gap-4 sm:gap-6 p-5 sm:p-8 lg:p-10">
+        <div className="flex items-center gap-2 sm:gap-3 text-yellow-300">
+          <div className="flex items-center gap-0.5 sm:gap-1">
             {Array.from({ length: testimonial.rating }).map((_, index) => (
-              <Star key={index} className="h-5 w-5 fill-yellow-300 text-yellow-300" />
+              <Star key={index} className="h-4 w-4 sm:h-5 sm:w-5 fill-yellow-300 text-yellow-300" />
             ))}
           </div>
-          <span className="text-sm font-semibold tracking-wide uppercase text-yellow-200/80">
+          <span className="text-xs sm:text-sm font-semibold tracking-wide uppercase text-yellow-200/80">
             {badge}
           </span>
         </div>
-        <Quote className="h-16 w-16 text-white/20" aria-hidden="true" />
-        <p className="text-xl leading-relaxed font-medium text-white/90">
+        <Quote className="h-10 w-10 sm:h-16 sm:w-16 text-white/20" aria-hidden="true" />
+        <p className="text-base sm:text-xl leading-relaxed font-medium text-white/90 line-clamp-4 sm:line-clamp-none">
           <span suppressHydrationWarning>&ldquo;{testimonial.content}&rdquo;</span>
         </p>
-        <div className="flex items-center gap-4 pt-6 border-t border-white/10">
-          <Avatar className="h-20 w-20 ring-4 ring-white/30">
+        <div className="flex items-center gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-white/10">
+          <Avatar className="h-14 w-14 sm:h-20 sm:w-20 ring-2 sm:ring-4 ring-white/30">
             <AvatarImage
               src={testimonial.avatarSrc}
               alt={testimonial.name}
@@ -239,17 +239,17 @@ function SpotlightCard({ testimonial, badge }: { testimonial: Testimonial; badge
               className="object-cover"
             />
             <AvatarFallback
-              className={`${testimonial.avatarColor} text-white text-xl font-semibold`}
+              className={`${testimonial.avatarColor} text-white text-base sm:text-xl font-semibold`}
             >
               {testimonial.avatarInitials}
             </AvatarFallback>
           </Avatar>
-          <div>
-            <p className="text-lg font-semibold">{testimonial.name}</p>
-            <p className="text-sm text-white/70">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm sm:text-lg font-semibold truncate">{testimonial.name}</p>
+            <p className="text-xs sm:text-sm text-white/70 truncate">
               <span suppressHydrationWarning>{testimonial.role}</span>
             </p>
-            <p className="text-xs text-white/60">
+            <p className="text-[10px] sm:text-xs text-white/60 truncate">
               <span suppressHydrationWarning>{testimonial.location}</span>
             </p>
           </div>

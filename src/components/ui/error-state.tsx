@@ -5,6 +5,7 @@
  * Based on existing error pages pattern but made flexible for inline use
  */
 
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertTriangle, AlertCircle, RefreshCw, ArrowLeft, Home, LucideIcon } from 'lucide-react';
@@ -60,13 +61,13 @@ export function ErrorState({
   description,
   showRetry = true,
   onRetry,
-  retryText = 'Try Again',
+  retryText,
   showBack = true,
   onBack,
-  backText = 'Go Back',
+  backText,
   showHome = false,
   homeUrl = '/dashboard',
-  homeText = 'Go to Dashboard',
+  homeText,
   customActions,
   fullScreen = false,
   iconColor,
@@ -76,20 +77,26 @@ export function ErrorState({
   errorDetails,
   variant = 'error',
 }: ErrorStateProps) {
+  const { t } = useTranslation();
+
   // Set defaults based on variant
   const defaultIcon = variant === 'not-found' ? AlertCircle : AlertTriangle;
   const defaultTitle =
     variant === 'not-found'
-      ? 'Not Found'
+      ? t('errors.notFound')
       : variant === 'forbidden'
-        ? 'Access Denied'
-        : 'Something Went Wrong';
+        ? t('errors.accessDenied')
+        : t('errors.somethingWentWrong');
   const defaultDescription =
     variant === 'not-found'
-      ? "The resource you're looking for doesn't exist or you don't have permission to access it."
+      ? t('errors.notFoundDescription')
       : variant === 'forbidden'
-        ? "You don't have permission to access this resource."
-        : 'An unexpected error occurred. Please try again.';
+        ? t('errors.accessDeniedDescription')
+        : t('errors.unexpectedError');
+
+  const defaultRetryText = retryText || t('common.tryAgain');
+  const defaultBackText = backText || t('common.goBack');
+  const defaultHomeText = homeText || t('common.goToDashboard');
   const defaultIconColor =
     variant === 'not-found'
       ? 'text-orange-600 dark:text-orange-400'
@@ -163,20 +170,20 @@ export function ErrorState({
                 {showRetry && onRetry && (
                   <Button onClick={onRetry} variant="default">
                     <RefreshCw className="mr-2 h-4 w-4" />
-                    {retryText}
+                    {defaultRetryText}
                   </Button>
                 )}
                 {showBack && (
                   <Button onClick={handleBack} variant="outline">
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    {backText}
+                    {defaultBackText}
                   </Button>
                 )}
                 {showHome && (
                   <Button asChild variant="outline">
                     <Link href={homeUrl}>
                       <Home className="mr-2 h-4 w-4" />
-                      {homeText}
+                      {defaultHomeText}
                     </Link>
                   </Button>
                 )}

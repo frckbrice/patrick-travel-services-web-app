@@ -103,22 +103,22 @@ export function SettingsView() {
   const handlePasswordChange = async () => {
     // Validation
     if (!passwordForm.current || !passwordForm.new || !passwordForm.confirm) {
-      toast.error('All password fields are required');
+      toast.error(t('settings.securitySettings.allFieldsRequired'));
       return;
     }
 
     if (passwordForm.new !== passwordForm.confirm) {
-      toast.error('New passwords do not match');
+      toast.error(t('settings.securitySettings.passwordsDoNotMatch'));
       return;
     }
 
     if (passwordForm.new.length < 8) {
-      toast.error('Password must be at least 8 characters');
+      toast.error(t('settings.securitySettings.passwordMinLength'));
       return;
     }
 
     if (passwordForm.current === passwordForm.new) {
-      toast.error('New password must be different from current password');
+      toast.error(t('settings.securitySettings.passwordMustBeDifferent'));
       return;
     }
 
@@ -128,7 +128,7 @@ export function SettingsView() {
     const hasNumber = /[0-9]/.test(passwordForm.new);
 
     if (!hasUpperCase || !hasLowerCase || !hasNumber) {
-      toast.error('Password must contain uppercase, lowercase, and numbers');
+      toast.error(t('settings.securitySettings.passwordRequirements'));
       return;
     }
 
@@ -163,9 +163,7 @@ export function SettingsView() {
         </div>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-destructive">
-              Failed to load settings. Please try refreshing the page.
-            </p>
+            <p className="text-destructive">{t('settings.loadError')}</p>
           </CardContent>
         </Card>
       </div>
@@ -381,7 +379,7 @@ export function SettingsView() {
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Must be at least 8 characters with uppercase, lowercase, and numbers
+                      {t('settings.securitySettings.passwordRequirements')}
                     </p>
                   </div>
                   <div className="space-y-2">
@@ -444,7 +442,7 @@ export function SettingsView() {
                     disabled={changePassword.isPending}
                   >
                     {changePassword.isPending
-                      ? 'Updating...'
+                      ? t('settings.securitySettings.updating')
                       : t('settings.securitySettings.updatePassword')}
                   </Button>
                 </DialogFooter>

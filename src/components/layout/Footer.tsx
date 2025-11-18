@@ -50,6 +50,7 @@ export function Footer() {
                 width={40}
                 height={40}
                 className="object-contain"
+                style={{ width: 'auto', height: 'auto' }}
               />
               <span className="font-bold text-lg text-primary">Patrick Travel Services</span>
             </Link>

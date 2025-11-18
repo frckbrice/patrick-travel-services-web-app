@@ -126,12 +126,13 @@ export function ProfileView() {
   };
 
   const getRoleDisplayName = () => {
-    const names: Record<string, string> = {
-      ADMIN: 'Administrator',
-      AGENT: 'Agent',
-      CLIENT: 'Client',
+    const roleKeyMap: Record<string, string> = {
+      ADMIN: 'users.admin',
+      AGENT: 'users.agent',
+      CLIENT: 'users.client',
     };
-    return names[user?.role || ''] || user?.role || 'Unknown';
+    const translationKey = roleKeyMap[user?.role || ''];
+    return translationKey ? t(translationKey) : user?.role || t('profile.unknown');
   };
 
   const handleAvatarClick = () => {
@@ -144,8 +145,8 @@ export function ProfileView() {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error('Invalid file type', {
-        description: 'Please select an image file (JPEG, PNG, GIF, etc.)',
+      toast.error(t('profile.avatar.invalidFileType'), {
+        description: t('profile.avatar.invalidFileTypeDescription'),
       });
       return;
     }
@@ -153,8 +154,8 @@ export function ProfileView() {
     // Validate file size (4MB max)
     const maxSize = 4 * 1024 * 1024; // 4MB
     if (file.size > maxSize) {
-      toast.error('File too large', {
-        description: 'Image size must be less than 4MB',
+      toast.error(t('profile.avatar.fileTooLarge'), {
+        description: t('profile.avatar.fileTooLargeDescription'),
       });
       return;
     }
@@ -184,13 +185,13 @@ export function ProfileView() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
-          <p className="text-muted-foreground mt-2">Manage your personal information</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('profile.title')}</h1>
+          <p className="text-muted-foreground mt-2">{t('profile.subtitle')}</p>
         </div>
         {!isEditing && (
           <Button onClick={() => setIsEditing(true)}>
             <Edit2 className="mr-2 h-4 w-4" />
-            Edit Profile
+            {t('profile.editProfile')}
           </Button>
         )}
       </div>
@@ -231,7 +232,7 @@ export function ProfileView() {
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    aria-label="Upload avatar"
+                    aria-label={t('profile.avatar.uploadAvatar')}
                     onChange={handleAvatarChange}
                   />
                 </>
@@ -262,13 +263,13 @@ export function ProfileView() {
               <Separator />
               <div className="grid grid-cols-2 gap-2">
                 <ProfileStatusBadge
-                  label="Status"
-                  value={user?.isActive ? 'Active' : 'Inactive'}
+                  label={t('profile.status')}
+                  value={user?.isActive ? t('profile.active') : t('profile.inactive')}
                   isActive={user?.isActive}
                 />
                 <ProfileStatusBadge
-                  label="Verified"
-                  value={user?.isVerified ? 'Yes' : 'No'}
+                  label={t('profile.verified')}
+                  value={user?.isVerified ? t('profile.yes') : t('profile.no')}
                   isActive={user?.isVerified}
                 />
               </div>
@@ -279,9 +280,9 @@ export function ProfileView() {
         {/* Profile Details */}
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>Personal Information</CardTitle>
+            <CardTitle>{t('profile.personalInfo')}</CardTitle>
             <CardDescription>
-              {isEditing ? 'Edit your account details' : 'Your account details and information'}
+              {isEditing ? t('profile.editAccountDetails') : t('profile.accountDetailsDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -293,9 +294,9 @@ export function ProfileView() {
                     name="firstName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>First Name</FormLabel>
+                        <FormLabel>{t('auth.firstName')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="John" {...field} />
+                          <Input placeholder={t('auth.placeholders.firstName')} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -306,9 +307,9 @@ export function ProfileView() {
                     name="lastName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Last Name</FormLabel>
+                        <FormLabel>{t('auth.lastName')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="Doe" {...field} />
+                          <Input placeholder={t('auth.placeholders.lastName')} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -319,9 +320,9 @@ export function ProfileView() {
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Phone</FormLabel>
+                        <FormLabel>{t('auth.phone')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="+1234567890" {...field} />
+                          <Input placeholder={t('auth.placeholders.phone')} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -332,9 +333,9 @@ export function ProfileView() {
                     name="street"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Street address</FormLabel>
+                        <FormLabel>{t('profile.streetAddress')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="123 Main St" {...field} />
+                          <Input placeholder={t('profile.streetPlaceholder')} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -345,9 +346,9 @@ export function ProfileView() {
                     name="city"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>City</FormLabel>
+                        <FormLabel>{t('profile.city')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="Paris" {...field} />
+                          <Input placeholder={t('profile.cityPlaceholder')} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -358,9 +359,9 @@ export function ProfileView() {
                     name="country"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Country</FormLabel>
+                        <FormLabel>{t('profile.country')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="France" {...field} />
+                          <Input placeholder={t('profile.countryPlaceholder')} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -372,7 +373,9 @@ export function ProfileView() {
                       disabled={form.formState.isSubmitting || updateProfileMutation.isPending}
                     >
                       <Save className="mr-2 h-4 w-4" />
-                      {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
+                      {updateProfileMutation.isPending
+                        ? t('profile.saving')
+                        : t('profile.saveChanges')}
                     </Button>
                     <Button
                       type="button"
@@ -384,23 +387,39 @@ export function ProfileView() {
                       disabled={updateProfileMutation.isPending}
                     >
                       <X className="mr-2 h-4 w-4" />
-                      Cancel
+                      {t('common.cancel')}
                     </Button>
                   </div>
                 </form>
               </Form>
             ) : (
               <div className="space-y-4">
-                <ProfileField icon={User} label="First Name" value={user?.firstName || ''} />
-                <ProfileField icon={User} label="Last Name" value={user?.lastName || ''} />
-                <ProfileField icon={Mail} label="Email" value={user?.email || ''} />
-                <ProfileField icon={Phone} label="Phone" value={user?.phone || 'Not provided'} />
-                <ProfileField icon={MapPin} label="Street" value={user?.street || 'Not provided'} />
-                <ProfileField icon={MapPin} label="City" value={user?.city || 'Not provided'} />
+                <ProfileField
+                  icon={User}
+                  label={t('auth.firstName')}
+                  value={user?.firstName || ''}
+                />
+                <ProfileField icon={User} label={t('auth.lastName')} value={user?.lastName || ''} />
+                <ProfileField icon={Mail} label={t('auth.email')} value={user?.email || ''} />
+                <ProfileField
+                  icon={Phone}
+                  label={t('auth.phone')}
+                  value={user?.phone || t('profile.notProvided')}
+                />
+                <ProfileField
+                  icon={MapPin}
+                  label={t('profile.streetAddress')}
+                  value={user?.street || t('profile.notProvided')}
+                />
+                <ProfileField
+                  icon={MapPin}
+                  label={t('profile.city')}
+                  value={user?.city || t('profile.notProvided')}
+                />
                 <ProfileField
                   icon={Globe}
-                  label="Country"
-                  value={user?.country || 'Not provided'}
+                  label={t('profile.country')}
+                  value={user?.country || t('profile.notProvided')}
                 />
               </div>
             )}

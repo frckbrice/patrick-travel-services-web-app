@@ -4,6 +4,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Download, FileText, Image as ImageIcon, File, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatFileSize, isImage } from '@/lib/utils/file-validation';
@@ -23,6 +24,7 @@ export function AttachmentPreview({
   removable = false,
   className,
 }: AttachmentPreviewProps) {
+  const { t } = useTranslation();
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -90,7 +92,7 @@ export function AttachmentPreview({
           size="icon"
           className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={handleDownload}
-          title="Download file"
+          title={t('messages.attachments.downloadFile')}
         >
           <Download className="h-4 w-4" />
         </Button>
@@ -102,7 +104,7 @@ export function AttachmentPreview({
             size="icon"
             className="h-8 w-8 hover:bg-destructive hover:text-destructive-foreground"
             onClick={onRemove}
-            title="Remove attachment"
+            title={t('messages.attachments.removeAttachment')}
           >
             <X className="h-4 w-4" />
           </Button>
@@ -115,7 +117,7 @@ export function AttachmentPreview({
             size="icon"
             className="h-8 w-8"
             onClick={handleDownload}
-            title="View file"
+            title={t('messages.attachments.viewFile')}
           >
             <ExternalLink className="h-4 w-4" />
           </Button>

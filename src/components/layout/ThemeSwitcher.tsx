@@ -1,9 +1,11 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 
 export function ThemeSwitcher() {
+  const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -18,13 +20,14 @@ export function ThemeSwitcher() {
   return (
     <button
       onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-      className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-      aria-label="Toggle theme"
+      className="w-auto min-w-[40px] h-10 px-3 rounded-md hover:bg-muted dark:hover:bg-muted transition-colors flex items-center justify-center border border-border bg-background shadow-sm"
+      aria-label={t('common.toggleTheme')}
+      title={t('common.toggleTheme')}
     >
       {theme === 'dark' ? (
-        <span className="text-2xl">☀️</span>
+        <span className="text-lg sm:text-xl">☀️</span>
       ) : (
-        <span className="text-2xl">🌙</span>
+        <span className="text-lg sm:text-xl">🌙</span>
       )}
     </button>
   );

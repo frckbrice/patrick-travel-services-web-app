@@ -15,6 +15,8 @@ const firebaseConfig = {
   databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
 };
 
+// logger.debug(`[firebase client config]: `, firebaseConfig)
+
 // Initialize Firebase
 let app: FirebaseApp;
 let auth: Auth;

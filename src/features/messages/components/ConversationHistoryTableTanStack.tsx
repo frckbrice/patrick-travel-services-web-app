@@ -113,9 +113,9 @@ export function ConversationHistoryTableTanStack() {
     const now = new Date();
     const diffHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
 
-    if (diffHours < 1) return 'Just now';
+    if (diffHours < 1) return t('messages.justNow');
     if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffHours < 48) return 'Yesterday';
+    if (diffHours < 48) return t('messages.yesterday');
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
@@ -143,21 +143,21 @@ export function ConversationHistoryTableTanStack() {
         return (
           <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
             <Mail className="h-3 w-3 mr-1" />
-            Email
+            {t('messages.conversationHistory.conversationType.email')}
           </Badge>
         );
       case 'CHAT':
         return (
           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
             <MessageSquare className="h-3 w-3 mr-1" />
-            Chat
+            {t('messages.conversationHistory.conversationType.chat')}
           </Badge>
         );
       case 'MIXED':
         return (
           <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
             <MessageCircle className="h-3 w-3 mr-1" />
-            Mixed
+            {t('messages.conversationHistory.conversationType.mixed')}
           </Badge>
         );
       default:
@@ -199,8 +199,10 @@ export function ConversationHistoryTableTanStack() {
     return (
       <Card>
         <CardContent className="py-12 text-center">
-          <p className="text-red-600">Failed to load conversation history</p>
-          <p className="text-sm text-muted-foreground mt-2">Please try again later</p>
+          <p className="text-red-600">{t('messages.conversationHistory.failedToLoad')}</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            {t('messages.conversationHistory.pleaseTryAgain')}
+          </p>
         </CardContent>
       </Card>
     );
@@ -211,7 +213,7 @@ export function ConversationHistoryTableTanStack() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Conversation History</CardTitle>
+          <CardTitle className="text-lg">{t('messages.conversationHistory.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4">
@@ -219,7 +221,7 @@ export function ConversationHistoryTableTanStack() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search conversations..."
+                placeholder={t('messages.conversationHistory.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -230,20 +232,20 @@ export function ConversationHistoryTableTanStack() {
             <Select value={typeFilter} onValueChange={(value: any) => setTypeFilter(value)}>
               <SelectTrigger className="w-full sm:w-[200px]">
                 <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filter by type" />
+                <SelectValue placeholder={t('messages.conversationHistory.filterByType')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="all">{t('messages.conversationHistory.allTypes')}</SelectItem>
                 <SelectItem value="EMAIL">
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4" />
-                    Email Only
+                    {t('messages.conversationHistory.emailOnly')}
                   </div>
                 </SelectItem>
                 <SelectItem value="CHAT">
                   <div className="flex items-center gap-2">
                     <MessageSquare className="h-4 w-4" />
-                    Chat Only
+                    {t('messages.conversationHistory.chatOnly')}
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -258,11 +260,13 @@ export function ConversationHistoryTableTanStack() {
           {conversations.length === 0 ? (
             <div className="py-12 text-center">
               <MessageCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4 opacity-50" />
-              <h3 className="text-lg font-semibold">No conversations found</h3>
+              <h3 className="text-lg font-semibold">
+                {t('messages.conversationHistory.noConversationsFound')}
+              </h3>
               <p className="text-sm text-muted-foreground mt-2">
                 {searchQuery
-                  ? 'Try adjusting your search or filters'
-                  : 'Start messaging with clients to see conversations here'}
+                  ? t('messages.conversationHistory.adjustSearchFilters')
+                  : t('messages.conversationHistory.startMessagingClients')}
               </p>
             </div>
           ) : (
@@ -270,14 +274,20 @@ export function ConversationHistoryTableTanStack() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Participant</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Last Message</TableHead>
-                    <TableHead>Case</TableHead>
-                    <TableHead className="text-center">Messages</TableHead>
-                    <TableHead className="text-center">Unread</TableHead>
-                    <TableHead>Last Activity</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t('messages.conversationHistory.participant')}</TableHead>
+                    <TableHead>{t('messages.conversationHistory.type')}</TableHead>
+                    <TableHead>{t('messages.conversationHistory.lastMessage')}</TableHead>
+                    <TableHead>{t('messages.conversationHistory.case')}</TableHead>
+                    <TableHead className="text-center">
+                      {t('messages.conversationHistory.messages')}
+                    </TableHead>
+                    <TableHead className="text-center">
+                      {t('messages.conversationHistory.unread')}
+                    </TableHead>
+                    <TableHead>{t('messages.conversationHistory.lastActivity')}</TableHead>
+                    <TableHead className="text-right">
+                      {t('messages.conversationHistory.actions')}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -377,7 +387,9 @@ export function ConversationHistoryTableTanStack() {
                             className="gap-1"
                           >
                             <MessageSquare className="h-3 w-3" />
-                            <span className="hidden sm:inline">Chat</span>
+                            <span className="hidden sm:inline">
+                              {t('messages.conversationHistory.chat')}
+                            </span>
                           </Button>
                           <Button
                             variant="ghost"
@@ -386,7 +398,9 @@ export function ConversationHistoryTableTanStack() {
                             className="gap-1"
                           >
                             <Send className="h-3 w-3" />
-                            <span className="hidden sm:inline">Email</span>
+                            <span className="hidden sm:inline">
+                              {t('messages.conversationHistory.email')}
+                            </span>
                           </Button>
                         </div>
                       </TableCell>
@@ -403,9 +417,11 @@ export function ConversationHistoryTableTanStack() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            Showing {(currentPage - 1) * pageSize + 1} to{' '}
-            {Math.min(currentPage * pageSize, data?.pagination.total || 0)} of{' '}
-            {data?.pagination.total || 0} conversations
+            {t('messages.conversationHistory.showing', {
+              from: (currentPage - 1) * pageSize + 1,
+              to: Math.min(currentPage * pageSize, data?.pagination.total || 0),
+              total: data?.pagination.total || 0,
+            })}
           </div>
 
           <div className="flex items-center gap-2">
@@ -416,7 +432,7 @@ export function ConversationHistoryTableTanStack() {
               disabled={currentPage === 1}
             >
               <ChevronLeft className="h-4 w-4" />
-              Previous
+              {t('messages.conversationHistory.previous')}
             </Button>
 
             <div className="flex items-center gap-1">
@@ -442,7 +458,7 @@ export function ConversationHistoryTableTanStack() {
               onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
             >
-              Next
+              {t('messages.conversationHistory.next')}
               <ChevronRightIcon className="h-4 w-4" />
             </Button>
           </div>

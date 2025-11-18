@@ -40,6 +40,7 @@ import {
 import { RefreshCw, Info } from 'lucide-react';
 import { getInitials } from '@/lib/utils/helpers';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface CaseTransferDialogProps {
   caseData: Case;
@@ -48,23 +49,25 @@ interface CaseTransferDialogProps {
   onSuccess?: () => void;
 }
 
-const transferSchema = z.object({
-  newAgentId: z.string().min(1, 'Please select an agent'),
-  reason: z.enum(['REASSIGNMENT', 'COVERAGE', 'SPECIALIZATION', 'WORKLOAD', 'OTHER']),
-  handoverNotes: z.string().optional(),
-  notifyClient: z.boolean(),
-  notifyAgent: z.boolean(),
-});
-
-type TransferFormValues = z.infer<typeof transferSchema>;
-
 export function CaseTransferDialog({
   caseData,
   open,
   onOpenChange,
   onSuccess,
 }: CaseTransferDialogProps) {
+  const { t } = useTranslation();
   const { user, isLoading: isAuthLoading, accessToken } = useAuthStore();
+
+  // Schema created inside component to use translation
+  const transferSchema = z.object({
+    newAgentId: z.string().min(1, t('cases.transferDialog.pleaseSelectAgent')),
+    reason: z.enum(['REASSIGNMENT', 'COVERAGE', 'SPECIALIZATION', 'WORKLOAD', 'OTHER']),
+    handoverNotes: z.string().optional(),
+    notifyClient: z.boolean(),
+    notifyAgent: z.boolean(),
+  });
+
+  type TransferFormValues = z.infer<typeof transferSchema>;
 
   // SECURITY FIX: Only fetch if dialog is open and user is ADMIN/AGENT with valid token
   const { data: usersData, isLoading: isLoadingUsers } = useUsers(
@@ -106,7 +109,7 @@ export function CaseTransferDialog({
         notifyAgent: data.notifyAgent,
       });
 
-      toast.success('Case transferred successfully');
+      toast.success(t('cases.transferDialog.caseTransferredSuccessfully'));
       form.reset();
       onOpenChange(false);
       onSuccess?.();
@@ -116,41 +119,46 @@ export function CaseTransferDialog({
   };
 
   const reasonLabels: Record<string, string> = {
-    REASSIGNMENT: 'Permanent Reassignment',
-    COVERAGE: 'Coverage (Vacation/Leave)',
-    SPECIALIZATION: 'Specialization Required',
-    WORKLOAD: 'Workload Balancing',
-    OTHER: 'Other Reason',
+    REASSIGNMENT: t('cases.transferDialog.permanentReassignment'),
+    COVERAGE: t('cases.transferDialog.coverage'),
+    SPECIALIZATION: t('cases.transferDialog.specialization'),
+    WORKLOAD: t('cases.transferDialog.workloadBalancing'),
+    OTHER: t('cases.transferDialog.otherReason'),
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto sm:max-h-[90vh]">
+      <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-2xl max-h-[95vh] overflow-y-auto sm:max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <RefreshCw className="h-5 w-5" />
-            Transfer Case to Another Agent
+            {t('cases.transferDialog.title')}
           </DialogTitle>
-          <DialogDescription>Reassign this case to a different immigration agent</DialogDescription>
+          <DialogDescription>{t('cases.transferDialog.description')}</DialogDescription>
         </DialogHeader>
 
         {/* Current Case Info */}
         <div className="rounded-lg border p-4 bg-muted/50 space-y-2">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium">Case: {caseData.referenceNumber}</p>
-              <p className="text-sm text-muted-foreground">
-                Client: {caseData.client?.firstName} {caseData.client?.lastName}
+              <p className="text-sm font-medium">
+                {t('cases.transferDialog.case')}: {caseData.referenceNumber}
               </p>
               <p className="text-sm text-muted-foreground">
-                Service: {caseData.serviceType.replace(/_/g, ' ')}
+                {t('cases.transferDialog.client')}: {caseData.client?.firstName}{' '}
+                {caseData.client?.lastName}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {t('cases.transferDialog.service')}: {caseData.serviceType.replace(/_/g, ' ')}
               </p>
             </div>
             <Badge variant="outline">{caseData.status}</Badge>
           </div>
           {caseData.assignedAgent && (
             <div className="pt-2 border-t mt-2">
-              <p className="text-xs text-muted-foreground">Current Agent</p>
+              <p className="text-xs text-muted-foreground">
+                {t('cases.transferDialog.currentAgent')}
+              </p>
               <p className="text-sm font-medium">
                 {caseData.assignedAgent.firstName} {caseData.assignedAgent.lastName}
               </p>
@@ -168,14 +176,14 @@ export function CaseTransferDialog({
               name="newAgentId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>New Agent *</FormLabel>
+                  <FormLabel>{t('cases.transferDialog.newAgent')}</FormLabel>
                   {isLoadingUsers ? (
                     <Skeleton className="h-10 w-full" />
                   ) : (
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select an agent..." />
+                          <SelectValue placeholder={t('cases.transferDialog.selectAgent')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -219,7 +227,7 @@ export function CaseTransferDialog({
               name="reason"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Transfer Reason *</FormLabel>
+                  <FormLabel>{t('cases.transferDialog.transferReason')}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -245,17 +253,15 @@ export function CaseTransferDialog({
               name="handoverNotes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Handover Notes</FormLabel>
+                  <FormLabel>{t('cases.transferDialog.handoverNotes')}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Provide important context for the new agent..."
+                      placeholder={t('cases.transferDialog.provideContext')}
                       className="min-h-[120px] resize-none"
                       {...field}
                     />
                   </FormControl>
-                  <FormDescription>
-                    Share important case details, client preferences, or pending actions
-                  </FormDescription>
+                  <FormDescription>{t('cases.transferDialog.shareDetails')}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -263,7 +269,7 @@ export function CaseTransferDialog({
 
             {/* Notification Options */}
             <div className="space-y-3 rounded-lg border p-4">
-              <p className="text-sm font-medium">Notification Options</p>
+              <p className="text-sm font-medium">{t('cases.transferDialog.notificationOptions')}</p>
 
               <FormField
                 control={form.control}
@@ -274,9 +280,9 @@ export function CaseTransferDialog({
                       <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                     </FormControl>
                     <div className="space-y-1 leading-none">
-                      <FormLabel>Notify client about agent change</FormLabel>
+                      <FormLabel>{t('cases.transferDialog.notifyClient')}</FormLabel>
                       <FormDescription>
-                        Client will receive an email with new agent contact information
+                        {t('cases.transferDialog.clientWillReceiveEmail')}
                       </FormDescription>
                     </div>
                   </FormItem>
@@ -292,9 +298,9 @@ export function CaseTransferDialog({
                       <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                     </FormControl>
                     <div className="space-y-1 leading-none">
-                      <FormLabel>Notify new agent</FormLabel>
+                      <FormLabel>{t('cases.transferDialog.notifyAgent')}</FormLabel>
                       <FormDescription>
-                        New agent will receive email with case details and handover notes
+                        {t('cases.transferDialog.agentWillReceiveEmail')}
                       </FormDescription>
                     </div>
                   </FormItem>
@@ -307,16 +313,15 @@ export function CaseTransferDialog({
               <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-medium text-blue-900 dark:text-blue-100">
-                  Case Transfer Effects
+                  {t('cases.transferDialog.caseTransferEffects')}
                 </p>
                 <p className="text-blue-700 dark:text-blue-300 text-xs mt-1">
-                  The case will be immediately reassigned. The new agent will receive a notification
-                  and the transfer will be logged in the case history.
+                  {t('cases.transferDialog.caseWillBeReassigned')}
                 </p>
               </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -325,14 +330,21 @@ export function CaseTransferDialog({
                   onOpenChange(false);
                 }}
                 disabled={transferCase.isPending}
+                className="w-full sm:w-auto"
               >
-                Cancel
+                {t('cases.transferDialog.cancel')}
               </Button>
-              <Button type="submit" disabled={transferCase.isPending || !form.formState.isValid}>
+              <Button
+                type="submit"
+                disabled={transferCase.isPending || !form.formState.isValid}
+                className="w-full sm:w-auto"
+              >
                 <RefreshCw
                   className={`mr-2 h-4 w-4 ${transferCase.isPending ? 'animate-spin' : ''}`}
                 />
-                {transferCase.isPending ? 'Transferring...' : 'Transfer Case'}
+                {transferCase.isPending
+                  ? t('cases.transferDialog.transferring')
+                  : t('cases.transferDialog.transferCase')}
               </Button>
             </DialogFooter>
           </form>

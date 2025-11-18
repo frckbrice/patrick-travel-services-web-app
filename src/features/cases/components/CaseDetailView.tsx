@@ -66,79 +66,22 @@ import { logger } from '@/lib/utils/logger';
 import { getErrorMessage } from '@/lib/utils/error-handler';
 import { formatDateTime } from '@/lib/utils/helpers';
 import { ScheduleAppointmentDialog } from './ScheduleAppointmentDialog';
+import { useTranslation } from 'react-i18next';
 
 interface CaseDetailViewProps {
   caseId: string;
 }
 
-const statusOptions = [
-  { value: 'SUBMITTED', label: 'Submitted' },
-  { value: 'UNDER_REVIEW', label: 'Under Review' },
-  { value: 'DOCUMENTS_REQUIRED', label: 'Documents Required' },
-  { value: 'PROCESSING', label: 'Processing' },
-  { value: 'APPROVED', label: 'Approved' },
-  { value: 'REJECTED', label: 'Rejected' },
-];
+// Status options will be created inside component to use translation
 
-// Consistent status colors as used in list views
-const statusConfig: Record<string, { label: string; className: string }> = {
-  SUBMITTED: {
-    label: 'Submitted',
-    className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  },
-  UNDER_REVIEW: {
-    label: 'Under Review',
-    className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-  },
-  DOCUMENTS_REQUIRED: {
-    label: 'Documents Required',
-    className: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
-  },
-  PROCESSING: {
-    label: 'Processing',
-    className: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
-  },
-  APPROVED: {
-    label: 'Approved',
-    className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  },
-  REJECTED: {
-    label: 'Rejected',
-    className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-  },
-  CLOSED: {
-    label: 'Closed',
-    className: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
-  },
-};
+// Status config will be created inside component to use translation
 
-const appointmentStatusConfig: Record<AppointmentStatus, { label: string; className: string }> = {
-  [AppointmentStatus.SCHEDULED]: {
-    label: 'Scheduled',
-    className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  },
-  [AppointmentStatus.RESCHEDULED]: {
-    label: 'Rescheduled',
-    className: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300',
-  },
-  [AppointmentStatus.COMPLETED]: {
-    label: 'Completed',
-    className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  },
-  [AppointmentStatus.CANCELLED]: {
-    label: 'Cancelled',
-    className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-  },
-};
+// Appointment status config will be created inside component to use translation
 
-const priorityOptions = [
-  { value: 'LOW', label: 'Low', color: 'text-gray-600' },
-  { value: 'NORMAL', label: 'Normal', color: 'text-blue-600' },
-  { value: 'HIGH', label: 'High', color: 'text-orange-600' },
-  { value: 'URGENT', label: 'Urgent', color: 'text-red-600' },
-];
+// Priority options will be created inside component to use translation
 
 export function CaseDetailView({ caseId }: CaseDetailViewProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuthStore();
   const { data, isLoading, error, refetch } = useCase(caseId);
@@ -146,6 +89,73 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const addInternalNote = useAddInternalNote(caseId);
   const approveDocument = useApproveDocument();
   const rejectDocument = useRejectDocument();
+
+  // Create translated configs
+  const statusOptions = [
+    { value: 'SUBMITTED', label: t('cases.statusLabels.SUBMITTED') },
+    { value: 'UNDER_REVIEW', label: t('cases.statusLabels.UNDER_REVIEW') },
+    { value: 'DOCUMENTS_REQUIRED', label: t('cases.statusLabels.DOCUMENTS_REQUIRED') },
+    { value: 'PROCESSING', label: t('cases.statusLabels.PROCESSING') },
+    { value: 'APPROVED', label: t('cases.statusLabels.APPROVED') },
+    { value: 'REJECTED', label: t('cases.statusLabels.REJECTED') },
+  ];
+
+  const statusConfig: Record<string, { label: string; className: string }> = {
+    SUBMITTED: {
+      label: t('cases.statusLabels.SUBMITTED'),
+      className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+    },
+    UNDER_REVIEW: {
+      label: t('cases.statusLabels.UNDER_REVIEW'),
+      className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+    },
+    DOCUMENTS_REQUIRED: {
+      label: t('cases.statusLabels.DOCUMENTS_REQUIRED'),
+      className: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
+    },
+    PROCESSING: {
+      label: t('cases.statusLabels.PROCESSING'),
+      className: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+    },
+    APPROVED: {
+      label: t('cases.statusLabels.APPROVED'),
+      className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+    },
+    REJECTED: {
+      label: t('cases.statusLabels.REJECTED'),
+      className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+    },
+    CLOSED: {
+      label: t('cases.statusLabels.CLOSED'),
+      className: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
+    },
+  };
+
+  const appointmentStatusConfig: Record<AppointmentStatus, { label: string; className: string }> = {
+    [AppointmentStatus.SCHEDULED]: {
+      label: t('cases.detailView.scheduled'),
+      className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+    },
+    [AppointmentStatus.RESCHEDULED]: {
+      label: t('cases.detailView.rescheduled'),
+      className: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300',
+    },
+    [AppointmentStatus.COMPLETED]: {
+      label: t('cases.detailView.completed'),
+      className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+    },
+    [AppointmentStatus.CANCELLED]: {
+      label: t('cases.detailView.cancelled'),
+      className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+    },
+  };
+
+  const priorityOptions = [
+    { value: 'LOW', label: t('cases.priorityLabels.LOW'), color: 'text-gray-600' },
+    { value: 'NORMAL', label: t('cases.priorityLabels.NORMAL'), color: 'text-blue-600' },
+    { value: 'HIGH', label: t('cases.priorityLabels.HIGH'), color: 'text-orange-600' },
+    { value: 'URGENT', label: t('cases.priorityLabels.URGENT'), color: 'text-red-600' },
+  ];
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState('');
   const [statusNote, setStatusNote] = useState('');
@@ -163,11 +173,9 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
     return (
       <ErrorState
         variant="not-found"
-        title="Case Not Found"
+        title={t('cases.detailView.caseNotFound')}
         description={
-          error
-            ? "We couldn't load this case. It may have been deleted, you may not have permission to view it, or there was an error fetching the data."
-            : "The case you're looking for doesn't exist or you don't have permission to access it."
+          error ? t('cases.detailView.couldNotLoadCase') : t('cases.detailView.caseDoesNotExist')
         }
         onRetry={refetch}
         errorDetails={error?.message}
@@ -189,13 +197,13 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
       <div className="text-center py-12 space-y-4">
         <AlertCircle className="mx-auto h-12 w-12 text-red-600" />
         <div>
-          <p className="text-red-600 font-semibold">Invalid Case Data</p>
+          <p className="text-red-600 font-semibold">{t('cases.detailView.invalidCaseData')}</p>
           <p className="text-sm text-muted-foreground mt-2">
-            The case data received from the server is malformed. Please contact support.
+            {t('cases.detailView.malformedCaseData')}
           </p>
         </div>
         <Button onClick={() => refetch()} variant="outline">
-          Try Again
+          {t('cases.detailView.tryAgain')}
         </Button>
       </div>
     );
@@ -218,7 +226,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
         status: newStatus,
         note: statusNote || undefined,
       });
-      toast.success('Case status updated successfully');
+      toast.success(t('cases.detailView.caseStatusUpdated'));
       setStatusNote('');
       setNewStatus('');
       setStatusDialogOpen(false);
@@ -231,7 +239,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const handleApproveDocument = async (docId: string) => {
     try {
       await approveDocument.mutateAsync(docId);
-      toast.success('Document approved successfully');
+      toast.success(t('cases.detailView.documentApproved'));
       refetch();
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -242,7 +250,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const handleRejectDocument = async (docId: string, reason: string) => {
     try {
       await rejectDocument.mutateAsync({ id: docId, reason });
-      toast.success('Document rejected successfully');
+      toast.success(t('cases.detailView.documentRejected'));
       setRejectDialogOpen(false);
       setRejectReason('');
       setSelectedDocId('');
@@ -262,7 +270,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
 
       if (!doc.filePath) {
         logger.error('Document filePath is empty (case)', { documentId: doc.id });
-        toast.error('Invalid document URL');
+        toast.error(t('cases.detailView.invalidDocumentUrl'));
         return;
       }
 
@@ -287,7 +295,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
           hostname: url.hostname,
           fileUrl,
         });
-        toast.error('Invalid document URL');
+        toast.error(t('cases.detailView.invalidDocumentUrl'));
         return;
       }
 
@@ -298,7 +306,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
         filePath: doc.filePath,
         documentId: doc.id,
       });
-      toast.error('Invalid document URL');
+      toast.error(t('cases.detailView.invalidDocumentUrl'));
     }
   };
 
@@ -342,13 +350,13 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
         documentId: doc.id,
         filePath: doc.filePath,
       });
-      toast.error('Failed to download document');
+      toast.error(t('cases.detailView.failedToDownload'));
     }
   };
 
   const handleSaveNote = async () => {
     if (!internalNote.trim()) {
-      toast.error('Note cannot be empty');
+      toast.error(t('cases.detailView.noteCannotBeEmpty'));
       return;
     }
 
@@ -357,12 +365,13 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
       await addInternalNote.mutateAsync({
         note: internalNote,
       });
-      toast.success('Internal note saved successfully');
+      toast.success(t('cases.detailView.internalNoteSaved'));
       setInternalNote('');
       refetch();
     } catch (error) {
       const err = error as { response?: { data?: { error?: string } }; message?: string };
-      const errorMessage = err.response?.data?.error || err.message || 'Failed to save note';
+      const errorMessage =
+        err.response?.data?.error || err.message || t('cases.detailView.failedToSaveNote');
       toast.error(errorMessage);
       logger.error('Failed to save internal note', error, {
         caseId,
@@ -375,7 +384,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
 
   const handleMessageClient = () => {
     if (!caseData.client) {
-      toast.error('Client information not available');
+      toast.error(t('cases.detailView.clientInfoNotAvailable'));
       return;
     }
     // Navigate to messages page with client parameters
@@ -388,7 +397,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
 
   const handleEmailClient = () => {
     if (!caseData.client) {
-      toast.error('Client information not available');
+      toast.error(t('cases.detailView.clientInfoNotAvailable'));
       return;
     }
     // Navigate to messages page with email mode and client parameters
@@ -406,11 +415,11 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const getAppointmentAdvisorDetails = (appointment: Appointment) => {
     const source = appointment.assignedAgent ?? appointment.createdBy;
     if (!source) {
-      return { name: 'Advisor', email: undefined as string | undefined };
+      return { name: t('cases.detailView.advisor'), email: undefined as string | undefined };
     }
     const displayName = `${source.firstName ?? ''} ${source.lastName ?? ''}`.trim();
     return {
-      name: displayName || source.email || 'Advisor',
+      name: displayName || source.email || t('cases.detailView.advisor'),
       email: source.email || undefined,
     };
   };
@@ -431,10 +440,12 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
     <TooltipProvider>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold">{caseData.referenceNumber}</h1>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+              <h1 className="text-2xl sm:text-3xl font-bold break-words">
+                {caseData.referenceNumber}
+              </h1>
               <Badge
                 variant="outline"
                 className={cn(
@@ -452,9 +463,11 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                 </Badge>
               )}
             </div>
-            <p className="text-muted-foreground">{caseData.serviceType.replace(/_/g, ' ')}</p>
+            <p className="text-muted-foreground text-sm sm:text-base break-words">
+              {caseData.serviceType.replace(/_/g, ' ')}
+            </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Assign to Agent Button (ADMIN only, unassigned cases) */}
             {isAdmin && isUnassigned && (
               <Tooltip>
@@ -495,17 +508,17 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                       </Button>
                     </DialogTrigger>
                   </TooltipTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-lg">
                     <DialogHeader>
-                      <DialogTitle>Update Case Status</DialogTitle>
-                      <DialogDescription>Change the status of this case</DialogDescription>
+                      <DialogTitle>{t('cases.detailView.updateCaseStatus')}</DialogTitle>
+                      <DialogDescription>{t('cases.detailView.changeStatus')}</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                       <div>
-                        <Label>New Status</Label>
+                        <Label>{t('cases.detailView.newStatus')}</Label>
                         <Select value={newStatus} onValueChange={setNewStatus}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
+                            <SelectValue placeholder={t('cases.detailView.selectStatus')} />
                           </SelectTrigger>
                           <SelectContent>
                             {statusOptions.map((s) => (
@@ -517,9 +530,9 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                         </Select>
                       </div>
                       <div>
-                        <Label>Note (optional)</Label>
+                        <Label>{t('cases.detailView.noteOptional')}</Label>
                         <Textarea
-                          placeholder="Add a note about this status change..."
+                          placeholder={t('cases.detailView.addNoteAboutStatusChange')}
                           value={statusNote}
                           onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                             setStatusNote(e.target.value)
@@ -527,34 +540,36 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                         />
                       </div>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="flex-col sm:flex-row gap-2">
                       <Button
                         variant="outline"
                         onClick={() => setStatusDialogOpen(false)}
                         disabled={updateCaseStatus.isPending}
+                        className="w-full sm:w-auto"
                       >
-                        Cancel
+                        {t('cases.detailView.cancel')}
                       </Button>
                       <Button
                         onClick={handleStatusUpdate}
                         disabled={!newStatus || updateCaseStatus.isPending}
+                        className="w-full sm:w-auto"
                       >
                         {updateCaseStatus.isPending ? (
                           <>
                             <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                            Updating...
+                            {t('cases.detailView.updating')}
                           </>
                         ) : (
                           <>
                             <Edit className="mr-2 h-4 w-4" />
-                            Update Status
+                            {t('cases.detailView.updateStatus')}
                           </>
                         )}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
                   <TooltipContent>
-                    <p>Update the current status of this case</p>
+                    <p>{t('cases.detailView.updateCurrentStatus')}</p>
                   </TooltipContent>
                 </Dialog>
               </Tooltip>
@@ -565,11 +580,11 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                   <TooltipTrigger asChild>
                     <Button variant="secondary" onClick={() => setAppointmentDialogOpen(true)}>
                       <Plus className="mr-2 h-4 w-4" />
-                      Manage Appointment
+                      {t('cases.detailView.manageAppointment')}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Create or update the in-person appointment for this case</p>
+                    <p>{t('cases.detailView.createOrUpdateAppointment')}</p>
                   </TooltipContent>
                 </Tooltip>
                 <ScheduleAppointmentDialog
@@ -607,18 +622,16 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
 
         {/* Reject Document Dialog */}
         <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-          <DialogContent>
+          <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-lg">
             <DialogHeader>
-              <DialogTitle>Reject Document</DialogTitle>
-              <DialogDescription>
-                Please provide a reason for rejecting this document
-              </DialogDescription>
+              <DialogTitle>{t('cases.detailView.rejectDocument')}</DialogTitle>
+              <DialogDescription>{t('cases.detailView.provideRejectionReason')}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div>
-                <Label>Rejection Reason</Label>
+                <Label>{t('cases.detailView.rejectionReason')}</Label>
                 <Textarea
-                  placeholder="Enter the reason for rejection..."
+                  placeholder={t('cases.detailView.enterRejectionReason')}
                   value={rejectReason}
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                     setRejectReason(e.target.value)
@@ -627,7 +640,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                 />
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -636,23 +649,25 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                   setSelectedDocId('');
                 }}
                 disabled={rejectDocument.isPending}
+                className="w-full sm:w-auto"
               >
-                Cancel
+                {t('cases.detailView.cancel')}
               </Button>
               <Button
                 variant="destructive"
                 onClick={() => handleRejectDocument(selectedDocId, rejectReason)}
                 disabled={!rejectReason.trim() || rejectDocument.isPending}
+                className="w-full sm:w-auto"
               >
                 {rejectDocument.isPending ? (
                   <>
                     <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    Rejecting...
+                    {t('cases.detailView.rejecting')}
                   </>
                 ) : (
                   <>
                     <XCircle className="mr-2 h-4 w-4" />
-                    Reject Document
+                    {t('cases.detailView.rejectDocumentButton')}
                   </>
                 )}
               </Button>
@@ -661,22 +676,36 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
         </Dialog>
 
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="documents">
-              Documents ({caseData.documents?.length || 0})
-            </TabsTrigger>
-            <TabsTrigger value="timeline">Timeline</TabsTrigger>
-            {isAgent && <TabsTrigger value="notes">Internal Notes</TabsTrigger>}
-          </TabsList>
+          <div className="overflow-x-auto">
+            <TabsList className="w-full inline-flex min-w-max sm:w-auto">
+              <TabsTrigger value="overview" className="whitespace-nowrap">
+                {t('cases.detailView.overview')}
+              </TabsTrigger>
+              <TabsTrigger value="documents" className="whitespace-nowrap">
+                {t('cases.detailView.documents')} ({caseData.documents?.length || 0})
+              </TabsTrigger>
+              <TabsTrigger value="timeline" className="whitespace-nowrap">
+                {t('cases.detailView.timeline')}
+              </TabsTrigger>
+              {isAgent && (
+                <TabsTrigger value="notes" className="whitespace-nowrap">
+                  {t('cases.detailView.internalNotes')}
+                </TabsTrigger>
+              )}
+            </TabsList>
+          </div>
 
           <TabsContent value="overview" className="space-y-4">
             {shouldShowAppointmentCard && (
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 space-y-0 pb-2">
                   <div>
-                    <CardTitle className="text-base">Appointments</CardTitle>
-                    <CardDescription>Office meetings scheduled for this case</CardDescription>
+                    <CardTitle className="text-base">
+                      {t('cases.detailView.appointments')}
+                    </CardTitle>
+                    <CardDescription>
+                      {t('cases.detailView.officeMeetingsScheduled')}
+                    </CardDescription>
                   </div>
                   {isAgent && caseData.status === 'APPROVED' && (
                     <Button
@@ -685,7 +714,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                       onClick={() => setAppointmentDialogOpen(true)}
                     >
                       <Plus className="mr-1.5 h-4 w-4" />
-                      Schedule
+                      {t('cases.detailView.schedule')}
                     </Button>
                   )}
                 </CardHeader>
@@ -695,7 +724,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                            Next Appointment
+                            {t('cases.detailView.nextAppointment')}
                           </p>
                           <p className="text-lg font-semibold">
                             {formatDateTime(upcomingAppointment.scheduledAt)}
@@ -711,26 +740,29 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                           {appointmentStatusConfig[upcomingAppointment.status].label}
                         </Badge>
                       </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                         <InfoRow
                           icon={MapPin}
-                          label="Location"
+                          label={t('cases.detailView.location')}
                           value={upcomingAppointment.location}
                         />
                         <InfoRow
                           icon={User}
-                          label="Advisor"
+                          label={t('cases.detailView.advisor')}
                           value={renderAppointmentAdvisor(upcomingAppointment)}
                         />
                       </div>
                       {upcomingAppointment.notes && (
-                        <InfoRow icon={FileText} label="Notes" value={upcomingAppointment.notes} />
+                        <InfoRow
+                          icon={FileText}
+                          label={t('cases.detailView.notes')}
+                          value={upcomingAppointment.notes}
+                        />
                       )}
                     </div>
                   ) : (
                     <div className="rounded-lg border border-dashed border-muted p-4 text-sm text-muted-foreground">
-                      No appointments scheduled yet. Schedule one to coordinate the next steps with
-                      the client.
+                      {t('cases.detailView.noAppointmentsScheduled')}
                     </div>
                   )}
 
@@ -738,7 +770,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                     <div className="space-y-3">
                       <Separator />
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Appointment History
+                        {t('cases.detailView.appointmentHistory')}
                       </p>
                       <div className="space-y-2">
                         {otherAppointments.map((appointment) => {
@@ -779,15 +811,17 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
               </Card>
             )}
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Case Information</CardTitle>
+                  <CardTitle className="text-base">
+                    {t('cases.detailView.caseInformation')}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <InfoRow
                     icon={Briefcase}
-                    label="Status"
+                    label={t('cases.status')}
                     value={
                       <Badge
                         className={cn(
@@ -801,34 +835,51 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                   />
                   <InfoRow
                     icon={Calendar}
-                    label="Submitted"
+                    label={t('cases.detailView.submitted')}
                     value={new Date(caseData.submissionDate).toLocaleDateString()}
                   />
                   <InfoRow
                     icon={Clock}
-                    label="Last Updated"
+                    label={t('cases.detailView.lastUpdated')}
                     value={new Date(caseData.lastUpdated).toLocaleDateString()}
                   />
-                  <InfoRow icon={Flag} label="Priority" value={caseData.priority} />
+                  <InfoRow
+                    icon={Flag}
+                    label={t('cases.priority')}
+                    value={
+                      priorityOptions.find((p) => p.value === caseData.priority)?.label ||
+                      caseData.priority
+                    }
+                  />
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Client Information</CardTitle>
+                  <CardTitle className="text-base">
+                    {t('cases.detailView.clientInformation')}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <InfoRow
                     icon={User}
-                    label="Name"
+                    label={t('cases.detailView.name')}
                     value={
                       caseData.client?.firstName || caseData.client?.lastName
                         ? `${caseData.client?.firstName ?? ''} ${caseData.client?.lastName ?? ''}`.trim()
                         : '—'
                     }
                   />
-                  <InfoRow icon={Mail} label="Email" value={caseData.client?.email || 'N/A'} />
-                  <InfoRow icon={Phone} label="Phone" value={caseData.client?.phone || 'N/A'} />
+                  <InfoRow
+                    icon={Mail}
+                    label={t('cases.detailView.email')}
+                    value={caseData.client?.email || 'N/A'}
+                  />
+                  <InfoRow
+                    icon={Phone}
+                    label={t('cases.detailView.phone')}
+                    value={caseData.client?.phone || 'N/A'}
+                  />
 
                   {/* Message/Email Client Actions - Only for Agents/Admins */}
                   {isAgent && caseData.client && (
@@ -836,7 +887,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                       <Separator className="my-3" />
                       <div className="space-y-2 pt-2">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                          Client Communication
+                          {t('cases.detailView.clientCommunication')}
                         </p>
                         <div className="flex gap-2">
                           <Tooltip>
@@ -848,11 +899,11 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                                 onClick={handleMessageClient}
                               >
                                 <MessageSquare className="mr-2 h-4 w-4" />
-                                Chat
+                                {t('cases.detailView.chat')}
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Start a real-time chat with this client</p>
+                              <p>{t('cases.detailView.startRealtimeChat')}</p>
                             </TooltipContent>
                           </Tooltip>
 
@@ -865,11 +916,11 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                                 onClick={handleEmailClient}
                               >
                                 <Send className="mr-2 h-4 w-4" />
-                                Email
+                                {t('cases.detailView.emailButton')}
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Send a formal email to this client</p>
+                              <p>{t('cases.detailView.sendFormalEmail')}</p>
                             </TooltipContent>
                           </Tooltip>
                         </div>
@@ -922,7 +973,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>View Document</p>
+                                  <p>{t('cases.detailView.viewDocument')}</p>
                                 </TooltipContent>
                               </Tooltip>
                               <Tooltip>
@@ -936,7 +987,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>Download Document</p>
+                                  <p>{t('cases.detailView.downloadDocument')}</p>
                                 </TooltipContent>
                               </Tooltip>
                             </div>
@@ -954,18 +1005,18 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                                     {approveDocument.isPending ? (
                                       <>
                                         <RefreshCw className="mr-1 h-4 w-4 animate-spin" />
-                                        Approving...
+                                        {t('cases.detailView.approving')}
                                       </>
                                     ) : (
                                       <>
                                         <CheckCircle className="mr-1 h-4 w-4" />
-                                        Approve
+                                        {t('cases.detailView.approve')}
                                       </>
                                     )}
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>Approve this document as valid</p>
+                                  <p>{t('cases.detailView.approveDocumentValid')}</p>
                                 </TooltipContent>
                               </Tooltip>
 
@@ -980,11 +1031,11 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                                     }}
                                   >
                                     <XCircle className="mr-1 h-4 w-4" />
-                                    Reject
+                                    {t('cases.detailView.reject')}
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>Reject this document and request a new one</p>
+                                  <p>{t('cases.detailView.rejectDocumentRequestNew')}</p>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
@@ -999,7 +1050,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
               <Card>
                 <CardContent className="py-12 text-center">
                   <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No documents uploaded yet</p>
+                  <p className="text-muted-foreground">{t('cases.detailView.noDocuments')}</p>
                 </CardContent>
               </Card>
             )}
@@ -1008,7 +1059,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
           <TabsContent value="timeline">
             <Card>
               <CardHeader>
-                <CardTitle>Case Timeline & Transfer History</CardTitle>
+                <CardTitle>{t('cases.detailView.timeline')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -1057,13 +1108,13 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
             <TabsContent value="notes">
               <Card>
                 <CardHeader>
-                  <CardTitle>Internal Notes</CardTitle>
-                  <CardDescription>Notes visible only to agents and admins</CardDescription>
+                  <CardTitle>{t('cases.detailView.internalNotes')}</CardTitle>
+                  <CardDescription>{t('cases.detailView.addInternalNote')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
                     <Textarea
-                      placeholder="Add internal note..."
+                      placeholder={t('cases.detailView.notePlaceholder')}
                       value={internalNote}
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                         setInternalNote(e.target.value)
@@ -1077,7 +1128,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                       disabled={!internalNote || savingNote}
                     >
                       <Save className="mr-2 h-4 w-4" />
-                      {savingNote ? 'Saving...' : 'Save Note'}
+                      {savingNote ? t('cases.detailView.saving') : t('cases.detailView.saveNote')}
                     </Button>
                   </div>
                   <Separator />
@@ -1088,7 +1139,9 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                       </p>
                     )}
                     {!caseData.internalNotes && (
-                      <p className="text-sm text-muted-foreground">No internal notes yet</p>
+                      <p className="text-sm text-muted-foreground">
+                        {t('cases.detailView.noNotesYet')}
+                      </p>
                     )}
                   </div>
                 </CardContent>
