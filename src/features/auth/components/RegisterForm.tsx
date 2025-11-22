@@ -9,7 +9,18 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { Eye, EyeOff } from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Lock,
+  Ticket,
+  FileText,
+  Shield,
+} from 'lucide-react';
 import { useRegister, useGoogleSignIn } from '../api/useAuth';
 import { useAuthStore } from '../store';
 import { registerSchema, RegisterInput } from '../schemas/auth.schema';
@@ -130,22 +141,26 @@ export function RegisterForm() {
         }}
       />
 
-      <div className="w-full max-w-md mx-auto">
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">{t('auth.createAccount')}</CardTitle>
-            <CardDescription className="text-center">{t('auth.signUpMessage')}</CardDescription>
+      <div className="w-full max-w-2xl mx-auto">
+        <Card className="shadow-xl border-2 bg-background/95 backdrop-blur-sm">
+          <CardHeader className="space-y-2 pb-6">
+            <CardTitle className="text-3xl font-bold text-center bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              {t('auth.createAccount')}
+            </CardTitle>
+            <CardDescription className="text-center text-base">
+              {t('auth.signUpMessage')}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Google Sign-In */}
             <Button
               type="button"
               variant="outline"
-              className="w-full"
+              className="w-full h-11 text-base font-medium border-2 hover:bg-accent/50 transition-all duration-200 shadow-sm"
               onClick={handleGoogleSignIn}
               disabled={googleSignInMutation.isPending}
             >
-              <svg className="mr-2 h-5 w-5" viewBox="0 0 48 48">
+              <svg className="mr-3 h-5 w-5" viewBox="0 0 48 48">
                 <path
                   fill="#EA4335"
                   d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
@@ -163,207 +178,315 @@ export function RegisterForm() {
               {googleSignInMutation.isPending ? t('auth.signingIn') : t('auth.continueWithGoogle')}
             </Button>
 
-            <div className="relative">
+            <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <Separator />
+                <Separator className="bg-border/60" />
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
+              <div className="relative flex justify-center text-xs uppercase tracking-wider">
+                <span className="bg-card px-3 py-1 text-muted-foreground font-medium">
                   {t('auth.orContinueWithEmail')}
                 </span>
               </div>
             </div>
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                {/* First Name */}
-                <FormField
-                  control={form.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('auth.firstName')}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t('auth.placeholders.firstName')} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* Personal Information Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                    <User className="h-5 w-5 text-primary" />
+                    <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                      {t('auth.personalInfo') || 'Personal Information'}
+                    </h3>
+                  </div>
 
-                {/* Last Name */}
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('auth.lastName')}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t('auth.placeholders.lastName')} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  {/* Name Fields - Grid Layout */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            {t('auth.firstName')}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder={t('auth.placeholders.firstName')}
+                              className="h-10"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                {/* Email */}
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('auth.email')}</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder={t('auth.emailPlaceholder')} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            {t('auth.lastName')}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder={t('auth.placeholders.lastName')}
+                              className="h-10"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-                {/* Phone (Optional) */}
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('auth.phone')}</FormLabel>
-                      <FormControl>
-                        <Input type="tel" placeholder={t('auth.placeholders.phone')} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Street (Optional) */}
-                <FormField
-                  control={form.control}
-                  name="street"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('auth.address.street')}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t('auth.placeholders.street')} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* City (Optional) */}
-                <FormField
-                  control={form.control}
-                  name="city"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('auth.address.city')}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t('auth.placeholders.city')} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Country (Optional) */}
-                <FormField
-                  control={form.control}
-                  name="country"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('auth.address.country')}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t('auth.placeholders.country')} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Password */}
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('auth.password')}</FormLabel>
-                      <FormControl>
-                        <div className="relative">
+                  {/* Email */}
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          {t('auth.email')}
+                        </FormLabel>
+                        <FormControl>
                           <Input
-                            type={showPassword ? 'text' : 'password'}
-                            placeholder="••••••••"
-                            className="pr-10"
+                            type="email"
+                            placeholder={t('auth.emailPlaceholder')}
+                            className="h-10"
                             {...field}
                           />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors z-10"
-                            tabIndex={-1}
-                          >
-                            {showPassword ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                {/* Invite Code (Optional - for AGENT/ADMIN roles) */}
-                <FormField
-                  control={form.control}
-                  name="inviteCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        {t('auth.inviteCode.label')}{' '}
-                        <span className="text-xs text-muted-foreground">
-                          {t('auth.inviteCode.subLabel')}
-                        </span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder={t('auth.inviteCode.placeholder')} {...field} />
-                      </FormControl>
-                      <p className="text-xs text-muted-foreground">{t('auth.inviteCode.helper')}</p>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  {/* Phone (Optional) */}
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          {t('auth.phone')}
+                          <span className="text-xs font-normal text-muted-foreground ml-1">
+                            ({t('auth.optional') || 'Optional'})
+                          </span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="tel"
+                            placeholder={t('auth.placeholders.phone')}
+                            className="h-10"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Address Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                    <MapPin className="h-5 w-5 text-primary" />
+                    <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                      {t('auth.address') || 'Address'}
+                      <span className="text-xs font-normal text-muted-foreground ml-2 lowercase">
+                        ({t('auth.optional') || 'Optional'})
+                      </span>
+                    </h3>
+                  </div>
+
+                  {/* Street */}
+                  <FormField
+                    control={form.control}
+                    name="street"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">
+                          {t('auth.address.street')}
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder={t('auth.placeholders.street')}
+                            className="h-10"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* City and Country - Grid Layout */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium">
+                            {t('auth.address.city')}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder={t('auth.placeholders.city')}
+                              className="h-10"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="country"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium">
+                            {t('auth.address.country')}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder={t('auth.placeholders.country')}
+                              className="h-10"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Security Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                    <Lock className="h-5 w-5 text-primary" />
+                    <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                      {t('auth.security') || 'Security'}
+                    </h3>
+                  </div>
+
+                  {/* Password */}
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium flex items-center gap-2">
+                          <Lock className="h-4 w-4 text-muted-foreground" />
+                          {t('auth.password')}
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              type={showPassword ? 'text' : 'password'}
+                              placeholder="••••••••"
+                              className="pr-10 h-10"
+                              {...field}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors z-10 focus:outline-none focus:ring-2 focus:ring-primary rounded"
+                              tabIndex={-1}
+                              aria-label={showPassword ? 'Hide password' : 'Show password'}
+                            >
+                              {showPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
+                        </FormControl>
+                        <FormDescription className="text-xs">
+                          {t('auth.passwordRequirements') ||
+                            'Must be at least 8 characters with uppercase, lowercase, and number'}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Invite Code (Optional - for AGENT/ADMIN roles) */}
+                  <FormField
+                    control={form.control}
+                    name="inviteCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium flex items-center gap-2">
+                          <Ticket className="h-4 w-4 text-muted-foreground" />
+                          {t('auth.inviteCode.label')}
+                          <span className="text-xs font-normal text-muted-foreground ml-1">
+                            ({t('auth.inviteCode.subLabel') || 'Optional'})
+                          </span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder={t('auth.inviteCode.placeholder')}
+                            className="h-10"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs">
+                          {t('auth.inviteCode.helper')}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 {/* GDPR Consent Section */}
-                <div className="space-y-4 pt-4 border-t">
-                  <p className="text-sm font-medium text-foreground">{t('auth.privacy.title')}</p>
+                <div className="space-y-4 pt-4 border-t border-border/50">
+                  <div className="flex items-center gap-2 pb-2">
+                    <Shield className="h-5 w-5 text-primary" />
+                    <p className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                      {t('auth.privacy.title')}
+                    </p>
+                  </div>
 
                   {/* Terms & Conditions Checkbox */}
                   <FormField
                     control={form.control}
                     name="acceptedTerms"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg border border-border/50 p-3 bg-accent/30">
                         <FormControl>
-                          <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            className="mt-0.5"
+                          />
                         </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel className="text-sm font-normal">
+                        <div className="space-y-1 leading-none flex-1">
+                          <FormLabel className="text-sm font-normal cursor-pointer">
                             {t('auth.privacy.acceptTermsPrefix')}{' '}
                             <Link
                               href="/terms"
                               target="_blank"
-                              className="text-primary hover:underline font-medium"
+                              className="text-primary hover:underline font-medium transition-colors"
                             >
                               {t('auth.privacy.termsLabel')}
                             </Link>
-                            <span className="text-destructive ml-1">
-                              {t('auth.privacy.requiredIndicator')}
-                            </span>
+                            <span className="text-destructive ml-1">*</span>
                           </FormLabel>
-                          <FormMessage />
+                          <FormMessage className="text-xs" />
                         </div>
                       </FormItem>
                     )}
@@ -374,37 +497,41 @@ export function RegisterForm() {
                     control={form.control}
                     name="acceptedPrivacy"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg border border-border/50 p-3 bg-accent/30">
                         <FormControl>
-                          <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            className="mt-0.5"
+                          />
                         </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel className="text-sm font-normal">
+                        <div className="space-y-1 leading-none flex-1">
+                          <FormLabel className="text-sm font-normal cursor-pointer">
                             {t('auth.privacy.acceptPrivacyPrefix')}{' '}
                             <Link
                               href="/privacy"
                               target="_blank"
-                              className="text-primary hover:underline font-medium"
+                              className="text-primary hover:underline font-medium transition-colors"
                             >
                               {t('auth.privacy.privacyLabel')}
                             </Link>
-                            <span className="text-destructive ml-1">
-                              {t('auth.privacy.requiredIndicator')}
-                            </span>
+                            <span className="text-destructive ml-1">*</span>
                           </FormLabel>
-                          <FormMessage />
+                          <FormMessage className="text-xs" />
                         </div>
                       </FormItem>
                     )}
                   />
 
-                  <FormDescription className="text-xs">{t('auth.privacy.notice')}</FormDescription>
+                  <FormDescription className="text-xs text-muted-foreground pl-1">
+                    {t('auth.privacy.notice')}
+                  </FormDescription>
                 </div>
 
                 {/* Submit Button */}
                 <Button
                   type="submit"
-                  className="w-full"
+                  className="w-full h-11 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                   disabled={form.formState.isSubmitting || registerMutation.isPending}
                 >
                   {registerMutation.isPending ? t('auth.signingUp') : t('auth.createAccount')}
@@ -412,10 +539,13 @@ export function RegisterForm() {
               </form>
             </Form>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="pt-6 border-t border-border/50">
             <p className="text-sm text-center text-muted-foreground w-full">
               {t('auth.alreadyHaveAccount')}{' '}
-              <Link href="/login" className="text-primary hover:underline font-medium">
+              <Link
+                href="/login"
+                className="text-primary hover:underline font-semibold transition-colors"
+              >
                 {t('auth.signIn')}
               </Link>
             </p>

@@ -8,10 +8,9 @@ import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { z } from 'zod';
 import { Eye, EyeOff } from 'lucide-react';
-import { confirmPasswordReset } from 'firebase/auth';
-import { auth } from '@/lib/firebase/firebase-client';
 import { toast } from 'sonner';
 import { logger } from '@/lib/utils/logger';
+import { apiClient } from '@/lib/utils/axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -34,7 +33,12 @@ import { useAuthStore } from '@/features/auth/store';
 
 const resetPasswordSchema = z
   .object({
-    password: z.string().min(6, 'Password must be at least 6 characters'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+      .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+      .regex(/[0-9]/, 'Password must contain at least one number'),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -77,19 +81,32 @@ function ResetPasswordForm() {
     }
 
     try {
-      await confirmPasswordReset(auth, oobCode, data.password);
-      toast.success('Password reset successful! You can now log in.');
-      logger.info('Password reset successful');
-      router.push('/login');
+      // Call backend API to reset password using Firebase REST API
+      const response = await apiClient.post('/api/auth/reset-password', {
+        oobCode,
+        password: data.password,
+      });
+
+      if (response.data.success) {
+        toast.success(response.data.message || 'Password reset successful! You can now log in.');
+        logger.info('Password reset successful', { email: response.data.data?.email });
+        // Redirect to login after a brief delay
+        setTimeout(() => {
+          router.push('/login');
+        }, 1500);
+      } else {
+        throw new Error(response.data.error || 'Failed to reset password');
+      }
     } catch (error: any) {
       logger.error('Reset password error', error);
 
-      if (error.code === 'auth/expired-action-code') {
-        toast.error('Reset link has expired. Please request a new one.');
-      } else if (error.code === 'auth/invalid-action-code') {
-        toast.error('Invalid reset link. Please request a new one.');
-      } else if (error.code === 'auth/weak-password') {
-        toast.error('Password is too weak. Please use a stronger password.');
+      // Handle API errors with user-friendly messages
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else if (error.message) {
+        toast.error(error.message);
       } else {
         toast.error('Failed to reset password. Please try again.');
       }
@@ -103,9 +120,7 @@ function ResetPasswordForm() {
         <Card className="border-2">
           <CardContent className="p-8 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-4 text-muted-foreground" suppressHydrationWarning>
-              {t('auth.loading.redirecting')}
-            </p>
+            <p className="mt-4 text-muted-foreground">{t('auth.loading.redirecting')}</p>
           </CardContent>
         </Card>
       </div>
@@ -226,9 +241,7 @@ function LoadingFallback() {
       <Card className="border-2">
         <CardContent className="p-8 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground" suppressHydrationWarning>
-            {t('common.loading')}
-          </p>
+          <p className="mt-4 text-muted-foreground">{t('common.loading')}</p>
         </CardContent>
       </Card>
     </div>

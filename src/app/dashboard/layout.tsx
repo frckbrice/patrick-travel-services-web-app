@@ -75,9 +75,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-          <p className="mt-4 text-muted-foreground" suppressHydrationWarning>
-            {t('common.loading')}
-          </p>
+          <p className="mt-4 text-muted-foreground">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -89,9 +87,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-          <p className="mt-4 text-muted-foreground" suppressHydrationWarning>
-            {t('common.loading')}
-          </p>
+          <p className="mt-4 text-muted-foreground">{t('common.loading')}</p>
         </div>
       </div>
     );

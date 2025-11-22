@@ -55,7 +55,7 @@ export const Navbar = memo(function Navbar() {
                 href={item.href}
                 className="text-md font-medium text-muted-foreground hover:text-primary transition-colors"
               >
-                <span suppressHydrationWarning>{t(item.nameKey)}</span>
+                <span>{t(item.nameKey)}</span>
               </Link>
             ))}
           </div>
@@ -73,19 +73,19 @@ export const Navbar = memo(function Navbar() {
                 <Button asChild>
                   <Link href="/dashboard">
                     <LayoutDashboard className="mr-2 h-4 w-4" />
-                    <span suppressHydrationWarning>{t('common.dashboard') || 'Dashboard'}</span>
+                    <span>{t('common.dashboard') || 'Dashboard'}</span>
                   </Link>
                 </Button>
               ) : (
                 <>
                   <Button variant="ghost" asChild>
                     <Link href="/login">
-                      <span suppressHydrationWarning>{t('auth.login')}</span>
+                      <span>{t('auth.login')}</span>
                     </Link>
                   </Button>
                   <Button asChild>
                     <Link href="/register">
-                      <span suppressHydrationWarning>{t('auth.signUp')}</span>
+                      <span>{t('auth.signUp')}</span>
                     </Link>
                   </Button>
                 </>
@@ -136,7 +136,7 @@ export const Navbar = memo(function Navbar() {
                     className="block py-2.5 px-3 text-base font-medium text-foreground hover:text-primary hover:bg-muted/50 rounded-lg transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    <span suppressHydrationWarning>{t(item.nameKey)}</span>
+                    <span>{t(item.nameKey)}</span>
                   </Link>
                 ))}
               </div>
@@ -169,19 +169,19 @@ export const Navbar = memo(function Navbar() {
                   <Button className="w-full" asChild>
                     <Link href="/dashboard">
                       <LayoutDashboard className="mr-2 h-4 w-4" />
-                      <span suppressHydrationWarning>{t('common.dashboard') || 'Dashboard'}</span>
+                      <span>{t('common.dashboard') || 'Dashboard'}</span>
                     </Link>
                   </Button>
                 ) : (
                   <>
                     <Button variant="outline" className="w-full" asChild>
                       <Link href="/login">
-                        <span suppressHydrationWarning>{t('auth.login')}</span>
+                        <span>{t('auth.login')}</span>
                       </Link>
                     </Button>
                     <Button className="w-full" asChild>
                       <Link href="/register">
-                        <span suppressHydrationWarning>{t('auth.signUp')}</span>
+                        <span>{t('auth.signUp')}</span>
                       </Link>
                     </Button>
                   </>

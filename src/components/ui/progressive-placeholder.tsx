@@ -43,9 +43,7 @@ export const StatCardPlaceholder = memo(function StatCardPlaceholder({
         <span className="text-xl sm:text-2xl font-bold text-muted-foreground/50 animate-pulse">
           --
         </span>
-        <span className="text-xs text-muted-foreground truncate" suppressHydrationWarning>
-          {loadingText}
-        </span>
+        <span className="text-xs text-muted-foreground truncate">{loadingText}</span>
       </div>
     </Card>
   );

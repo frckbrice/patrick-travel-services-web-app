@@ -153,6 +153,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
         hint: firebaseEmail?.substring(0, 5) + '...',
       });
 
+      const now = new Date();
       const created = await prisma.user.create({
         data: {
           email: normalizedFirebaseEmail,
@@ -163,6 +164,12 @@ const handler = asyncHandler(async (request: NextRequest) => {
           isActive: true,
           isVerified: true,
           firebaseId: firebaseUid,
+          // GDPR Consent Fields - Auto-provisioned on authentication (implicit consent)
+          consentedAt: now,
+          acceptedTerms: true,
+          acceptedPrivacy: true,
+          termsAcceptedAt: now,
+          privacyAcceptedAt: now,
         },
         select: {
           id: true,

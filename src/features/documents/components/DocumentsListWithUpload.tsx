@@ -210,7 +210,7 @@ export function DocumentsList() {
       const url = new URL(fileUrl);
 
       // Define trusted domains for file hosting
-      const trustedDomains = ['utfs.io', 'uploadthing.com', 'ufs.sh'];
+      const trustedDomains = ['utfs.io', 'uploadthing.com', 'ufs.sh', 'res.cloudinary.com'];
 
       // Check if the hostname ends with one of the trusted domains
       // This will match: *.utfs.io, *.uploadthing.com, *.ufs.sh

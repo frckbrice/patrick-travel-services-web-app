@@ -124,7 +124,9 @@ export function VideoCallContainer({
 
       setInitialised(true);
     } catch (error) {
-      console.error('[ZegoCloud] Failed to join room', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[ZegoCloud] Failed to join room', error);
+      }
       instanceRef.current = null;
       activeTokenRef.current = null;
       onError?.(error as Error);

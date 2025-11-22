@@ -81,7 +81,7 @@ export const isValidUUID = (uuid: string): boolean => {
  * @example
  * getInitials("John Doe") // Returns "JD"
  * getInitials("  John   Doe  ") // Returns "JD"
- * getInitials("") // Returns "?"
+ * getInitials( ) // Returns "?"
  * getInitials("John") // Returns "J"
  */
 export const getInitials = (name: string): string => {

@@ -333,7 +333,7 @@ export function DocumentsList() {
                 // Validate URL before opening to prevent security issues
                 try {
                   const url = new URL(d.filePath);
-                  const trustedDomains = ['utfs.io', 'uploadthing.com'];
+                  const trustedDomains = ['utfs.io', 'uploadthing.com', 'res.cloudinary.com'];
                   const isTrustedDomain = trustedDomains.some(
                     (domain) => url.hostname === domain || url.hostname.endsWith('.' + domain)
                   );

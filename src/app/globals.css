@@ -113,10 +113,16 @@
 }
 
 @layer base {
+  /* 
+                 * Base layer: Sets default styles for all elements
+                 * @apply is a Tailwind CSS directive - linter warnings are false positives
+                 */
   * {
+    /* Apply default border and outline colors to all elements */
     @apply border-border outline-ring/50;
   }
   body {
+    /* Set default background and text colors for the body */
     @apply bg-background text-foreground;
   }
   /* Ensure all links have cursor pointer */
@@ -219,4 +225,104 @@
       will-change: auto;
     }
   }
+}
+
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes scroll-right {
+  0% {
+    transform: translateX(-50%);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.animate-scroll-left {
+  animation: scroll-left 60s linear infinite;
+  will-change: transform;
+}
+
+.animate-scroll-right {
+  animation: scroll-right 60s linear infinite;
+  will-change: transform;
+}
+
+.hover-pause:hover .animate-scroll-left,
+.hover-pause:hover .animate-scroll-right {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-scroll-left,
+  .animate-scroll-right {
+    animation: none !important;
+    will-change: auto;
+  }
+}
+
+@keyframes glow-smooth {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-glow-smooth {
+  animation: glow-smooth 4s ease-in-out infinite;
+  will-change: opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-glow-smooth {
+    animation: none !important;
+    will-change: auto;
+  }
+}
+
+.optimize-rendering {
+  /* will-change: transform; */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.animate-fill-forwards {
+  animation-fill-mode: forwards;
+}
+
+/* Prevent blank page flash - ensure content is visible immediately */
+.hero-content-visible {
+  /* Content is visible immediately - no animation to prevent flickering */
+  opacity: 1 !important;
+  visibility: visible !important;
+  /* Ensure smooth rendering with hardware acceleration */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Prevent flickering on landing page sections - ensure immediate visibility */
+section[id] {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Ensure main content in public layout is immediately visible */
+main {
+  opacity: 1;
+  visibility: visible;
 }

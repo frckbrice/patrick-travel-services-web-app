@@ -20,9 +20,15 @@ async function handler(request: AuthenticatedRequest) {
       );
     }
 
-    // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
+    // Determine which field to query based on userId format
+    // If userId matches Firebase UID, it means custom claims aren't set yet, so query by firebaseId
+    // Otherwise, userId is the database UUID from custom claims, so query by id
+    const isFirebaseUid = userId === request.user?.uid;
+    const whereClause = isFirebaseUid ? { firebaseId: userId } : { id: userId };
+
+    // Get user from database (single query)
+    let user = await prisma.user.findUnique({
+      where: whereClause,
       select: {
         id: true,
         email: true,
@@ -34,11 +40,12 @@ async function handler(request: AuthenticatedRequest) {
         country: true,
         role: true,
         profilePicture: true,
-        // isActive: true,
-        // isVerified: true,
-        // lastLogin: true,
-        // createdAt: true,
-        // updatedAt: true,
+        isActive: true,
+        isVerified: true,
+        lastLogin: true,
+        createdAt: true,
+        updatedAt: true,
+        firebaseId: true, // Include to check if it exists
         // GDPR Consent Fields
         consentedAt: true,
         acceptedTerms: true,
@@ -58,6 +65,51 @@ async function handler(request: AuthenticatedRequest) {
         },
         { status: 404 }
       );
+    }
+
+    // Ensure firebaseId is set (data consistency)
+    // If user was found by UUID but doesn't have firebaseId, update it
+    // This handles edge cases where user exists but firebaseId wasn't set
+    if (!user.firebaseId && request.user?.uid) {
+      logger.info('Updating user with missing firebaseId', {
+        userId: user.id,
+        email: user.email?.substring(0, 5) + '...',
+      });
+
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { firebaseId: request.user.uid },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          street: true,
+          city: true,
+          country: true,
+          role: true,
+          profilePicture: true,
+          isActive: true,
+          isVerified: true,
+          lastLogin: true,
+          createdAt: true,
+          updatedAt: true,
+          firebaseId: true,
+          // GDPR Consent Fields
+          consentedAt: true,
+          acceptedTerms: true,
+          acceptedPrivacy: true,
+          termsAcceptedAt: true,
+          privacyAcceptedAt: true,
+          dataExportRequests: true,
+          lastDataExport: true,
+        },
+      });
+
+      logger.info('firebaseId successfully linked to user', {
+        userId: user.id,
+      });
     }
 
     logger.debug('User info retrieved', { userId: user.id });

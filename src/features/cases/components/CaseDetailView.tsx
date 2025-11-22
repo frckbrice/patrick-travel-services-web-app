@@ -285,7 +285,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
       }
 
       const url = new URL(fileUrl);
-      const trustedDomains = ['utfs.io', 'uploadthing.com', 'ufs.sh'];
+      const trustedDomains = ['utfs.io', 'uploadthing.com', 'ufs.sh', 'res.cloudinary.com'];
       const isTrusted = trustedDomains.some(
         (domain) => url.hostname === domain || url.hostname.endsWith('.' + domain)
       );

@@ -73,7 +73,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <head>
         {/* CRITICAL: Clear service workers BEFORE React loads (development only) */}
         {process.env.NODE_ENV === 'development' && (

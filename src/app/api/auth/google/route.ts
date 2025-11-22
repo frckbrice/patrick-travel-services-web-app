@@ -196,6 +196,7 @@ const handler = asyncHandler(async (request: NextRequest) => {
   const lastName = names.slice(1).join(' ') || '';
 
   try {
+    const now = new Date();
     user = await prisma.user.create({
       data: {
         id: firebaseUid,
@@ -208,6 +209,12 @@ const handler = asyncHandler(async (request: NextRequest) => {
         isVerified: true, // Google accounts are already verified
         profilePicture: photoURL || null,
         firebaseId: firebaseUid, // Link Firebase UID
+        // GDPR Consent Fields - Auto-provisioned on authentication (implicit consent)
+        consentedAt: now,
+        acceptedTerms: true,
+        acceptedPrivacy: true,
+        termsAcceptedAt: now,
+        privacyAcceptedAt: now,
       },
       select: {
         id: true,

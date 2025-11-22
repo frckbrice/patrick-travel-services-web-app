@@ -873,7 +873,6 @@ export function MessagesList({
                                 ? 'text-emerald-600 font-medium'
                                 : 'text-muted-foreground'
                             )}
-                            suppressHydrationWarning
                           >
                             {presenceLabel}
                           </span>
@@ -884,7 +883,7 @@ export function MessagesList({
                         {isMounted && (
                           <div className="flex items-center gap-1">
                             <Clock className="h-3 w-3 shrink-0" />
-                            <span className="text-xs truncate" suppressHydrationWarning>
+                            <span className="text-xs truncate">
                               {formatTime(conv.lastMessageTime)}
                             </span>
                           </div>
@@ -944,10 +943,7 @@ export function MessagesList({
                         {selectedConversation.participantRole}
                       </span>
                       <span className="hidden sm:inline text-xs text-muted-foreground">•</span>
-                      <span
-                        className={cn('text-xs truncate', headerStatusClass)}
-                        suppressHydrationWarning
-                      >
+                      <span className={cn('text-xs truncate', headerStatusClass)}>
                         {headerStatusLabel}
                       </span>
                     </div>
@@ -1140,7 +1136,6 @@ export function MessagesList({
                                     'text-xs',
                                     isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'
                                   )}
-                                  suppressHydrationWarning
                                 >
                                   {formatTime(msg.sentAt)}
                                 </p>
@@ -1190,10 +1185,7 @@ export function MessagesList({
                           </AvatarFallback>
                         </Avatar>
                         <div className="bg-muted rounded-lg px-3 py-2">
-                          <p
-                            className="text-xs text-muted-foreground mb-1"
-                            suppressHydrationWarning
-                          >
+                          <p className="text-xs text-muted-foreground mb-1">
                             {typingLabel || t('messages.activeChats.typing')}
                           </p>
                           <div className="flex gap-1 text-muted-foreground">

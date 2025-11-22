@@ -17,6 +17,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ProgressiveSection } from '@/components/ui/progressive-section';
 
 interface FAQSectionProps {
   /**
@@ -139,8 +140,11 @@ export function FAQSection({
   };
 
   return (
-    <section
-      className="py-12 md:py-20 bg-linear-to-b from-blue-200/30 via-indigo-200/20 to-purple-200/30 dark:from-transparent dark:via-transparent dark:to-transparent"
+    <ProgressiveSection
+      delay={600}
+      duration={800}
+      as="section"
+      className="py-12 md:py-20 bg-white dark:bg-transparent"
       id="faq"
     >
       {/* Schema.org markup for Google FAQ rich snippets */}
@@ -268,7 +272,7 @@ export function FAQSection({
           </Card>
         )}
       </div>
-    </section>
+    </ProgressiveSection>
   );
 }
 

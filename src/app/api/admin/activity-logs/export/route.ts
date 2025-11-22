@@ -17,7 +17,7 @@ function escapeCsvField(field: any): string {
   const str = String(field);
   // If field contains comma, quote, or newline, wrap in quotes and escape quotes
   if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-    return `"${str.replace(/"/g, '""')}"`;
+    return `"${str.replace(/"/g, ' ')}"`;
   }
   return str;
 }

@@ -88,7 +88,9 @@ export function useZegoKitToken({
             errorMessage = payload.error;
           }
         } catch (error) {
-          console.warn('Failed to parse token error payload', error);
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('Failed to parse token error payload', error);
+          }
         }
         throw new Error(errorMessage);
       }

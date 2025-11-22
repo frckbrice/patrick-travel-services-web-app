@@ -155,6 +155,7 @@ const postHandler = asyncHandler(async (request: NextRequest) => {
 });
 
 // Export POST handler with authentication, CORS, and rate limiting
+// Note: OPTIONS preflight requests are automatically handled by withCorsMiddleware
 export const POST = withCorsMiddleware(
   withRateLimit(authenticateToken(postHandler), RateLimitPresets.UPLOAD)
 );
